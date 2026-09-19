@@ -1,5 +1,7 @@
 // Kaart- en adresfunctionaliteit Tuinplantplanner (Leaflet + PDOK)
-var mapBorderId = null;
+// Nieuwe flow: border intekenen op de kaart maakt DIRECT een border-object aan,
+// bewerken en planten plaatsen gebeurt op de aparte border-editor (border.html).
+
 var drawMode = false;
 var drawPoints = [];
 var drawPreview = null;
@@ -43,8 +45,7 @@ function applyAddress(addr, lat, lng, zoomTo) {
   document.body.classList.add('has-address');
   document.getElementById('addressTitle').textContent = '\uD83D\uDCCD ' + addr;
   if (zoomTo) gardenMap.setView([lat, lng], 19);
-  s
-etTimeout(function () { gardenMap.invalidateSize(); }, 50);
+  setTimeout(function () { gardenMap.invalidateSize(); }, 50);
   setTimeout(function () { gardenMap.invalidateSize(); }, 400);
   window.scrollTo(0, 0);
 }
@@ -90,76 +91,41 @@ document.getElementById('changeAddressBtn').addEventListener('click', function (
 })();
 
 function saveMapView() {
-  var c0 = gardenMap.getCenter();
+  var c0 = gardenMap.getCen
+ter();
   localStorage.setItem('mapView', JSON.stringify({ lat: c0.lat, lng: c0.lng, zoom: gardenMap.getZoom() }));
 }
 gardenMap.on('moveend zoomend', saveMapView);
 
-function getMapBorder() {
-  return borders.find(function (b) { return b.id === mapBorderId; }) || null;
-}
-
-function updateMapBorderSelect() {
-  var sel = document.getElementById('mapBorderSelect');
-  sel.innerHTML = '<option value="">Kies een border...</option>' + borders.map(function (b) {
-    return '<option value="' + esc(b.id) + '"' + (b.id === mapBorderId ? ' selected' : '') + '>' + esc(b.name) + '</option>';
-  }).join('');
-}
-
-function updateMapPlantSelect() {
-  var sel = document.getElementById('mapPlantSelect');
-  var border = getMapBorder();
-  if (!border || border.plants.length === 0) {
-    sel.innerHTML = '<option value="">(geen planten in border)</option>';
-    return;
-  }
-  sel.innerHTML = border.plants.map(function (p) {
-    var label = esc(p.nlNaam || p.latijnseNaam) + (p.pos ? ' \u2713' : '');
-    return '<option value="' + esc(p.latijnseNaam) + '">' + label + '</option>';
-  }).join('');
-}
-
-function makePlantPopup(plant) {
-  var div = document.createElement('div');
-  var strong = document.createElement('strong');
-  strong.textContent = plant.nlNaam || plant.latijnseNaam;
-  div.appendChild(strong);
-  div.appendChild(document.createElement('br'));
-  var btn = document.createElement('button');
-  btn.className = 'btn btn-danger';
-  btn.textContent = 'Positie wissen';
-  btn.addEventListener('click', function () {
-    var border = getMapBorder();
-    if (!border) return;
-    var p = border.plants.find(function (x) { return x.latijnseNaam === plant.latijnseNaam; });
-    if (p) { p.pos = null; saveState(); gardenMap.closePopup(); }
-  });
-  div.appendChild(btn);
-  return div;
+// ===== Alle borders op de kaart tonen =====
+function openBorderEditor(borderId) {
+  window.location.href = 'border.html?id=' + encodeURIComponent(borderId);
 }
 
 function renderMap() {
-  updateMapBorderSelect();
-  updateMapPlantSelect();
   mapShapeLayer.clearLayers();
   mapMarkerLayer.clearLayers();
-  var border = getMapBorder();
-  document.getElementById('mapPlaceRow').style.display = border ? 'flex' : 'none';
-  if (!border) return;
-  if (border.shape && border.shape.length >= 3) {
-    L.polygon(border.shape, { color: '#2e7d32', weight: 3, fillOpacity: 0.15 }).addTo(mapShapeLayer);
-  }
-  border.plants.forEach(function (p) {
-    if (!p.pos) return;
-    var marker = L.circleMarker([p.pos.lat, p.pos.lng], {
-      radius: 9, color: '#333', weight: 1,
-      fillColor: getColorHex(p.kleur) || '#8bc34a', fillOpacity: 0.95
-    }).addTo(mapMarkerLayer);
-    marker.bindPopup(makePlantPopup(p));
-    if (!L.Browser.mobile) marker.bindTooltip(p.nlNaam || p.latijnseNaam);
+  borders.forEach(function (border) {
+    if (border.shape && border.shape.length >= 3) {
+      var poly = L.polygon(border.shape, {
+        color: '#2e7d32', weight: 3, fillOpacity: 0.15
+      }).addTo(mapShapeLayer);
+      poly.bindTooltip(border.name + ' \u2014 klik om te bewerken');
+      poly.on('click', function () { openBorderEditor(border.id); });
+    }
+    (border.plants || []).forEach(function (p) {
+      if (!p.pos) return;
+      var marker = L.circleMarker([p.pos.lat, p.pos.lng], {
+        radius: 8, color: '#333', weight: 1,
+        fillColor: getColorHex(p.kleur) || '#8bc34a', fillOpacity: 0.95
+      }).addTo(mapMarkerLayer);
+      marker.bindTooltip((p.nlNaam || p.latijnseNaam) + ' (' + border.name + ')');
+      marker.on('click', function () { openBorderEditor(border.id); });
+    });
   });
 }
 
+// ===== Border intekenen: maakt direct een nieuw border-object aan =====
 function setDrawMode(on) {
   drawMode = on;
   drawPoints = [];
@@ -170,21 +136,31 @@ function setDrawMode(on) {
 }
 
 function finishDraw() {
-  if (drawPoints.length < 3) { alert('Te weinig punten: klik minimaal 3 hoekpunten van de border aan.'); return; }
-  var border = getMapBorder();
-  if (border) { border.shape = drawPoints; saveState(); }
+  if (drawPoints.length < 3) {
+    alert('Te weinig punten: klik minimaal 3 hoekpunten van de border aan.');
+    return;
+  }
+  var name = prompt('Naam voor deze border:', 'Border ' + (borders.length + 1));
+  if (!name) return; // annuleren: tekening blijft staan om opnieuw te kunnen afsluiten
+  var newBor
+der = {
+    id: Date.now().toString(),
+    name: name,
+    plants: [],
+    shape: drawPoints.slice()
+  };
+  borders.push(newBorder);
   setDrawMode(false);
+  saveState();
+  renderMap();
+  gardenMap.fitBounds(newBorder.shape, { padding: [30, 30] });
+  if (confirm('Border "' + name + '" is aangemaakt!\n\nNu planten toevoegen en plaatsen in de border-editor?')) {
+    openBorderEditor(newBorder.id);
+  }
 }
 
 gardenMap.on('click', function (e) {
-  if (!drawMode) {
-    var border = getMapBorder();
-    var sel = document.getElementById('mapPlantSelect');
-    if (!border || !sel || !sel.value) return;
-    var plant = border.plants.find(function (x) { return x.latijnseNaam === sel.value; });
-    if (plant) { plant.pos = { lat: e.latlng.lat, lng: e.latlng.lng }; saveState(); }
-    return;
-  }
+  if (!drawMode) return;
   drawPoints.push([e.latlng.lat, e.latlng.lng]);
   if (drawPreview) gardenMap.removeLayer(drawPreview);
   drawPreview = L.polyline(drawPoints, { color: '#2e7d32', dashArray: '6 4', weight: 3 }).addTo(gardenMap);
@@ -192,19 +168,10 @@ gardenMap.on('click', function (e) {
 
 gardenMap.on('dblclick', function () { if (drawMode) finishDraw(); });
 
-document.getElementById('mapBorderSelect').addEventListener('change', function (e) {
-  mapBorderId = e.target.value || null;
-  renderMap();
-});
 document.getElementById('mapDrawBtn').addEventListener('click', function () {
-  if (!mapBorderId) { alert('Kies eerst een border in de dropdown.'); return; }
   setDrawMode(true);
 });
 document.getElementById('mapFinishDrawBtn').addEventListener('click', finishDraw);
-document.getElementById('mapClearShapeBtn').addEventListener('click', function () {
-  var border = getMapBorder();
-  if (border && border.shape && confirm('Border-tekening wissen?')) { border.shape = null; saveState(); }
-});
 document.getElementById('mapLocateBtn').addEventListener('click', function () {
   if (!navigator.geolocation) { alert('Geolocatie wordt niet ondersteund.'); return; }
   navigator.geolocation.getCurrentPosition(function (pos) {
