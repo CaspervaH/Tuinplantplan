@@ -103,6 +103,7 @@
         </div>
     </div>
     <script>
+        // Plantendata
         const plantData = [
             { latijnseNaam: "Acaena inermis Purpurea", nlNaam: "Stekelnootje", standplaats: "Z", kleur: "bruinrood", bloeiVan: "juni", bloeiTot: "juli", hoogteVan: 10, hoogteTot: 10 },
             { latijnseNaam: "Allium Millenium", nlNaam: "Sierui", standplaats: "Z", kleur: "paars violet", bloeiVan: "juli", bloeiTot: "sept", hoogteVan: 40, hoogteTot: 40 },
@@ -183,7 +184,7 @@
                 const colorHex = getColorHex(plant.kleur);
                 return 
                     '<div class="plant-card ' + (isInShortlist ? 'selected' : '') + '">' +
-                    '<label><input type="checkbox" ' + (isInShortlist ? 'checked' : '') + ' onchange="toggleShortlist('' + plant.latijnseNaam + '')">' +
+                    '<label><input type="checkbox" ' + (isInShortlist ? 'checked' : '') + ' onchange="toggleShortlist('' + plant.latijnseNaam.replace(/'/g, "\'") + '')">' +
                     '<strong>' + plant.latijnseNaam + '</strong></label>' +
                     '<div class="plant-details"><span><em>' + plant.nlNaam + '</em></span></div>' +
                     '<div class="plant-details">' +
@@ -222,7 +223,7 @@
                     '☀️ ' + plant.standplaats +
                     '</div>' +
                     '</div>' +
-                    '<button onclick="removeFromShortlist('' + plant.latijnseNaam + '')">✕</button>' +
+                    '<button onclick="removeFromShortlist('' + plant.latijnseNaam.replace(/'/g, "\'") + '')">✕</button>' +
                     '</div>';
             }).join('');
             updateAddPlantSelect();
@@ -286,7 +287,7 @@
                     '<td>' + plant.hoogteVan + 'cm</td>' +
                     '<td>' + (plant.hoogteTot > plant.hoogteVan ? plant.hoogteTot + 'cm' : '') + '</td>' +
                     '<td>' + plant.standplaats + '</td>' +
-                    '<td><button class="btn btn-danger" onclick="removePlantFromBorder('' + plant.latijnseNaam + '')">✕</button></td>' +
+                    '<td><button class="btn btn-danger" onclick="removePlantFromBorder('' + plant.latijnseNaam.replace(/'/g, "\'") + '')">✕</button></td>' +
                     '</tr>';
             }).join('');
         }
@@ -358,6 +359,7 @@
             localStorage.setItem('borders', JSON.stringify(borders));
         }
 
+        // Event listeners
         document.getElementById('searchInput').addEventListener('input', renderPlantList);
         document.getElementById('colorFilter').addEventListener('change', renderPlantList);
         document.getElementById('standplaatsFilter').addEventListener('change', renderPlantList);
@@ -367,12 +369,14 @@
         document.getElementById('closeBorderBtn').addEventListener('click', closeBorder);
         document.getElementById('clearBorderBtn').addEventListener('click', clearBorder);
 
+        // Maak functies globaal beschikbaar voor onclick handlers
         window.toggleShortlist = toggleShortlist;
         window.removeFromShortlist = removeFromShortlist;
         window.showActiveBorder = showActiveBorder;
         window.deleteBorder = deleteBorder;
         window.removePlantFromBorder = removePlantFromBorder;
 
+        // **DE FIX: Roep renderPlantList() aan bij het laden van de pagina**
         renderPlantList();
         renderShortlist();
         renderBorderList();
