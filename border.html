@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Border bewerken – Tuinplantplanner</title>
+    <style>
+        :root {
+            --primary: #4a6b4a;
+            --accent: #7cb342;
+            --border: #dee2e6;
+            --text: #212529;
+            --light-text: #6c757d;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f5f7f5; color: var(--text); line-height: 1.6; padding: 10px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 { color: var(--primary); text-align: center; margin-bottom: 6px; font-size: 1.4rem; }
+        .subtitle { text-align: center; color: var(--light-text); font-size: 0.9rem; margin-bottom: 12px; }
+        .back-link { display: inline-block; color: var(--primary); text-decoration: none; font-size: 14px; margin-bottom: 8px; }
+        .section { background: white; border-radius: 6px; box-shadow: 0 1px 5px rgba(0,0,0,0.1); padding: 12px; margin-bottom: 12px; }
+        .toolbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 10px; }
+        .layout { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        @media (min-width: 900px) { .layout { grid-template-columns: 3fr 2fr; } }
+        #shapeWrap { position: relative; background: #f0fff0; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; height: 480px; }
+        #shapeSvg { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+        #shapeSvg.placing { cursor: crosshair; }
+        .shape-hint { font-size: 12px; color: #666; margin-top: 6px; }
+        .zoom-controls { position: absolute; top: 8px; right: 8px; display: flex; flex-direction: column; gap: 4px; }
+        .zoom-controls button { width: 32px; height: 32px; border: 1px solid var(--border); background: white; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; }
+        .btn { padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 4px; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-secondary { background: #f8f9fa; color: var(--text); border: 1px solid var(--border); }
+        .btn-danger { background: #ff6b6b; color: white; }
+        .palette-list { display: flex; flex-direction: column; gap: 4px; max-height: 300px; overflow-y: auto; }
+        .palette-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; background: white; cursor: pointer; font-size: 13px; }
+        .palette-item.selected { border-color: var(--accent); background: #f0ffe0; }
+        .palette-item .dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid #999; flex-shrink: 0; }
+        .palette-item .status { margin-left: auto; font-size: 11px; color: var(--light-text); white-space: nowrap; }
+        .add-row { display: flex; gap: 6px; margin: 10px 0; flex-wrap: wrap; }
+        .add-row select { padding: 6px; border: 1px solid var(--border); border-radius: 4px; flex: 1; min-width: 180px; font-size: 13px; }
+        h3 { color: var(--primary); font-size: 1rem; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
+        th, td { padding: 6px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background: var(--primary); color: white; }
+        .color-indicator { display: inline-block; width: 14px; height: 14px; border-radius: 3px; border: 1px solid #ccc; vertical-align: middle; }
+        .error-box { text-align: center; padding: 30px 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a class="back-link" href="index.html">&larr; Terug naar de planner</a>
+        <h1 id="borderTitle">Border</h1>
+        <p class="subtitle" id="borderSubtitle"></p>
+
+        <div id="errorBox" class="section error-box" style="display:none;">
+            <h2 id="errorText" style="color:#c0392b; font-size:1.1rem;"></h2>
+            <p><a href="index.html">Ga terug naar de planner</a></p>
+        </div>
+
+        <div id="editorBox">
+            <div class="section">
+                <div class="toolbar">
+                    <button class="btn btn-secondary" id="renameBtn">&#9998; Naam wijzigen</button>
+                    <button class="btn btn-danger" id="deleteBorderBtn">Border verwijderen</button>
+                    <span id="placedInfo" style="font-size: 13px; color: var(--light-text); margin-left: auto;"></span>
+                </div>
+                <div class="layout">
+                    <div>
+                        <div id="shapeWrap">
+                            <svg id="shapeSvg" xmlns="http://www.w3.org/2000/svg">
+                                <g id="viewGroup"></g>
+                            </svg>
+                            <div class="zoom-controls">
+                                <button id="zoomInBtn" title="Inzoomen">+</button>
+                                <button id="zoomOutBtn" title="Uitzoomen">&minus;</button>
+                                <button id="zoomResetBtn" title="Reset weergave">&#8634;</button>
+                            </div>
+                        </div>
+                        <p class="shape-hint" id="shapeHint">Scroll of gebruik +/&minus; om te zoomen, sleep om te verschuiven. Kies rechts een plant en klik in de border om hem te plaatsen. Sleep een plant om te verplaatsen.</p>
+                    </div>
+                    <div>
+                        <h3>Planten in deze border</h3>
+                        <div class="palette-list" id="paletteList"></div>
+                        <div class="add-row">
+                            <select id="addPlantSelect"><option value="">Plant toevoegen (uit shortlist)...</option></select>
+                            <button class="btn btn-primary" id="addPlantBtn">Toevoegen</button>
+                        </div>
+                        <div style="overflow-x: auto;">
+                            <table>
+                                <thead><tr><th>Plant</th><th>Kleur</th><th>Bloei</th><th>Hoogte</th><th>Standplaats</th><th></th></tr></thead>
+                                <tbody id="plantTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="border.js" defer></script>
+</body>
+</html>
