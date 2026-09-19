@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tuinplantplanner</title>
+    <style>
+        :root {
+            --primary: #4a6b4a;
+            --secondary: #f8f9fa;
+            --accent: #7cb342;
+            --border: #dee2e6;
+            --text: #212529;
+            --light-text: #6c757d;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f5f7f5; color: var(--text); line-height: 1.6; padding: 10px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 { color: var(--primary); text-align: center; margin-bottom: 15px; font-size: 1.5rem; }
+        h2 { color: var(--primary); margin-bottom: 10px; font-size: 1.2rem; border-bottom: 2px solid var(--accent); padding-bottom: 5px; }
+        h3 { color: var(--primary); margin-bottom: 8px; font-size: 1rem; }
+        .section { background: white; border-radius: 6px; box-shadow: 0 1px 5px rgba(0,0,0,0.1); padding: 12px; margin-bottom: 12px; }
+        .shortlist-section { background: #fff9f0; border-left: 3px solid var(--accent); }
+        .border-section { background: #f0fff0; border-left: 3px solid var(--primary); }
+        .filter-controls { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+        .filter-controls input, .filter-controls select { padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; flex: 1; min-width: 140px; }
+        .filter-controls input[type="text"] { flex: 2; }
+        .plant-list { display: grid; grid-template-columns: 1fr; gap: 8px; margin-bottom: 12px; }
+        .plant-card { border: 1px solid var(--border); border-radius: 4px; padding: 10px; background: white; }
+        .plant-card.selected { border-color: var(--accent); background-color: #f0ffe0; }
+        .plant-card input[type="checkbox"] { margin-right: 8px; }
+        .plant-name { font-weight: bold; color: var(--primary); margin-bottom: 3px; font-size: 0.9rem; }
+        .plant-details { font-size: 12px; color: var(--light-text); margin-top: 5px; }
+        .plant-details span { margin-right: 8px; display: inline-block; margin-bottom: 3px; }
+        .color-indicator { display: inline-block; width: 14px; height: 14px; border-radius: 3px; margin-right: 4px; border: 1px solid #ccc; vertical-align: middle; }
+        .shortlist-grid { display: grid; grid-template-columns: 1fr; gap: 6px; }
+        .shortlist-item { background: white; padding: 8px; border-radius: 4px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .shortlist-item button { background: #ff6b6b; color: white; border: none; border-radius: 3px; padding: 2px 6px; cursor: pointer; font-size: 11px; }
+        .border-list { margin-bottom: 12px; }
+        .border-item { background: white; padding: 8px 10px; border-radius: 4px; border: 1px solid var(--border); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .border-item.active { background: #e8f5e8; border-color: var(--accent); }
+        .border-item button { background: var(--primary); color: white; border: none; border-radius: 3px; padding: 3px 6px; cursor: pointer; margin-left: 6px; font-size: 11px; }
+        .border-plant-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+        .border-plant-table th, .border-plant-table td { padding: 6px; text-align: left; border-bottom: 1px solid var(--border); }
+        .border-plant-table th { background: var(--primary); color: white; font-weight: bold; }
+        .add-border-btn { background: var(--accent); color: white; border: none; border-radius: 4px; padding: 8px 12px; cursor: pointer; font-size: 14px; margin-bottom: 10px; width: 100%; }
+        .add-plant-section { margin-top: 12px; padding: 10px; background: #e8f5e8; border-radius: 4px; }
+        .add-plant-section select { padding: 6px; border-radius: 4px; border: 1px solid var(--border); margin-right: 6px; min-width: 160px; font-size: 13px; }
+        .add-plant-section button { background: var(--primary); color: white; border: none; border-radius: 4px; padding: 6px 10px; cursor: pointer; font-size: 13px; }
+        .hidden { display: none; }
+        .btn { padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 4px; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-secondary { background: var(--secondary); color: var(--text); border: 1px solid var(--border); }
+        .btn-danger { background: #ff6b6b; color: white; }
+        @media (min-width: 768px) {
+            .plant-list { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+            .filter-controls { flex-wrap: nowrap; }
+            .filter-controls input, .filter-controls select { min-width: 180px; }
+            .shortlist-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tuinplantplanner</h1>
+        <div class="section">
+            <h2>Plantenlijst</h2>
+            <div class="filter-controls">
+                <input type="text" id="searchInput" placeholder="Zoeken...">
+                <select id="colorFilter"><option value="">Alle kleuren</option><option value="wit">Wit</option><option value="geel">Geel</option><option value="roze">Roze</option><option value="rood">Rood</option><option value="paars">Paars</option><option value="blauw">Blauw</option><option value="oranje">Oranje</option></select>
+                <select id="standplaatsFilter"><option value="">Alle standplaatsen</option><option value="Z">Zon</option><option value="HS">Halfschaduw</option><option value="S">Schaduw</option></select>
+            </div>
+            <div class="plant-list" id="plantList"></div>
+        </div>
+        <div class="section shortlist-section">
+            <h2>Shortlist (<span id="shortlistCount">0</span> planten)</h2>
+            <div class="shortlist-grid" id="shortlist"></div>
+            <button class="btn btn-danger" id="clearShortlistBtn">Shortlist leegmaken</button>
+        </div>
+        <div class="section border-section">
+            <h2>Border Planner</h2>
+            <button class="add-border-btn" id="addBorderBtn">Nieuwe border aanmaken</button>
+            <div class="border-list" id="borderList"></div>
+            <div id="activeBorderSection" class="hidden">
+                <h3 id="activeBorderName"></h3>
+                <div class="add-plant-section">
+                    <h4>Plant toevoegen:</h4>
+                    <select id="addPlantSelect"><option value="">Selecteer een plant...</option></select>
+                    <button class="btn btn-primary" id="addPlantToBorderBtn">Toevoegen</button>
+                </div>
+                <h4>Plantoverzicht:</h4>
+                <div style="overflow-x: auto;">
+                    <table class="border-plant-table">
+                        <thead><tr><th>Plant</th><th>Kleur</th><th>Bloei van</th><th>Bloei tot</th><th>Hoogte van</th><th>Hoogte tot</th><th>Standplaats</th><th>Actie</th></tr></thead>
+                        <tbody id="borderPlantTableBody"></tbody>
+                    </table>
+                </div>
+                <div style="margin-top: 8px;">
+                    <button class="btn btn-secondary" id="closeBorderBtn">Sluiten</button>
+                    <button class="btn btn-danger" id="clearBorderBtn">Border leegmaken</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const plantData = [
+            { latijnseNaam: "Acaena inermis Purpurea", nlNaam: "Stekelnootje", standplaats: "Z", kleur: "bruinrood", bloeiVan: "juni", bloeiTot: "juli", hoogteVan: 10, hoogteTot: 10 },
+            { latijnseNaam: "Allium Millenium", nlNaam: "Sierui", standplaats: "Z", kleur: "paars violet", bloeiVan: "juli", bloeiTot: "sept", hoogteVan: 40, hoogteTot: 40 },
+            { latijnseNaam: "Allium obliquum", nlNaam: "Sierui", standplaats: "Z", kleur: "groengeel", bloeiVan: "mei", bloeiTot: "juni", hoogteVan: 70, hoogteTot: 70 },
+            { latijnseNaam: "Allium Suger Melt", nlNaam: "Sierui", standplaats: "Z", kleur: "lichtroze", bloeiVan: "juli", bloeiTot: "sept", hoogteVan: 25, hoogteTot: 25 },
+            { latijnseNaam: "Allium Summer Beauty", nlNaam: "Sierui", standplaats: "Z", kleur: "lilapaars", bloeiVan: "juli", bloeiTot: "aug", hoogteVan: 40, hoogteTot: 60 },
+            { latijnseNaam: "Allium tuberosum", nlNaam: "Knoflookbieslook", standplaats: "Z", kleur: "wit", bloeiVan: "juli", bloeiTot: "sept", hoogteVan: 30, hoogteTot: 70 },
+            { latijnseNaam: "Allium ursinum", nlNaam: "Daslook", standplaats: "HS - S", kleur: "wit", bloeiVan: "april", bloeiTot: "mei", hoogteVan: 20, hoogteTot: 20 },
+            { latijnseNaam: "Amsonia Blue Ice", nlNaam: "Blauwe ster", standplaats: "Z - HS", kleur: "blauw", bloeiVan: "mei", bloeiTot: "juni", hoogteVan: 40, hoogteTot: 40 },
+            { latijnseNaam: "Anaphalis triplinervis", nlNaam: "Siberisch edelweiss", standplaats: "Z", kleur: "wit", bloeiVan: "juli", bloeiTot: "aug", hoogteVan: 25, hoogteTot: 30 },
+            { latijnseNaam: "Anemone hybrida Honorine Jobert", nlNaam: "Herfstanemoon", standplaats: "Z - HS", kleur: "wit", bloeiVan: "aug", bloeiTot: "okt", hoogteVan: 80, hoogteTot: 80 },
+            { latijnseNaam: "Anemone Konigin Charlotte", nlNaam: "Herfstanemoon", standplaats: "Z - HS", kleur: "zuiverroze", bloeiVan: "sept", bloeiTot: "okt", hoogteVan: 80, hoogteTot: 80 },
+            { latijnseNaam: "Anemone hupehensis Pretty Lady Maria", nlNaam: "Herfstanemoon", standplaats: "HS", kleur: "wit", bloeiVan: "aug", bloeiTot: "sept", hoogteVan: 40, hoogteTot: 50 },
+            { latijnseNaam: "Anemone hupehensis September Charm", nlNaam: "Herfstanemoon", standplaats: "Z - S", kleur: "roze", bloeiVan: "aug", bloeiTot: "okt", hoogteVan: 90, hoogteTot: 90 },
+            { latijnseNaam: "Anemone hybrida Splendens", nlNaam: "Herstanemoon", standplaats: "Z - HS", kleur: "paars - roze", bloeiVan: "aug", bloeiTot: "okt", hoogteVan: 80, hoogteTot: 80 },
+            { latijnseNaam: "Anemone virginiana", nlNaam: "Anemoon", standplaats: "Z - HS", kleur: "wit", bloeiVan: "mei", bloeiTot: "juni", hoogteVan: 40, hoogteTot: 40 },
+            { latijnseNaam: "Anthemis tinctoria", nlNaam: "Gele kamille", standplaats: "Z - HS", kleur: "geel", bloeiVan: "juni", bloeiTot: "sept", hoogteVan: 40, hoogteTot: 50 },
+            { latijnseNaam: "Anthericum ramosum", nlNaam: "Berg- of graslelie", standplaats: "Z", kleur: "wit", bloeiVan: "juni", bloeiTot: "sept", hoogteVan: 60, hoogteTot: 60 },
+            { latijnseNaam: "Aquilegia vulgaris Alba", nlNaam: "Akelei", standplaats: "Z", kleur: "wit", bloeiVan: "mei", bloeiTot: "juni", hoogteVan: 30, hoogteTot: 50 },
+            { latijnseNaam: "Aquilegia vulgaris mix", nlNaam: "Akelei", standplaats: "Z - HS", kleur: "diverse kleuren", bloeiVan: "mei", bloeiTot: "juni", hoogteVan: 30, hoogteTot: 70 },
+            { latijnseNaam: "Aquilegia vulgaris Pink", nlNaam: "Akelei", standplaats: "Z - HS", kleur: "roze", bloeiVan: "mei", bloeiTot: "juni", hoogteVan: 30, hoogteTot: 50 },
+            { latijnseNaam: "Armeria maritima Rubrifolia", nlNaam: "Engels gras", standplaats: "Z", kleur: "rood", bloeiVan: "mei", bloeiTot: "aug", hoogteVan: 20, hoogteTot: 20 },
+            { latijnseNaam: "Artemisia abrotanum Coca Cola", nlNaam: "Cola plant", standplaats: "Z - HS", kleur: "creme geel", bloeiVan: "juli", bloeiTot: "juli", hoogteVan: 100, hoogteTot: 100 },
+            { latijnseNaam: "Asarum caudatum", nlNaam: "Mansoor", standplaats: "HS - S", kleur: "bruinrood", bloeiVan: "april", bloeiTot: "juni", hoogteVan: 15, hoogteTot: 15 },
+            { latijnseNaam: "Asclepias tuberosa", nlNaam: "Papegaaiplant", standplaats: "Z", kleur: "oranje", bloeiVan: "juli", bloeiTot: "aug", hoogteVan: 50, hoogteTot: 50 },
+            { latijnseNaam: "Aster ageratoides Ashvi", nlNaam: "Herfstaster", standplaats: "Z - HS", kleur: "wit", bloeiVan: "sept", bloeiTot: "okt", hoogteVan: 50, hoogteTot: 60 },
+            { latijnseNaam: "Aster ageratoides Asran", nlNaam: "Herfstaster", standplaats: "Z", kleur: "lichtblauw", bloeiVan: "aug", bloeiTot: "okt", hoogteVan: 70, hoogteTot: 70 },
+            { latijnseNaam: "Aster azureus", nlNaam: "Herfstaster", standplaats: "Z - HS", kleur: "blauw", bloeiVan: "juli", bloeiTot: "okt", hoogteVan: 50, hoogteTot: 70 },
+            { latijnseNaam: "Achillea filipendulina Cloth of Gold", nlNaam: "Duizendblad", standplaats: "Z", kleur: "geel", bloeiVan: "juli", bloeiTot: "aug", hoogteVan: 100, hoogteTot: 100 }
+        ];
+
+        let shortlist = JSON.parse(localStorage.getItem('shortlist')) || [];
+        let borders = JSON.parse(localStorage.getItem('borders')) || [];
+        let activeBorderId = null;
+        let allPlants = [...plantData];
+
+        const plantListEl = document.getElementById('plantList');
+        const shortlistEl = document.getElementById('shortlist');
+        const shortlistCountEl = document.getElementById('shortlistCount');
+        const borderListEl = document.getElementById('borderList');
+        const activeBorderSectionEl = document.getElementById('activeBorderSection');
+        const activeBorderNameEl = document.getElementById('activeBorderName');
+        const borderPlantTableBodyEl = document.getElementById('borderPlantTableBody');
+        const addPlantSelectEl = document.getElementById('addPlantSelect');
+
+        const colorToHex = {
+            wit: '#ffffff', geel: '#ffd700', roze: '#ffc0cb', rood: '#ff0000',
+            paars: '#800080', blauw: '#0000ff', oranje: '#ffa500', bruinrood: '#8b0000',
+            groengeel: '#adff2f', lichtroze: '#ffb6c1', lilapaars: '#c8a2c8',
+            cremegeel: '#fffacd', violetblauw: '#4169e1', lichtblauw: '#add8e6'
+        };
+
+        function getColorHex(color) {
+            if (!color) return '#cccccc';
+            for (const [key, hex] of Object.entries(colorToHex)) {
+                if (color.toLowerCase().includes(key)) return hex;
+            }
+            return '#cccccc';
+        }
+
+        function renderPlantList() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const colorFilter = document.getElementById('colorFilter').value;
+            const standplaatsFilter = document.getElementById('standplaatsFilter').value;
+
+            const filteredPlants = allPlants.filter(plant => {
+                const matchesSearch = plant.latijnseNaam.toLowerCase().includes(searchTerm) || plant.nlNaam.toLowerCase().includes(searchTerm);
+                const matchesColor = !colorFilter || plant.kleur.toLowerCase().includes(colorFilter.toLowerCase());
+                const matchesStandplaats = !standplaatsFilter || 
+                    (plant.standplaats.includes("Z") && standplaatsFilter.includes("Z")) ||
+                    (plant.standplaats.includes("HS") && standplaatsFilter.includes("HS")) ||
+                    (plant.standplaats.includes("S") && standplaatsFilter.includes("S"));
+                return matchesSearch && matchesColor && matchesStandplaats;
+            });
+
+            plantListEl.innerHTML = filteredPlants.map(plant => {
+                const isInShortlist = shortlist.some(p => p.latijnseNaam === plant.latijnseNaam);
+                const colorHex = getColorHex(plant.kleur);
+                return 
+                    '<div class="plant-card ' + (isInShortlist ? 'selected' : '') + '">' +
+                    '<label><input type="checkbox" ' + (isInShortlist ? 'checked' : '') + ' onchange="toggleShortlist('' + plant.latijnseNaam + '')">' +
+                    '<strong>' + plant.latijnseNaam + '</strong></label>' +
+                    '<div class="plant-details"><span><em>' + plant.nlNaam + '</em></span></div>' +
+                    '<div class="plant-details">' +
+                    '<span><span class="color-indicator" style="background-color: ' + colorHex + '"></span>' + plant.kleur + '</span>' +
+                    '<span>🌸 ' + plant.bloeiVan + '-' + plant.bloeiTot + '</span>' +
+                    '<span>📏 ' + plant.hoogteVan + (plant.hoogteTot > plant.hoogteVan ? '-' + plant.hoogteTot : '') + 'cm</span>' +
+                    '<span>☀️ ' + plant.standplaats + '</span>' +
+                    '</div>' +
+                    '</div>';
+            }).join('');
+        }
+
+        function toggleShortlist(latijnseNaam) {
+            const plant = allPlants.find(p => p.latijnseNaam === latijnseNaam);
+            if (!plant) return;
+            const index = shortlist.findIndex(p => p.latijnseNaam === latijnseNaam);
+            if (index === -1) shortlist.push(plant);
+            else shortlist.splice(index, 1);
+            saveState();
+            renderPlantList();
+            renderShortlist();
+        }
+
+        function renderShortlist() {
+            shortlistCountEl.textContent = shortlist.length;
+            shortlistEl.innerHTML = shortlist.map(plant => {
+                const colorHex = getColorHex(plant.kleur);
+                return 
+                    '<div class="shortlist-item">' +
+                    '<div>' +
+                    '<strong>' + plant.latijnseNaam + '</strong> – <em>' + plant.nlNaam + '</em>' +
+                    '<div style="margin-top: 3px;">' +
+                    '<span class="color-indicator" style="background-color: ' + colorHex + '"></span>' +
+                    plant.kleur + ' | 🌸 ' + plant.bloeiVan + '-' + plant.bloeiTot + ' | ' +
+                    '📏 ' + plant.hoogteVan + (plant.hoogteTot > plant.hoogteVan ? '-' + plant.hoogteTot : '') + 'cm | ' +
+                    '☀️ ' + plant.standplaats +
+                    '</div>' +
+                    '</div>' +
+                    '<button onclick="removeFromShortlist('' + plant.latijnseNaam + '')">✕</button>' +
+                    '</div>';
+            }).join('');
+            updateAddPlantSelect();
+        }
+
+        function removeFromShortlist(latijnseNaam) {
+            shortlist = shortlist.filter(p => p.latijnseNaam !== latijnseNaam);
+            saveState();
+            renderPlantList();
+            renderShortlist();
+        }
+
+        function clearShortlist() {
+            if (confirm('Shortlist leegmaken?')) {
+                shortlist = [];
+                saveState();
+                renderPlantList();
+                renderShortlist();
+            }
+        }
+
+        function addNewBorder() {
+            const borderName = prompt('Naam voor nieuwe border:');
+            if (!borderName) return;
+            const newBorder = { id: Date.now().toString(), name: borderName, plants: [] };
+            borders.push(newBorder);
+            activeBorderId = newBorder.id;
+            saveState();
+            renderBorderList();
+            showActiveBorder(newBorder);
+        }
+
+        function showActiveBorder(border) {
+            activeBorderId = border.id;
+            activeBorderNameEl.textContent = 'Border: ' + border.name;
+            activeBorderSectionEl.classList.remove('hidden');
+            renderBorderPlantTable();
+            updateAddPlantSelect();
+        }
+
+        function renderBorderList() {
+            borderListEl.innerHTML = borders.map(border => 
+                '<div class="border-item ' + (activeBorderId === border.id ? 'active' : '') + '" onclick="showActiveBorder(' + JSON.stringify(border) + ')">' +
+                '<span><strong>' + border.name + '</strong> (' + border.plants.length + ' planten)</span>' +
+                '<button onclick="event.stopPropagation(); deleteBorder('' + border.id + '')">✕</button>' +
+                '</div>'
+            ).join('');
+        }
+
+        function renderBorderPlantTable() {
+            const border = borders.find(b => b.id === activeBorderId);
+            if (!border) return;
+            borderPlantTableBodyEl.innerHTML = border.plants.map(plant => {
+                const colorHex = getColorHex(plant.kleur);
+                return 
+                    '<tr>' +
+                    '<td><strong>' + plant.latijnseNaam + '</strong><br><em>' + plant.nlNaam + '</em></td>' +
+                    '<td><span class="color-indicator" style="background-color: ' + colorHex + '"></span> ' + plant.kleur + '</td>' +
+                    '<td>' + plant.bloeiVan + '</td>' +
+                    '<td>' + plant.bloeiTot + '</td>' +
+                    '<td>' + plant.hoogteVan + 'cm</td>' +
+                    '<td>' + (plant.hoogteTot > plant.hoogteVan ? plant.hoogteTot + 'cm' : '') + '</td>' +
+                    '<td>' + plant.standplaats + '</td>' +
+                    '<td><button class="btn btn-danger" onclick="removePlantFromBorder('' + plant.latijnseNaam + '')">✕</button></td>' +
+                    '</tr>';
+            }).join('');
+        }
+
+        function updateAddPlantSelect() {
+            const border = borders.find(b => b.id === activeBorderId);
+            const availablePlants = shortlist.filter(p => 
+                !border || !border.plants.some(bp => bp.latijnseNaam === p.latijnseNaam)
+            );
+            addPlantSelectEl.innerHTML = '<option value="">Selecteer een plant...</option>' +
+                availablePlants.map(plant => 
+                    '<option value="' + plant.latijnseNaam + '">' + plant.latijnseNaam + ' - ' + plant.nlNaam + '</option>'
+                ).join('');
+        }
+
+        function addPlantToBorder() {
+            const selected = addPlantSelectEl.value;
+            if (!selected) return;
+            const plant = shortlist.find(p => p.latijnseNaam === selected);
+            if (!plant) return;
+            const border = borders.find(b => b.id === activeBorderId);
+            if (!border) return;
+            border.plants.push(plant);
+            saveState();
+            renderBorderPlantTable();
+            updateAddPlantSelect();
+            addPlantSelectEl.value = '';
+        }
+
+        function removePlantFromBorder(latijnseNaam) {
+            const border = borders.find(b => b.id === activeBorderId);
+            if (!border) return;
+            border.plants = border.plants.filter(p => p.latijnseNaam !== latijnseNaam);
+            saveState();
+            renderBorderPlantTable();
+            updateAddPlantSelect();
+        }
+
+        function clearBorder() {
+            const border = borders.find(b => b.id === activeBorderId);
+            if (!border) return;
+            if (confirm('Border leegmaken?')) {
+                border.plants = [];
+                saveState();
+                renderBorderPlantTable();
+                updateAddPlantSelect();
+            }
+        }
+
+        function deleteBorder(borderId) {
+            if (confirm('Border verwijderen?')) {
+                borders = borders.filter(b => b.id !== borderId);
+                if (activeBorderId === borderId) {
+                    activeBorderId = null;
+                    activeBorderSectionEl.classList.add('hidden');
+                }
+                saveState();
+                renderBorderList();
+            }
+        }
+
+        function closeBorder() {
+            activeBorderId = null;
+            activeBorderSectionEl.classList.add('hidden');
+        }
+
+        function saveState() {
+            localStorage.setItem('shortlist', JSON.stringify(shortlist));
+            localStorage.setItem('borders', JSON.stringify(borders));
+        }
+
+        document.getElementById('searchInput').addEventListener('input', renderPlantList);
+        document.getElementById('colorFilter').addEventListener('change', renderPlantList);
+        document.getElementById('standplaatsFilter').addEventListener('change', renderPlantList);
+        document.getElementById('clearShortlistBtn').addEventListener('click', clearShortlist);
+        document.getElementById('addBorderBtn').addEventListener('click', addNewBorder);
+        document.getElementById('addPlantToBorderBtn').addEventListener('click', addPlantToBorder);
+        document.getElementById('closeBorderBtn').addEventListener('click', closeBorder);
+        document.getElementById('clearBorderBtn').addEventListener('click', clearBorder);
+
+        window.toggleShortlist = toggleShortlist;
+        window.removeFromShortlist = removeFromShortlist;
+        window.showActiveBorder = showActiveBorder;
+        window.deleteBorder = deleteBorder;
+        window.removePlantFromBorder = removePlantFromBorder;
+
+        renderPlantList();
+        renderShortlist();
+        renderBorderList();
+    </script>
+</body>
+</html>
