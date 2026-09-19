@@ -60,11 +60,12 @@ function main() {
 
   // map.js-specifieke onderdelen
   const mapMust = {
-    'kadaster WMS-laag': 'kadastralekaart/wms',
+    'kadaster WMTS-laag': 'kadastralekaart/wmts',
     'PDOK locatieserver': 'locatieserver',
     'renderMap': 'function renderMap',
     'saveState-koppeling': '_origSaveState',
-    'adres-gate logica': 'has-address'
+    'adres-gate logica': 'has-address',
+    'invalidateSize-fix': 'invalidateSize'
   };
   for (const [naam, needle] of Object.entries(mapMust)) {
     if (mapJs.includes(needle)) ok('map.js bevat: ' + naam);
