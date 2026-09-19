@@ -28,7 +28,8 @@
         .filter-controls input[type="text"] { flex: 2; }
         .plant-list { display: grid; grid-template-columns: 1fr; gap: 8px; margin-bottom: 12px; }
         .plant-card { border: 1px solid var(--border); border-radius: 4px; padding: 10px; background: white; }
-        .plant-card.selected { border-color: var(--accent); background-color: #f0ffe0; }
+        .plant-card.selected { border-color: var(--accent); background-color: #
+f0ffe0; }
         .plant-card input[type="checkbox"] { margin-right: 8px; }
         .plant-name { font-weight: bold; color: var(--primary); margin-bottom: 3px; font-size: 0.9rem; }
         .plant-details { font-size: 12px; color: var(--light-text); margin-top: 5px; }
@@ -45,7 +46,8 @@
         .border-plant-table th, .border-plant-table td { padding: 6px; text-align: left; border-bottom: 1px solid var(--border); }
         .border-plant-table th { background: var(--primary); color: white; font-weight: bold; }
         .add-border-btn { background: var(--accent); color: white; border: none; border-radius: 4px; padding: 8px 12px; cursor: pointer; font-size: 14px; margin-bottom: 10px; width: 100%; }
-        .add-plant-section { margin-top: 12px; padding: 10px; background: #e8f5e8; border-radius: 4px; }
+   
+     .add-plant-section { margin-top: 12px; padding: 10px; background: #e8f5e8; border-radius: 4px; }
         .add-plant-section select { padding: 6px; border-radius: 4px; border: 1px solid var(--border); margin-right: 6px; min-width: 160px; font-size: 13px; }
         .add-plant-section button { background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; padding: 6px 10px; font-size: 13px; }
         .hidden { display: none; }
@@ -64,13 +66,15 @@
 .map-controls { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; align-items: center; }
 .map-controls select { padding: 6px; border-radius: 4px; border: 1px solid var(--border); min-width: 160px; }
 .map-place-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; padding: 8px; background: #fff3cd; border-radius: 4px; font-size: 13px; }
+.map-place-row input { padding: 5px; border-radius: 4px; border: 1px solid var(--border); }
 .map-place-row select { padding: 5px; border-radius: 4px; border: 1px solid var(--border); min-width: 180px; max-width: 100%; }
 #gardenMap { height: 420px; border-radius: 6px; border: 1px solid var(--border); }
 .map-help { font-size: 12px; color: #666; margin-top: 6px; }
 .leaflet-container { font: inherit; }
 </style>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="http
+s://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
@@ -101,7 +105,8 @@
                     <select id="addPlantSelect"><option value="">Selecteer een plant...</option></select>
                     <button class="btn btn-primary" id="addPlantToBorderBtn">Toevoegen</button>
                 </div>
-                <h4>Plantoverzicht:</h4>
+                <h4>Plantoverzicht:</
+h4>
                 <div style="overflow-x: auto;">
                     <table class="border-plant-table">
                         <thead><tr><th>Plant</th><th>Kleur</th><th>Bloei van</th><th>Bloei tot</th><th>Hoogte van</th><th>Hoogte tot</th><th>Standplaats</th><th>Actie</th></tr></thead>
@@ -118,12 +123,17 @@
     
 <div class="section map-section">
   <h2>Border op de kaart 🗺️</h2>
+  <div class="map-place-row" style="display:flex;">
+    <input type="text" id="mapAddressInput" placeholder="Voer je adres in (bv. Dorpsstraat 1, Utrecht)" style="flex:1; min-width:200px; padding:6px; border-radius:4px; border:1px solid var(--border);">
+    <button class="btn btn-primary" id="mapAddressBtn">Zoeken 🔍</button>
+  </div>
   <div class="map-controls">
     <select id="mapBorderSelect"><option value="">Kies een border...</option></select>
     <button class="btn btn-primary" id="mapDrawBtn">Border intekenen</button>
     <button class="btn btn-primary" id="mapFinishDrawBtn" style="display:none;">Klaar ✓</button>
     <button class="btn btn-danger" id="mapClearShapeBtn">Tekening wissen</button>
     <button class="btn btn-secondary" id="mapLocateBtn">📍 Mijn locatie</button>
+    <label style="font-size:13px; display:flex; align-items:center; gap:4px;"><input type="checkbox" id="mapKadasterToggle" checked> Kadastrale kaart</label>
   </div>
   <div class="map-place-row" id="mapPlaceRow" style="display:none;">
     <select id="mapPlantSelect"></select>
@@ -137,7 +147,8 @@
         // Plantendata
         const plantData = [
             { latijnseNaam: "Acaena inermis Purpurea", nlNaam: "Stekelnootje", standplaats: "Z", kleur: "bruinrood", bloeiVan: "juni", bloeiTot: "juli", hoogteVan: 10, hoogteTot: 10 },
-            { latijnseNaam: "Allium Millenium", nlNaam: "Sierui", standplaats: "Z", kleur: "paars violet", bloeiVan: "juli", bloeiTot: "sept", hoogteVan: 40, hoogteTot: 40 },
+            { latijnseNaam: "Allium Millenium", nlNaam: "Sierui", standplaats: "Z", kleur: "paars violet", bloeiVan: "juli", bloeiTot: "sept
+", hoogteVan: 40, hoogteTot: 40 },
             { latijnseNaam: "Allium obliquum", nlNaam: "Sierui", standplaats: "Z", kleur: "groengeel", bloeiVan: "mei", bloeiTot: "juni", hoogteVan: 70, hoogteTot: 70 },
             { latijnseNaam: "Allium Suger Melt", nlNaam: "Sierui", standplaats: "Z", kleur: "lichtroze", bloeiVan: "juli", bloeiTot: "sept", hoogteVan: 25, hoogteTot: 25 },
             { latijnseNaam: "Allium Summer Beauty", nlNaam: "Sierui", standplaats: "Z", kleur: "lilapaars", bloeiVan: "juli", bloeiTot: "aug", hoogteVan: 40, hoogteTot: 60 },
@@ -148,7 +159,8 @@
             { latijnseNaam: "Anemone hybrida Honorine Jobert", nlNaam: "Herfstanemoon", standplaats: "Z - HS", kleur: "wit", bloeiVan: "aug", bloeiTot: "okt", hoogteVan: 80, hoogteTot: 80 },
             { latijnseNaam: "Anemone Konigin Charlotte", nlNaam: "Herfstanemoon", standplaats: "Z - HS", kleur: "zuiverroze", bloeiVan: "sept", bloeiTot: "okt", hoogteVan: 80, hoogteTot: 80 },
             { latijnseNaam: "Anemone hupehensis Pretty Lady Maria", nlNaam: "Herfstanemoon", standplaats: "HS", kleur: "wit", bloeiVan: "aug", bloeiTot: "sept", hoogteVan: 40, hoogteTot: 50 },
-            { latijnseNaam: "Anemone hupehensis September Charm", nlNaam: "Herfstanemoon", standplaats: "Z - S", kleur: "roze", bloeiVan: "aug", bloeiTot: "okt", hoogteVan: 90, hoogteTot: 90 },
+            { latijnseNaam: "Anemone hupehensis September Charm", nlNaam: "Herfstanemoon", standplaats: "Z - S", kleur: "roze", bloeiVan: "aug", bloeiTot: "okt", h
+oogteVan: 90, hoogteTot: 90 },
             { latijnseNaam: "Anemone hybrida Splendens", nlNaam: "Herfstanemoon", standplaats: "Z - HS", kleur: "paars - roze", bloeiVan: "aug", bloeiTot: "okt", hoogteVan: 80, hoogteTot: 80 },
             { latijnseNaam: "Anemone virginiana", nlNaam: "Anemoon", standplaats: "Z - HS", kleur: "wit", bloeiVan: "mei", bloeiTot: "juni", hoogteVan: 40, hoogteTot: 40 },
             { latijnseNaam: "Anthemis tinctoria", nlNaam: "Gele kamille", standplaats: "Z - HS", kleur: "geel", bloeiVan: "juni", bloeiTot: "sept", hoogteVan: 40, hoogteTot: 50 },
@@ -159,7 +171,8 @@
             { latijnseNaam: "Armeria maritima Rubrifolia", nlNaam: "Engels gras", standplaats: "Z", kleur: "rood", bloeiVan: "mei", bloeiTot: "aug", hoogteVan: 20, hoogteTot: 20 },
             { latijnseNaam: "Artemisia abrotanum Coca Cola", nlNaam: "Cola plant", standplaats: "Z - HS", kleur: "cremegeel", bloeiVan: "juli", bloeiTot: "juli", hoogteVan: 100, hoogteTot: 100 },
             { latijnseNaam: "Asarum caudatum", nlNaam: "Mansoor", standplaats: "HS - S", kleur: "bruinrood", bloeiVan: "april", bloeiTot: "juni", hoogteVan: 15, hoogteTot: 15 },
-            { latijnseNaam: "Asclepias tuberosa", nlNaam: "Papegaaiplant", standplaats: "Z", kleur: "oranje", bloeiVan: "juli", bloeiTot: "aug", hoogteVan: 50, hoogteTot: 50 },
+            { latijnseNaam: "Asclepias tuberosa", nlNaam: "Papegaaiplant", standplaats: "Z", kleur: "oranje", bloeiVan: "juli", bloeiTot: "aug", hoog
+teVan: 50, hoogteTot: 50 },
             { latijnseNaam: "Aster ageratoides Ashvi", nlNaam: "Herfstaster", standplaats: "Z - HS", kleur: "wit", bloeiVan: "sept", bloeiTot: "okt", hoogteVan: 50, hoogteTot: 60 },
             { latijnseNaam: "Aster ageratoides Asran", nlNaam: "Herfstaster", standplaats: "Z", kleur: "lichtblauw", bloeiVan: "aug", bloeiTot: "okt", hoogteVan: 70, hoogteTot: 70 },
             { latijnseNaam: "Aster azureus", nlNaam: "Herfstaster", standplaats: "Z - HS", kleur: "blauw", bloeiVan: "juli", bloeiTot: "okt", hoogteVan: 50, hoogteTot: 70 },
@@ -187,7 +200,8 @@
         const addPlantSelectEl = document.getElementById('addPlantSelect');
 
         const colorToHex = {
-            wit: '#ffffff', geel: '#ffd700', roze: '#ffc0cb', rood: '#ff0000',
+            wit: '#ffffff', geel: '#ffd700', roze: '#ffc0cb', ro
+od: '#ff0000',
             paars: '#800080', blauw: '#0000ff', oranje: '#ffa500', bruinrood: '#8b0000',
             groengeel: '#adff2f', lichtroze: '#ffb6c1', lilapaars: '#c8a2c8',
             cremegeel: '#fffacd', violetblauw: '#4169e1', lichtblauw: '#add8e6'
@@ -221,7 +235,8 @@
                 const isInShortlist = shortlist.some(p => p.latijnseNaam === plant.latijnseNaam);
                 const colorHex = getColorHex(plant.kleur);
                 const name = esc(plant.latijnseNaam);
-                return '<div class="plant-card ' + (isInShortlist ? 'selected' : '') + '">' +
+                return '<div class="plant-card ' + (isInShortlist ? 'selected' : 
+'') + '">' +
                     '<label><input type="checkbox" data-name="' + name + '" ' + (isInShortlist ? 'checked' : '') + '>' +
                     '<strong>' + name + '</strong></label>' +
                     '<div class="plant-details"><span><em>' + esc(plant.nlNaam) + '</em></span></div>' +
@@ -259,7 +274,8 @@
                 const name = esc(plant.latijnseNaam);
                 return '<div class="shortlist-item">' +
                     '<div>' +
-                    '<strong>' + name + '</strong> &ndash; <em>' + esc(plant.nlNaam) + '</em>' +
+                    '<strong>' + name + '</strong> &ndash; <em>' + esc(plant.nlNa
+am) + '</em>' +
                     '<div style="margin-top: 3px;">' +
                     '<span class="color-indicator" style="background-color: ' + colorHex + '"></span>' +
                     esc(plant.kleur) + ' | &#127804; ' + plant.bloeiVan + '-' + plant.bloeiTot + ' | ' +
@@ -307,7 +323,8 @@
         }
 
         function showActiveBorder(borderOrId) {
-            const border = typeof borderOrId === 'object' ? borderOrId : borders.find(b => b.id === borderOrId);
+            const border = typeof borderOrId === 'object' ? borderOrId : borders.find(b 
+=> b.id === borderOrId);
             if (!border) return;
             activeBorderId = border.id;
             activeBorderNameEl.textContent = 'Border: ' + border.name;
@@ -346,7 +363,8 @@
                 return '<tr>' +
                     '<td><strong>' + name + '</strong><br><em>' + esc(plant.nlNaam) + '</em></td>' +
                     '<td><span class="color-indicator" style="background-color: ' + colorHex + '"></span> ' + esc(plant.kleur) + '</td>' +
-                    '<td>' + plant.bloeiVan + '</td>' +
+                    '
+<td>' + plant.bloeiVan + '</td>' +
                     '<td>' + plant.bloeiTot + '</td>' +
                     '<td>' + plant.hoogteVan + 'cm</td>' +
                     '<td>' + (plant.hoogteTot > plant.hoogteVan ? plant.hoogteTot + 'cm' : '') + '</td>' +
@@ -388,7 +406,8 @@
         }
 
         function removePlantFromBorder(latijnseNaam) {
-            const border = borders.find(b => b.id === activeBorderId);
+            const border 
+= borders.find(b => b.id === activeBorderId);
             if (!border) return;
             border.plants = border.plants.filter(p => p.latijnseNaam !== latijnseNaam);
             saveState();
@@ -436,7 +455,8 @@
         document.getElementById('clearShortlistBtn').addEventListener('click', clearShortlist);
         document.getElementById('addBorderBtn').addEventListener('click', addNewBorder);
         document.getElementById('addPlantToBorderBtn').addEventListener('click', addPlantToBorder);
-        document.getElementById('closeBorderBtn').addEventListener('click', closeBorder);
+        document.getEl
+ementById('closeBorderBtn').addEventListener('click', closeBorder);
         document.getElementById('clearBorderBtn').addEventListener('click', clearBorder);
 
         // Init: render alles bij het laden van de pagina
@@ -450,12 +470,17 @@ var drawMode = false;
 var drawPoints = [];
 var drawPreview = null;
 
-var gardenMap = L.map('gardenMap').setView([52.1, 5.3], 12);
-L.tileLayer.wms('https://service.pdok.nl/brt/achtergrondkaart/wms/v2_0', {
-  layers: 'standaard', format: 'image/png', attribution: 'Kaartgegevens: PDOK / Kadaster'
+var savedMapView = null;
+try { savedMapView = JSON.parse(localStorage.getItem('mapView')); } catch (e) {}
+var gardenMap = L.map('gardenMap').setView(
+  savedMapView ? [savedMapView.lat, savedMapView.lng] : [52.1, 5.3],
+  savedMapView ? savedMapView.zoom : 12
+);
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19, attribution: '© OpenStreetMap'
 }).addTo(gardenMap);
 var kadasterLayer = L.tileLayer.wms('https://service.pdok.nl/kadaster/kadastralekaart/wms/v5_0', {
-  layers: 'standaard', format: 'image/png', transparent: true, opacity: 0.8
+  layers: 'standaard', format: 'image/png', transparent: true, opacity: 0.8, minZoom: 15
 });
 kadasterLayer.addTo(gardenMap);
 
@@ -489,7 +514,8 @@ function updateMapPlantSelect() {
 }
 
 function renderMap() {
-  updateMapBorderSelect();
+  upda
+teMapBorderSelect();
   updateMapPlantSelect();
   mapShapeLayer.clearLayers();
   mapMarkerLayer.clearLayers();
@@ -536,7 +562,8 @@ gardenMap.on('click', function (e) {
     if (plant) { plant.pos = { lat: e.latlng.lat, lng: e.latlng.lng }; saveState(); }
     return;
   }
-  drawPoints.push([e.latlng.lat, e.latlng.lng]);
+  drawPoints.push([e.latlng.lat, e.latlng.lng
+]);
   if (drawPreview) gardenMap.removeLayer(drawPreview);
   drawPreview = L.polyline(drawPoints, { color: '#2e7d32', dashArray: '6 4', weight: 3 }).addTo(gardenMap);
 });
@@ -552,30 +579,45 @@ function finishDraw() {
 
 document.getElementById('mapBorderSelect').addEventListener('change', function (e) {
   mapBorderId = e.target.value || null;
-  renderMap();
+  // Adres zoeken (PDOK Locatieserver)
+function searchAddress() {
+  var q = document.getElementById('mapAddressInput').value.trim();
+  if (!q) { alert('Voer een adres in.'); return; }
+  fetch('https://api.pdok.nl/bzk/locatieserver/search/v3_1/free?q=' + encodeURIComponent(q) + '&rows=1')
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      var doc = d.response && d.response.docs && d.response.docs[0];
+      var m = doc && doc.centroide_ll && doc.centroide_ll.match(/POINT\(([-\d.]+) ([-\d.]+)\)/);
+      if (m) {
+        gardenMap.setView([parseFloat(m[2]), parseFloat(m[1])], 18);
+        saveMapView();
+      } else {
+        alert('Adres niet gevonden. Probeer bv. "Straatnaam 12, Plaats".');
+      }
+    })
+    .catch(function () { alert('Zoeken mislukt (internetverbinding?).'); });
+}
+
+function saveMapView() {
+  var c0 = gardenMap.getCenter();
+  localStorage.setItem('mapView', JSON.stringify({ lat: c0.lat, lng: c0.lng, zoom: gardenMap.getZoom() }));
+}
+gardenMap.on('moveend zoomend', saveMapView);
+
+document.getElementById('mapAddressBtn').addEventListener('click', searchAddress);
+document.getElementById('mapAddressInput').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') searchAddress();
 });
-document.getElementById('mapDrawBtn').addEventListener('click', function () {
-  if (!mapBorderId) { alert('Kies eerst een border in de dropdown.'); return; }
-  setDrawMode(true);
-});
-document.getElementById('mapFinishDrawBtn').addEventListener('click', finishDraw);
-document.getElementById('mapClearShapeBtn').addEventListener('click', function () {
-  var border = getMapBorder();
-  if (border && border.shape && confirm('Border-tekening wissen?')) { border.shape = null; saveState(); }
-});
-document.getElementById('mapLocateBtn').addEventListener('click', function () {
-  if (!navigator.geolocation) { alert('Geolocatie wordt niet ondersteund.'); return; }
-  navigator.geolocation.getCurrentPosition(function (pos) {
-    gardenMap.setView([pos.coords.latitude, pos.coords.longitude], 18);
-  }, function () { alert('Kon locatie niet bepalen.'); });
+document.getElementById('mapKadasterToggle').addEventListener('change', function (e) {
+  if (e.target.checked) { kadasterLayer.addTo(gardenMap); } else { gardenMap.removeLayer(kadasterLayer); }
 });
 
-// Synchroniseer kaart met planner-wijzigingen
-var _origSaveState = saveState;
-saveState = function () { _origSaveState(); renderMap(); };
+// Bij eerste gebruik: focus op adres-zoekbalk
+if (!savedMapView) document.getElementById('mapAddressInput').focus();
 
 renderMap();
+});
+document.getElementById('mapDrawBtn').addEventListener('click', function () {
+  if (!mapBorderId) { alert('Kies
 
-</script>
-</body>
-</html>
+... [Content truncated]
