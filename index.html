@@ -30,13 +30,11 @@
         .plant-card { border: 1px solid var(--border); border-radius: 4px; padding: 10px; background: white; }
         .plant-card.selected { border-color: var(--accent); background-color: #f0ffe0; }
         .plant-card input[type="checkbox"] { margin-right: 8px; }
-        .genus-group { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr; gap: 8px; }
-        .genus-header { display: flex; align-items: center; gap: 8px; padding: 4px 2px; margin-top: 10px; border-bottom: 2px solid var(--accent); flex-wrap: wrap; }
+        .genus-group { display: grid; grid-template-columns: 1fr; gap: 8px; grid-column: 1 / -1; }
+        .genus-header { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 4px 0; border-bottom: 1px solid var(--accent); }
         .genus-header strong { color: var(--primary); font-size: 0.95rem; }
-        .genus-count { color: var(--light-text); font-size: 12px; }
-        .genus-btn { margin-left: auto; background: var(--accent); color: white; border: none; border-radius: 3px; padding: 3px 8px; cursor: pointer; font-size: 11px; }
-        .genus-btn.some-in { background: #e8a030; }
-        .genus-btn.all-in { background: var(--primary); }
+        .genus-header .genus-count { font-size: 12px; color: var(--light-text); }
+        .genus-btn { background: var(--secondary); color: var(--primary); border: 1px solid var(--border); border-radius: 3px; padding: 2px 8px; cursor: pointer; font-size: 11px; margin-left: auto; }
         .plant-name { font-weight: bold; color: var(--primary); margin-bottom: 3px; font-size: 0.9rem; }
         .plant-details { font-size: 12px; color: var(--light-text); margin-top: 5px; }
         .plant-details span { margin-right: 8px; display: inline-block; margin-bottom: 3px; }
@@ -83,8 +81,6 @@ body.has-address #addressGate { display: none; }
 .map-section { background: #f0f8ff; border-left: 3px solid #4682b4; }
 .map-controls { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; align-items: center; }
 .map-controls select { padding: 6px; border-radius: 4px; border: 1px solid var(--border); min-width: 160px; }
-.map-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; padding: 8px; background: #fff3cd; border-radius: 4px; font-size: 13px; }
-.map-row select { padding: 5px; border-radius: 4px; border: 1px solid var(--border); min-width: 180px; max-width: 100%; }
 #gardenMap { height: 420px; border-radius: 6px; border: 1px solid var(--border); }
 .map-help { font-size: 12px; color: #666; margin-top: 6px; }
 .leaflet-container { font: inherit; }
@@ -96,11 +92,11 @@ body.has-address #addressGate { display: none; }
     <div class="container">
         <h1>Tuinplantplanner</h1>
         <div id="addressGate" class="gate-section">
-            <h2>Welkom! 🌿</h2>
+            <h2>Welkom! &#127807;</h2>
             <p>Voer het adres van je tuin in om te beginnen. Daarna kun je planten kiezen en je border op de kaart plannen.</p>
             <div class="gate-row">
                 <input type="text" id="gateAddressInput" placeholder="Bijv. Dorpsstraat 1, Utrecht">
-                <button id="gateAddressBtn">Naar mijn tuin →</button>
+                <button id="gateAddressBtn">Naar mijn tuin &rarr;</button>
             </div>
         </div>
         <p id="addressTitle" class="address-title"></p>
@@ -142,36 +138,29 @@ body.has-address #addressGate { display: none; }
                 </div>
             </div>
         </div>
-    </div>
-    
+
 <div class="section map-section">
-  <h2>Border op de kaart 🗺️</h2>
+  <h2>Tuin &amp; borders op de kaart &#128506;</h2>
   <div class="map-controls">
-    <select id="mapBorderSelect"><option value="">Kies een border...</option></select>
     <button class="btn btn-primary" id="mapDrawBtn">Border intekenen</button>
-    <button class="btn btn-primary" id="mapFinishDrawBtn" style="display:none;">Klaar ✓</button>
-    <button class="btn btn-danger" id="mapClearShapeBtn">Tekening wissen</button>
-    <button class="btn btn-secondary" id="mapLocateBtn">📍 Mijn locatie</button>
-    <button class="btn btn-secondary" id="changeAddressBtn">✏️ Adres wijzigen</button>
+    <button class="btn btn-primary" id="mapFinishDrawBtn" style="display:none;">Klaar &#10003;</button>
+    <button class="btn btn-secondary" id="mapLocateBtn">&#128205; Mijn locatie</button>
+    <button class="btn btn-secondary" id="changeAddressBtn">&#9998; Adres wijzigen</button>
     <label style="font-size:13px; display:flex; align-items:center; gap:4px;"><input type="checkbox" id="mapKadasterToggle" checked> Kadastrale kaart</label>
   </div>
-  <div class="map-row" id="mapPlaceRow" style="display:none;">
-    <select id="mapPlantSelect"></select>
-    <span>👆 Klik op de kaart om deze plant te plaatsen</span>
-  </div>
   <div id="gardenMap"></div>
-  <p class="map-help">Tip: klik op een plant-marker voor opties. Dubbelklik beëindigt het intekenen. Kadastrale percelen verschijnen vanaf zoom 15.</p>
+  <p class="map-help">Teken een border door op de kaart te klikken (hoekpunten); dubbelklik of &quot;Klaar&quot; sluit af. De border wordt daarna automatisch aangemaakt en je kunt hem vullen met planten. Klik op een getekende border om deze te bewerken. Kadastrale percellen verschijnen vanaf zoom 14.</p>
 </div>
 
-<script src="plants.js"></script>
-<script>
+    </div>
+    <script src="plants.js"></script>
+    <script>
         // Plantendata
         const plantData = [
             { latijnseNaam: "Acaena inermis Purpurea", nlNaam: "Stekelnootje", standplaats: "Z", kleur: "bruinrood", bloeiVan: "juni", bloeiTot: "juli", hoogteVan: 10, hoogteTot: 10 },
             { latijnseNaam: "Allium Millenium", nlNaam: "Sierui", standplaats: "Z", kleur: "paars violet", bloeiVan: "juli", bloeiTot: "sept", hoogteVan: 40, hoogteTot: 40 },
             { latijnseNaam: "Allium obliquum", nlNaam: "Sierui", standplaats: "Z", kleur: "groengeel", bloeiVan: "mei", bloeiTot: "juni", hoogteVan: 70, hoogteTot: 70 },
             { latijnseNaam: "Allium Suger Melt", nlNaam: "Sierui", standplaats: "Z", kleur: "lichtroze", bloeiVan: "juli", bloeiTot: "sept", hoogteVan: 25, hoogteTot: 25 },
-
             { latijnseNaam: "Allium Summer Beauty", nlNaam: "Sierui", standplaats: "Z", kleur: "lilapaars", bloeiVan: "juli", bloeiTot: "aug", hoogteVan: 40, hoogteTot: 60 },
             { latijnseNaam: "Allium tuberosum", nlNaam: "Knoflookbieslook", standplaats: "Z", kleur: "wit", bloeiVan: "juli", bloeiTot: "sept", hoogteVan: 30, hoogteTot: 70 },
             { latijnseNaam: "Allium ursinum", nlNaam: "Daslook", standplaats: "HS - S", kleur: "wit", bloeiVan: "april", bloeiTot: "mei", hoogteVan: 20, hoogteTot: 20 },
@@ -199,7 +188,7 @@ body.has-address #addressGate { display: none; }
         ];
 
         function esc(s) {
-            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         }
 
         let shortlist = [];
@@ -235,7 +224,7 @@ body.has-address #addressGate { display: none; }
         }
 
         function getGenus(plant) {
-            return ((plant.latijnseNaam || '').trim().split(/\s+/)[0]) || 'Overig';
+            return (plant.latijnseNaam || '').split(' ')[0] || 'Overig';
         }
 
         function renderPlantList() {
@@ -244,67 +233,75 @@ body.has-address #addressGate { display: none; }
             const standplaatsFilter = document.getElementById('standplaatsFilter').value;
 
             const filteredPlants = allPlants.filter(plant => {
-                const matchesSearch = plant.latijnseNaam.toLowerCase().includes(searchTerm) || (plant.nlNaam || '').toLowerCase().includes(searchTerm);
-                const matchesColor = !colorFilter || (plant.kleur || '').toLowerCase().includes(colorFilter.toLowerCase());
+                const naam = (plant.latijnseNaam || '').toLowerCase();
+                const nlNaam = (plant.nlNaam || '').toLowerCase();
+                const kleur = (plant.kleur || '').toLowerCase();
+                const standplaats = plant.standplaats || '';
+                const matchesSearch = naam.includes(searchTerm) || nlNaam.includes(searchTerm);
+                const matchesColor = !colorFilter || kleur.includes(colorFilter.toLowerCase());
                 const matchesStandplaats = !standplaatsFilter ||
-                    ((plant.standplaats || '').includes("Z") && standplaatsFilter.includes("Z")) ||
-                    ((plant.standplaats || '').includes("HS") && standplaatsFilter.includes("HS")) ||
-                    ((plant.standplaats || '').includes("S") && standplaatsFilter.includes("S"));
+                    (standplaats.includes("Z") && standplaatsFilter.includes("Z")) ||
+                    (standplaats.includes("HS") && standplaatsFilter.includes("HS")) ||
+                    (standplaats.includes("S") && standplaatsFilter.includes("S"));
                 return matchesSearch && matchesColor && matchesStandplaats;
             });
 
             // Groepeer per geslacht (eerste woord van de Latijnse naam)
-            const groups = {};
+            const genera = {};
             filteredPlants.forEach(plant => {
-                const genus = getGenus(plant);
-                if (!groups[genus]) groups[genus] = [];
-                groups[genus].push(plant);
+                const g = getGenus(plant);
+                (genera[g] = genera[g] || []).push(plant);
             });
-            const genusNames = Object.keys(groups).sort((a, b) => a.localeCompare(b, 'nl'));
+            const genusNames = Object.keys(genera).sort((a, b) => a.localeCompare(b, 'nl'));
 
             plantListEl.innerHTML = genusNames.map(genus => {
-                const plants = groups[genus];
-                const inList = plants.filter(p => shortlist.some(s => s.latijnseNaam === p.latijnseNaam));
-                const allIn = inList.length === plants.length;
-                const btnClass = allIn ? 'genus-btn all-in' : (inList.length > 0 ? 'genus-btn some-in' : 'genus-btn');
-                const btnLabel = allIn ? '\u2715 Van shortlist af' : '+ Heel geslacht';
-                const countText = plants.length + ' plant' + (plants.length === 1 ? '' : 'en') + (inList.length > 0 ? ' \u00b7 ' + inList.length + ' op shortlist' : '');
+                const plants = genera[genus];
+                const onShortlist = plants.filter(p => shortlist.some(s => s.latijnseNaam === p.latijnseNaam)).length;
+                const allOnShortlist = onShortlist === plants.length;
+                const cards = plants.map(plant => {
+                    const isInShortlist = shortlist.some(p => p.latijnseNaam === plant.latijnseNaam);
+                    const colorHex = getColorHex(plant.kleur);
+                    const name = esc(plant.latijnseNaam);
+                    return '<div class="plant-card ' + (isInShortlist ? 'selected' : '') + '">' +
+                        '<label><input type="checkbox" data-name="' + name + '" ' + (isInShortlist ? 'checked' : '') + '>' +
+                        '<strong>' + name + '</strong></label>' +
+                        '<div class="plant-details"><span><em>' + esc(plant.nlNaam) + '</em></span></div>' +
+                        '<div class="plant-details">' +
+                        '<span><span class="color-indicator" style="background-color: ' + colorHex + '"></span>' + esc(plant.kleur) + '</span>' +
+                        '<span>&#127804; ' + esc(plant.bloeiVan || '-') + '-' + esc(plant.bloeiTot || '-') + '</span>' +
+                        '<span>&#128207; ' + (plant.hoogteVan || '-') + (plant.hoogteTot > plant.hoogteVan ? '-' + plant.hoogteTot : '') + 'cm</span>' +
+                        '<span>&#9728; ' + esc(plant.standplaats || '-') + '</span>' +
+                        '</div>' +
+                        '</div>';
+                }).join('');
                 return '<div class="genus-group">' +
                     '<div class="genus-header">' +
                     '<strong>' + esc(genus) + '</strong>' +
-                    '<span class="genus-count">' + countText + '</span>' +
-                    '<button class="' + btnClass + '" data-genus="' + esc(genus) + '">' + btnLabel + '</button>' +
-                    '</div>' +
-                    plants.map(plant => {
-                        const isInShortlist = shortlist.some(p => p.latijnseNaam === plant.latijnseNaam);
-                        const colorHex = getColorHex(plant.kleur);
-                        const name = esc(plant.latijnseNaam);
-                        return '<div class="plant-card ' + (isInShortlist ? 'selected' : '') + '">' +
-                            '<label><input type="checkbox" data-name="' + name + '" ' + (isInShortlist ? 'checked' : '') + '>' +
-                            '<strong>' + name + '</strong></label>' +
-                            '<div class="plant-details"><span><em>' + esc(plant.nlNaam) + '</em></span></div>' +
-                            '<div class="plant-details">' +
-                            '<span><span class="color-indicator" style="background-color: ' + colorHex + '"></span>' + esc(plant.kleur) + '</span>' +
-                            '<span>&#127804; ' + plant.bloeiVan + '-' + plant.bloeiTot + '</span>' +
-                            '<span>&#128207; ' + plant.hoogteVan + (plant.hoogteTot > plant.hoogteVan ? '-' + plant.hoogteTot : '') + 'cm</span>' +
-                            '<span>&#9728; ' + esc(plant.standplaats) + '</span>' +
-                            '</div>' +
-                            '</div>';
-                    }).join('') +
-                    '</div>';
+                    '<span class="genus-count">' + plants.length + ' soorten' + (onShortlist ? ' &middot; ' + onShortlist + ' op shortlist' : '') + '</span>' +
+                    '<button class="genus-btn" data-genus="' + esc(genus) + '">' + (allOnShortlist ? '\u2715 Van shortlist af' : '+ Heel geslacht') + '</button>' +
+                    '</div>' + cards + '</div>';
             }).join('');
         }
 
+        plantListEl.addEventListener('change', function (e) {
+            if (e.target && e.target.type === 'checkbox') {
+                toggleShortlist(e.target.getAttribute('data-name'));
+            }
+        });
+
         plantListEl.addEventListener('click', function (e) {
-            const btn = e.target && e.target.closest ? e.target.closest('.genus-btn') : null;
-            if (btn && btn.hasAttribute('data-genus')) toggleGenus(btn.getAttribute('data-genus'));
+            const btn = e.target.closest ? e.target.closest('.genus-btn') : null;
+            if (btn) {
+                e.preventDefault();
+                toggleGenus(btn.getAttribute('data-genus'));
+            }
         });
 
         function toggleGenus(genus) {
             const plants = allPlants.filter(p => getGenus(p) === genus);
-            if (!plants.length) return;
-            const allIn = plants.every(p => shortlist.some(s => s.latijnseNaam === p.latijnseNaam));
-            if (allIn) {
+            if (plants.length === 0) return;
+            const allOn = plants.every(p => shortlist.some(s => s.latijnseNaam === p.latijnseNaam));
+            if (allOn) {
                 const names = new Set(plants.map(p => p.latijnseNaam));
                 shortlist = shortlist.filter(p => !names.has(p.latijnseNaam));
             } else {
@@ -316,12 +313,6 @@ body.has-address #addressGate { display: none; }
             renderPlantList();
             renderShortlist();
         }
-
-        plantListEl.addEventListener('change', function (e) {
-            if (e.target && e.target.type === 'checkbox') {
-                toggleShortlist(e.target.getAttribute('data-name'));
-            }
-        });
 
         function toggleShortlist(latijnseNaam) {
             const plant = allPlants.find(p => p.latijnseNaam === latijnseNaam);
@@ -344,9 +335,9 @@ body.has-address #addressGate { display: none; }
                     '<strong>' + name + '</strong> &ndash; <em>' + esc(plant.nlNaam) + '</em>' +
                     '<div style="margin-top: 3px;">' +
                     '<span class="color-indicator" style="background-color: ' + colorHex + '"></span>' +
-                    esc(plant.kleur) + ' | &#127804; ' + plant.bloeiVan + '-' + plant.bloeiTot + ' | ' +
-                    '&#128207; ' + plant.hoogteVan + (plant.hoogteTot > plant.hoogteVan ? '-' + plant.hoogteTot : '') + 'cm | ' +
-                    '&#9728; ' + esc(plant.standplaats) +
+                    esc(plant.kleur) + ' | &#127804; ' + esc(plant.bloeiVan || '-') + '-' + esc(plant.bloeiTot || '-') + ' | ' +
+                    '&#128207; ' + (plant.hoogteVan || '-') + (plant.hoogteTot > plant.hoogteVan ? '-' + plant.hoogteTot : '') + 'cm | ' +
+                    '&#9728; ' + esc(plant.standplaats || '-') +
                     '</div>' +
                     '</div>' +
                     '<button data-remove="' + name + '">\u2715</button>' +
@@ -380,7 +371,7 @@ body.has-address #addressGate { display: none; }
         function addNewBorder() {
             const borderName = prompt('Naam voor nieuwe border:');
             if (!borderName) return;
-            const newBorder = { id: Date.now().toString(), name: borderName, plants: [] };
+            const newBorder = { id: Date.now().toString(), name: borderName, plants: [], shape: null };
             borders.push(newBorder);
             activeBorderId = newBorder.id;
             saveState();
@@ -401,8 +392,11 @@ body.has-address #addressGate { display: none; }
         function renderBorderList() {
             borderListEl.innerHTML = borders.map(border =>
                 '<div class="border-item ' + (activeBorderId === border.id ? 'active' : '') + '" data-border="' + esc(border.id) + '">' +
-                '<span><strong>' + esc(border.name) + '</strong> (' + border.plants.length + ' planten)</span>' +
+                '<span><strong>' + esc(border.name) + '</strong> (' + border.plants.length + ' planten' + (border.shape && border.shape.length >= 3 ? ', vorm getekend' : '') + ')</span>' +
+                '<span>' +
+                '<button data-editborder="' + esc(border.id) + '">&#9998; Bewerken</button>' +
                 '<button data-deleteborder="' + esc(border.id) + '">\u2715</button>' +
+                '</span>' +
                 '</div>'
             ).join('');
         }
@@ -411,6 +405,11 @@ body.has-address #addressGate { display: none; }
             if (e.target && e.target.tagName === 'BUTTON' && e.target.hasAttribute('data-deleteborder')) {
                 e.stopPropagation();
                 deleteBorder(e.target.getAttribute('data-deleteborder'));
+                return;
+            }
+            if (e.target && e.target.tagName === 'BUTTON' && e.target.hasAttribute('data-editborder')) {
+                e.stopPropagation();
+                window.location.href = 'border.html?id=' + encodeURIComponent(e.target.getAttribute('data-editborder'));
                 return;
             }
             const item = e.target.closest ? e.target.closest('.border-item') : null;
@@ -428,11 +427,11 @@ body.has-address #addressGate { display: none; }
                 return '<tr>' +
                     '<td><strong>' + name + '</strong><br><em>' + esc(plant.nlNaam) + '</em></td>' +
                     '<td><span class="color-indicator" style="background-color: ' + colorHex + '"></span> ' + esc(plant.kleur) + '</td>' +
-                    '<td>' + plant.bloeiVan + '</td>' +
-                    '<td>' + plant.bloeiTot + '</td>' +
-                    '<td>' + plant.hoogteVan + 'cm</td>' +
+                    '<td>' + esc(plant.bloeiVan || '-') + '</td>' +
+                    '<td>' + esc(plant.bloeiTot || '-') + '</td>' +
+                    '<td>' + (plant.hoogteVan || '-') + 'cm</td>' +
                     '<td>' + (plant.hoogteTot > plant.hoogteVan ? plant.hoogteTot + 'cm' : '') + '</td>' +
-                    '<td>' + esc(plant.standplaats) + '</td>' +
+                    '<td>' + esc(plant.standplaats || '-') + '</td>' +
                     '<td><button class="btn btn-danger" data-removefromborder="' + name + '">\u2715</button></td>' +
                     '</tr>';
             }).join('');
@@ -462,7 +461,9 @@ body.has-address #addressGate { display: none; }
             if (!plant) return;
             const border = borders.find(b => b.id === activeBorderId);
             if (!border) return;
-            border.plants.push(plant);
+            const copy = JSON.parse(JSON.stringify(plant));
+            copy.pos = null;
+            border.plants.push(copy);
             saveState();
             renderBorderPlantTable();
             updateAddPlantSelect();
