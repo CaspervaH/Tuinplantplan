@@ -25,7 +25,7 @@ jobs:
           echo "$RESP" | head -c 300
           echo
           echo "$RESP" | grep -q '"weergavenaam"' || { echo "GEEN weergavenaam in PDOK-antwoord"; exit 1; }
-          echo "$RESP" | grep -Eq '"centroide_ll":"POINT\([-0-9.]+ [0-9.]+\)"' || { echo "GEEN geldige centroide_ll"; exit 1; }
+          echo "$RESP" | grep -Eq '"centroide_ll":"POINT\(-?[0-9.]+ [0-9.]+\)"' || { echo "GEEN geldige centroide_ll"; exit 1; }
           echo "PDOK-adreszoeker OK"
 
   live-check:
@@ -41,16 +41,20 @@ jobs:
             HTML=$(curl -sL "$BASE/" || true)
             MAPJS=$(curl -sL -o /dev/null -w "%{http_code}" "$BASE/map.js" || true)
             MAPBODY=$(curl -sL "$BASE/map.js" || true)
+            BORDERHTML=$(curl -sL -o /dev/null -w "%{http_code}" "$BASE/border.html" || true)
+            BORDERJS=$(curl -sL -o /dev/null -w "%{http_code}" "$BASE/border.js" || true)
             if echo "$HTML" | grep -q 'id="addressGate"' && \
                echo "$HTML" | grep -q 'id="gardenMap"' && \
                echo "$HTML" | grep -q 'leaflet.js' && \
                [ "$MAPJS" = "200" ] && \
                echo "$MAPBODY" | grep -q 'submitGateAddress' && \
-               echo "$MAPBODY" | grep -q 'geocodeAddress'; then
-              echo "Live site OK: gate, kaart, leaflet en map.js met adres-logica aanwezig."
+               echo "$MAPBODY" | grep -q 'geocodeAddress' && \
+               [ "$BORDERHTML" = "200" ] && \
+               [ "$BORDERJS" = "200" ]; then
+              echo "Live site OK: gate, kaart, leaflet, map.js en border-editor aanwezig."
               exit 0
             fi
-            echo "Nog niet klaar of incompleet (map.js HTTP: $MAPJS), poging $i..."
+            echo "Nog niet klaar of incompleet (map.js HTTP: $MAPJS, border.html HTTP: $BORDERHTML, border.js HTTP: $BORDERJS), poging $i..."
             sleep 60
           done
           echo "LIVE CHECK GEFAALD"
