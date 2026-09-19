@@ -1,0 +1,42 @@
+name: Test Tuinplantplanner
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Valideer app (syntax, structuur, koppelingen)
+        run: node tests/validate.js
+
+  live-check:
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wacht op GitHub Pages deploy
+        run: sleep 90
+      - name: Controleer live site
+        run: |
+          URL="https://caspervah.github.io/Tuinplantplan/"
+          echo "Controleren: $URL"
+          sleep 60
+          for i in 1 2 3; do
+            BODY=$(curl -sL "$URL" || true)
+            if echo "$BODY" | grep -q 'id="addressGate"' && \
+               echo "$BODY" | grep -q 'id="gardenMap"' && \
+               echo "$BODY" | grep -q 'leaflet.js'; then
+              echo "Live site OK: adres-gate, kaart en leaflet aanwezig."
+              exit 0
+            fi
+            echo "Nog niet klaar of incompleet, poging $i..."
+            sleep 60
+          done
+          echo "LIVE CHECK GEFAALD"
+          exit 1
