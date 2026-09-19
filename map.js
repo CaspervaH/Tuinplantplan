@@ -24,6 +24,7 @@ var kadasterLayer = L.tileLayer('https://service.pdok.nl/kadaster/brk-kadastrale
 kadasterLayer.addTo(gardenMap);
 
 var mapShapeLayer = L.layerGroup().addTo(gardenMap);
+var mapObjectLayer = L.layerGroup().addTo(gardenMap);
 var mapMarkerLayer = L.layerGroup().addTo(gardenMap);
 
 // ===== Adres-gate =====
@@ -43,7 +44,7 @@ function geocodeAddress(q, onSuccess, onFail) {
 function applyAddress(addr, lat, lng, zoomTo) {
   localStorage.setItem('gardenAddress', JSON.stringify({ addr: addr, lat: lat, lng: lng }));
   document.body.classList.add('has-address');
-  document.getElementById('addressTitle').textContent = '📍 ' + addr;
+  document.getElementById('addressTitle').textContent = '\uD83D\uDCCD ' + addr;
   if (zoomTo) gardenMap.setView([lat, lng], 19);
   setTimeout(function () { gardenMap.invalidateSize(); }, 50);
   setTimeout(function () { gardenMap.invalidateSize(); }, 400);
@@ -56,10 +57,10 @@ function submitGateAddress() {
   var btn = document.getElementById('gateAddressBtn');
   btn.disabled = true; btn.textContent = 'Zoeken...';
   geocodeAddress(q, function (addr, lat, lng) {
-    btn.disabled = false; btn.textContent = 'Naar mijn tuin →';
+    btn.disabled = false; btn.textContent = 'Naar mijn tuin \u2192';
     applyAddress(addr, lat, lng, true);
   }, function () {
-    btn.disabled = false; btn.textContent = 'Naar mijn tuin →';
+    btn.disabled = false; btn.textContent = 'Naar mijn tuin \u2192';
     alert('Adres niet gevonden. Probeer bv. "Straatnaam 12, Plaats".');
   });
 }
@@ -82,7 +83,7 @@ document.getElementById('changeAddressBtn').addEventListener('click', function (
   try { saved = JSON.parse(localStorage.getItem('gardenAddress')); } catch (e) {}
   if (saved && saved.addr) {
     document.body.classList.add('has-address');
-    document.getElementById('addressTitle').textContent = '📍 ' + saved.addr;
+    document.getElementById('addressTitle').textContent = '\uD83D\uDCCD ' + saved.addr;
     setTimeout(function () { gardenMap.invalidateSize(); }, 50);
     setTimeout(function () { gardenMap.invalidateSize(); }, 400);
   } else {
@@ -109,7 +110,7 @@ function renderMap() {
       var poly = L.polygon(border.shape, {
         color: '#2e7d32', weight: 3, fillOpacity: 0.15
       }).addTo(mapShapeLayer);
-      poly.bindTooltip(border.name + ' — klik om te bewerken');
+      poly.bindTooltip(border.name + ' \u2014 klik om te bewerken');
       poly.on('click', function () { openBorderEditor(border.id); });
     }
     (border.plants || []).forEach(function (p) {
@@ -127,10 +128,12 @@ function renderMap() {
 
 // ===== Tuinobjecten uit het ontwerp (pad, terras, haag, ...) op de kaart =====
 // Opgeslagen in localStorage onder 'gardenObjects' als JSON-array:
-//   [{ id, type, name, shape: [[lat,lng],...], closed: true/false, color: '#hex' }]
-// - shape met 1 punt  -> stip (bv. boom, vuurplaats, techniekpunt)
+//   [{ id, type, name, shape: [[lat,lng],...], closed: true/false, color: '#hex',
+//      widthM: <breedte in meters, alleen voor lijnen> }]
+// - shape met 1 punt    -> stip (bv. boom, vuurplaats, techniekpunt)
 // - closed + >=3 punten -> vlak (bv. terras, gazon, moestuin)
-// - anders -> lijn (bv. pad, haag)
+// - anders              -> lijn (bv. pad, haag); met widthM schaalt de
+//   getekende breedte automatisch mee met het zoomniveau (echte meters)
 function readGardenObjects() {
   try { return JSON.parse(localStorage.getItem('gardenObjects')) || []; }
   catch (e) { return []; }
@@ -144,27 +147,75 @@ var GARDEN_OBJECT_COLORS = {
   misc: '#607d8b'
 };
 
+function metersPerPixel() {
+  // Web Mercator: equator-omtrek / 2^(zoom+8), gecorrigeerd voor breedtegraad
+  return 40075016.686 * Math.cos(gardenMap.getCenter().lat * Math.PI / 180) / Math.pow(2, gardenMap.getZoom() + 8);
+}
+
 function renderGardenObjects() {
+  mapObjectLayer.clearLayers();
   readGardenObjects().forEach(function (obj) {
     if (!obj || !obj.shape || !obj.shape.length) return;
     var color = obj.color || GARDEN_OBJECT_COLORS[obj.type] || GARDEN_OBJECT_COLORS.misc;
+    var label = obj.name || obj.type || 'Tuinobject';
+    if (obj.materiaal) label += ' \u2014 ' + obj.materiaal;
     var layer;
     if (obj.shape.length === 1) {
       layer = L.circleMarker(obj.shape[0], {
         radius: 7, color: '#333', weight: 1, fillColor: color, fillOpacity: 0.9
-      }).addTo(mapShapeLayer);
+      }).addTo(mapObjectLayer);
     } else if (obj.closed && obj.shape.length >= 3) {
       layer = L.polygon(obj.shape, {
         color: color, weight: 2, fillOpacity: 0.3
-      }).addTo(mapShapeLayer);
+      }).addTo(mapObjectLayer);
     } else {
+      // Lijn: breedte in meters (widthM) als die gegeven is, anders vaste weight
+      var weight = obj.weight || 4;
+      if (typeof obj.widthM === 'number' && obj.widthM > 0) {
+        weight = Math.max(2, Math.round(obj.widthM / metersPerPixel()));
+      }
       layer = L.polyline(obj.shape, {
-        color: color, weight: obj.weight || 4, opacity: 0.9
-      }).addTo(mapShapeLayer);
+        color: color, weight: weight, opacity: 0.9, lineCap: 'round'
+      }).addTo(mapObjectLayer);
     }
-    layer.bindTooltip(obj.name || obj.type || 'Tuinobject');
+    layer.bindTooltip(label);
   });
 }
+
+// Toggle rechtsboven op de kaart om het ontwerp aan/uit te zetten
+var objectsControl = L.control({ position: 'topright' });
+objectsControl.onAdd = function () {
+  var div = L.DomUtil.create('div');
+  div.style.background = '#fff';
+  div.style.padding = '4px 8px';
+  div.style.borderRadius = '4px';
+  div.style.boxShadow = '0 1px 4px rgba(0,0,0,.3)';
+  div.style.fontSize = '13px';
+  div.style.display = 'flex';
+  div.style.alignItems = 'center';
+  div.style.gap = '4px';
+  var cb = document.createElement('input');
+  cb.type = 'checkbox';
+  cb.checked = true;
+  cb.id = 'mapObjectsToggle';
+  cb.style.cursor = 'pointer';
+  var lb = document.createElement('label');
+  lb.htmlFor = 'mapObjectsToggle';
+  lb.style.cursor = 'pointer';
+  lb.textContent = '\uD83D\uDCD0 Ontwerp';
+  cb.addEventListener('change', function (e) {
+    if (e.target.checked) { mapObjectLayer.addTo(gardenMap); }
+    else { gardenMap.removeLayer(mapObjectLayer); }
+  });
+  div.appendChild(cb);
+  div.appendChild(lb);
+  L.DomEvent.disableClickPropagation(div);
+  return div;
+};
+objectsControl.addTo(gardenMap);
+
+// Bij in-/uitzoomen de lijnbreedtes opnieuw berekenen (weight is in pixels)
+gardenMap.on('zoomend', renderGardenObjects);
 
 // ===== Border intekenen: maakt direct een nieuw border-object aan =====
 function setDrawMode(on) {
