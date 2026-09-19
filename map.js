@@ -24,7 +24,7 @@ var mapMarkerLayer = L.layerGroup().addTo(gardenMap);
 
 // ===== Adres-gate =====
 function geocodeAddress(q, onSuccess, onFail) {
-  fetch('https://api.pdok.nl/bzk/locatieserver/search/v3_1/free?q=' + encodeURIComponent(q) + '&rows=1')
+  fetch('https://api.pdok.nl/bzk/locatieserver/search/v3_1/free?q=' + encodeURIComponent(q) + '&fq=type:adres&rows=1')
     .then(function (r) { return r.json(); })
     .then(function (d) {
       var doc = d.response && d.response.docs && d.response.docs[0];
@@ -41,6 +41,8 @@ function applyAddress(addr, lat, lng, zoomTo) {
   document.body.classList.add('has-address');
   document.getElementById('addressTitle').textContent = '\uD83D\uDCCD ' + addr;
   if (zoomTo) gardenMap.setView([lat, lng], 18);
+  setTimeout(function () { gardenMap.invalidateSize(); }, 50);
+  setTimeout(function () { gardenMap.invalidateSize(); }, 400);
   window.scrollTo(0, 0);
 }
 
@@ -77,6 +79,8 @@ document.getElementById('changeAddressBtn').addEventListener('click', function (
   if (saved && saved.addr) {
     document.body.classList.add('has-address');
     document.getElementById('addressTitle').textContent = '\uD83D\uDCCD ' + saved.addr;
+    setTimeout(function () { gardenMap.invalidateSize(); }, 50);
+    setTimeout(function () { gardenMap.invalidateSize(); }, 400);
   } else {
     setTimeout(function () { document.getElementById('gateAddressInput').focus(); }, 100);
   }
