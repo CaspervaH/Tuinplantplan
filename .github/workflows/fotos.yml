@@ -1,0 +1,48 @@
+name: Fotos
+on:
+  push:
+    branches: [main]
+    paths: ['photos.js', 'scripts/foto-integrate.js', 'scripts/foto-scan.js', '.github/workflows/fotos.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  fotos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: photos.js integreren in index.html
+        run: node scripts/foto-integrate.js
+
+      - name: Dekkingsscan Wikimedia Commons
+        run: node scripts/foto-scan.js
+
+      - name: Integratie committen
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "Geen wijzigingen aan index.html."
+          else
+            git commit -m "[fotos] photos.js geintegreerd in index.html"
+            git push
+          fi
+
+      - name: Stats als issue rapporteren
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BESTAAND=$(gh issue list --state open --search "Foto-dekking" --json number --limit 1 -q '.[0].number')
+          if [ -n "$BESTAAND" ]; then
+            gh issue comment "$BESTAAND" --body-file foto-stats.md
+          else
+            gh issue create --title "Foto-dekking scan (Wikimedia Commons)" --body-file foto-stats.md
+          fi
