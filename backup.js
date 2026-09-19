@@ -1,6 +1,6 @@
 // Backup: exporteer & importeer plannerdata (localStorage) als JSON — Tuinplantplanner
 (function () {
-  var KEYS = ['shortlist', 'borders', 'gardenAddress', 'mapView'];
+  var KEYS = ['shortlist', 'borders', 'gardenObjects', 'gardenAddress', 'mapView'];
   var LAST = 'lastBackupAt';
 
   function readAll() {
@@ -32,7 +32,7 @@
     }
     var payload = {
       app: 'tuinplantplanner',
-      version: 1,
+      version: 2,
       exportedAt: new Date().toISOString(),
       data: data
     };
@@ -59,10 +59,16 @@
         return;
       }
       var hasData = Object.keys(readAll()).length > 0;
-      if (hasData && !window.confirm('Importeren vervangt de huidige shortlist, borders, kaartgegevens en het adres in deze browser. Doorgaan?')) return;
-      KEYS.forEach(function (k) { localStorage.removeItem(k); });
-      Object.keys(payload.data).forEach(function (k) {
-        if (KEYS.indexOf(k) !== -1) localStorage.setItem(k, payload.data[k]);
+      if (hasData && !window.confirm('Importeren vervangt de gegevens die in dit bestand zitten (shortlist, borders, tuinobjecten, kaartgegevens en adres). Gegevens die niet in het bestand staan, blijven gewoon staan. Doorgaan?')) return;
+      // Alleen sleutels die in het bestand zitten worden vervangen,
+      // zodat je bv. alleen tuinobjecten (gardenObjects) kunt importeren
+      // zonder je shortlist of borders te verliezen.
+      KEYS.forEach(function (k) {
+        if (Object.prototype.hasOwnProperty.call(payload.data, k)) {
+          localStorage.removeItem(k);
+          var v = payload.data[k];
+          localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
+        }
       });
       setStatus('Geïmporteerd — pagina wordt herladen...');
       setTimeout(function () { location.reload(); }, 800);
@@ -77,7 +83,7 @@
     sec.className = 'section';
     sec.innerHTML =
       '<h2>Backup &#128190;</h2>' +
-      '<p style="font-size:0.92em;color:#555;max-width:640px;">Je gegevens staan in deze browser (localStorage) en zijn dus alleen voor jou zichtbaar. ' +
+      '<p style="font-size:0.92em;color:#555;max-width:640px;">Je gegevens (shortlist, borders, tuinobjecten zoals paden en terrassen, kaartgegevens en adres) staan in deze browser (localStorage) en zijn dus alleen voor jou zichtbaar. ' +
       'Exporteer regelmatig een JSON-backup als veiligheid, of om je tuin over te zetten naar een ander apparaat of een andere browser.</p>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;">' +
       '<button id="backupExportBtn" class="btn">Exporteer JSON</button>' +
