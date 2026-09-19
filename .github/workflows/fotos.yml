@@ -21,10 +21,7 @@ jobs:
       - name: photos.js integreren in index.html
         run: node scripts/foto-integrate.js
 
-      - name: Dekkingsscan Wikimedia Commons
-        run: node scripts/foto-scan.js
-
-      - name: Integratie committen
+      - name: Integratie committen (vóór de trage scan, minimaal race-risico)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -33,8 +30,12 @@ jobs:
             echo "Geen wijzigingen aan index.html."
           else
             git commit -m "[fotos] photos.js geintegreerd in index.html"
+            git pull --rebase origin main
             git push
           fi
+
+      - name: Dekkingsscan Wikimedia Commons
+        run: node scripts/foto-scan.js
 
       - name: Stats als issue rapporteren
         env:
