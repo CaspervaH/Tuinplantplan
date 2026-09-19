@@ -7,15 +7,17 @@ var drawPreview = null;
 var savedMapView = null;
 try { savedMapView = JSON.parse(localStorage.getItem('mapView')); } catch (e) {}
 
-var gardenMap = L.map('gardenMap').setView(
+var gardenMap = L.map('gardenMap', { maxZoom: 21 }).setView(
   savedMapView ? [savedMapView.lat, savedMapView.lng] : [52.1, 5.3],
   savedMapView ? savedMapView.zoom : 12
 );
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 19, attribution: '&copy; OpenStreetMap'
+  maxZoom: 21, maxNativeZoom: 19, attribution: '&copy; OpenStreetMap'
 }).addTo(gardenMap);
-var kadasterLayer = L.tileLayer.wms('https://service.pdok.nl/kadaster/kadastralekaart/wms/v5_0', {
-  layers: 'standaard', format: 'image/png', transparent: true, opacity: 0.8, minZoom: 15
+// Kadastrale kaart als WMTS-tegels (betrouwbaar, ook op hoog zoomniveau)
+var kadasterLayer = L.tileLayer('https://service.pdok.nl/kadaster/brk-kadastralekaart/wmts/v5_0/Kadastralekaart/EPSG:3857/{z}/{x}/{y}.png', {
+  maxZoom: 21, maxNativeZoom: 19, opacity: 0.9, minZoom: 14,
+  attribution: 'Kadastrale kaart: PDOK / Kadaster'
 });
 kadasterLayer.addTo(gardenMap);
 
@@ -40,7 +42,7 @@ function applyAddress(addr, lat, lng, zoomTo) {
   localStorage.setItem('gardenAddress', JSON.stringify({ addr: addr, lat: lat, lng: lng }));
   document.body.classList.add('has-address');
   document.getElementById('addressTitle').textContent = '\uD83D\uDCCD ' + addr;
-  if (zoomTo) gardenMap.setView([lat, lng], 18);
+  if (zoomTo) gardenMap.setView([lat, lng], 19);
   setTimeout(function () { gardenMap.invalidateSize(); }, 50);
   setTimeout(function () { gardenMap.invalidateSize(); }, 400);
   window.scrollTo(0, 0);
@@ -205,7 +207,7 @@ document.getElementById('mapClearShapeBtn').addEventListener('click', function (
 document.getElementById('mapLocateBtn').addEventListener('click', function () {
   if (!navigator.geolocation) { alert('Geolocatie wordt niet ondersteund.'); return; }
   navigator.geolocation.getCurrentPosition(function (pos) {
-    gardenMap.setView([pos.coords.latitude, pos.coords.longitude], 18);
+    gardenMap.setView([pos.coords.latitude, pos.coords.longitude], 19);
   }, function () { alert('Kon locatie niet bepalen.'); });
 });
 document.getElementById('mapKadasterToggle').addEventListener('change', function (e) {
