@@ -29,7 +29,8 @@
         .plant-card { border: 1px solid var(--border); border-radius: 4px; padding: 10px; background: white; }
         .plant-card.selected { border-color: var(--accent); background-color: #f0ffe0; }
         .plant-card input[type="checkbox"] { margin-right: 8px; }
-        .plant-name { font-weight: bold; color: var(--primary); margin-bottom: 3px; font-size: 0.9rem; }
+ 
+       .plant-name { font-weight: bold; color: var(--primary); margin-bottom: 3px; font-size: 0.9rem; }
         .plant-details { font-size: 12px; color: var(--light-text); margin-top: 5px; }
         .plant-details span { margin-right: 8px; display: inline-block; margin-bottom: 3px; }
         .color-indicator { display: inline-block; width: 14px; height: 14px; border-radius: 3px; margin-right: 4px; border: 1px solid #ccc; vertical-align: middle; }
@@ -44,7 +45,8 @@
         .border-plant-table th, .border-plant-table td { padding: 6px; text-align: left; border-bottom: 1px solid var(--border); }
         .border-plant-table th { background: var(--primary); color: white; font-weight: bold; }
         .add-border-btn { background: var(--accent); color: white; border: none; border-radius: 4px; padding: 8px 12px; cursor: pointer; font-size: 14px; margin-bottom: 10px; width: 100%; }
-        .add-plant-section { margin-top: 12px; padding: 10px; background: #e8f5e8; border-radius: 4px; }
+        .add-plant-section { margin-top: 12px; padding: 10px; background: #e8f5e
+8; border-radius: 4px; }
         .add-plant-section select { padding: 6px; border-radius: 4px; border: 1px solid var(--border); margin-right: 6px; min-width: 160px; font-size: 13px; }
         .add-plant-section button { background: var(--primary); color: white; border: none; border-radius: 4px; padding: 6px 10px; cursor: pointer; font-size: 13px; }
         .hidden { display: none; }
@@ -71,7 +73,8 @@
                 <select id="standplaatsFilter"><option value="">Alle standplaatsen</option><option value="Z">Zon</option><option value="HS">Halfschaduw</option><option value="S">Schaduw</option></select>
             </div>
             <div class="plant-list" id="plantList"></div>
-        </div>
+    
+    </div>
         <div class="section shortlist-section">
             <h2>Shortlist (<span id="shortlistCount">0</span> planten)</h2>
             <div class="shortlist-grid" id="shortlist"></div>
@@ -106,7 +109,8 @@
         // Plantendata
         const plantData = [
             { latijnseNaam: "Acaena inermis Purpurea", nlNaam: "Stekelnootje", standplaats: "Z", kleur: "bruinrood", bloeiVan: "juni", bloeiTot: "juli", hoogteVan: 10, hoogteTot: 10 },
-            { latijnseNaam: "Allium Millenium", nlNaam: "Sierui", standplaats: "Z", kleur: "paars violet", bloeiVan: "juli", bloeiTot: "sept", hoogteVan: 40, hoogteTot: 40 },
+            { latijnseNaam: "Allium
+ Millenium", nlNaam: "Sierui", standplaats: "Z", kleur: "paars violet", bloeiVan: "juli", bloeiTot: "sept", hoogteVan: 40, hoogteTot: 40 },
             { latijnseNaam: "Allium obliquum", nlNaam: "Sierui", standplaats: "Z", kleur: "groengeel", bloeiVan: "mei", bloeiTot: "juni", hoogteVan: 70, hoogteTot: 70 },
             { latijnseNaam: "Allium Suger Melt", nlNaam: "Sierui", standplaats: "Z", kleur: "lichtroze", bloeiVan: "juli", bloeiTot: "sept", hoogteVan: 25, hoogteTot: 25 },
             { latijnseNaam: "Allium Summer Beauty", nlNaam: "Sierui", standplaats: "Z", kleur: "lilapaars", bloeiVan: "juli", bloeiTot: "aug", hoogteVan: 40, hoogteTot: 60 },
@@ -117,7 +121,8 @@
             { latijnseNaam: "Anemone hybrida Honorine Jobert", nlNaam: "Herfstanemoon", standplaats: "Z - HS", kleur: "wit", bloeiVan: "aug", bloeiTot: "okt", hoogteVan: 80, hoogteTot: 80 },
             { latijnseNaam: "Anemone Konigin Charlotte", nlNaam: "Herfstanemoon", standplaats: "Z - HS", kleur: "zuiverroze", bloeiVan: "sept", bloeiTot: "okt", hoogteVan: 80, hoogteTot: 80 },
             { latijnseNaam: "Anemone hupehensis Pretty Lady Maria", nlNaam: "Herfstanemoon", standplaats: "HS", kleur: "wit", bloeiVan: "aug", bloeiTot: "sept", hoogteVan: 40, hoogteTot: 50 },
-            { latijnseNaam: "Anemone hupehensis September Charm", nlNaam: "Herfstanemoon", standplaats: "Z - S", kleur: "roze", bloeiVan: "aug", bloeiTot: "okt", hoogteVan: 90, hoogteTot: 90 },
+            { latijnseNaam: "Anemone hupehensis September 
+Charm", nlNaam: "Herfstanemoon", standplaats: "Z - S", kleur: "roze", bloeiVan: "aug", bloeiTot: "okt", hoogteVan: 90, hoogteTot: 90 },
             { latijnseNaam: "Anemone hybrida Splendens", nlNaam: "Herstanemoon", standplaats: "Z - HS", kleur: "paars - roze", bloeiVan: "aug", bloeiTot: "okt", hoogteVan: 80, hoogteTot: 80 },
             { latijnseNaam: "Anemone virginiana", nlNaam: "Anemoon", standplaats: "Z - HS", kleur: "wit", bloeiVan: "mei", bloeiTot: "juni", hoogteVan: 40, hoogteTot: 40 },
             { latijnseNaam: "Anthemis tinctoria", nlNaam: "Gele kamille", standplaats: "Z - HS", kleur: "geel", bloeiVan: "juni", bloeiTot: "sept", hoogteVan: 40, hoogteTot: 50 },
@@ -128,7 +133,8 @@
             { latijnseNaam: "Armeria maritima Rubrifolia", nlNaam: "Engels gras", standplaats: "Z", kleur: "rood", bloeiVan: "mei", bloeiTot: "aug", hoogteVan: 20, hoogteTot: 20 },
             { latijnseNaam: "Artemisia abrotanum Coca Cola", nlNaam: "Cola plant", standplaats: "Z - HS", kleur: "creme geel", bloeiVan: "juli", bloeiTot: "juli", hoogteVan: 100, hoogteTot: 100 },
             { latijnseNaam: "Asarum caudatum", nlNaam: "Mansoor", standplaats: "HS - S", kleur: "bruinrood", bloeiVan: "april", bloeiTot: "juni", hoogteVan: 15, hoogteTot: 15 },
-            { latijnseNaam: "Asclepias tuberosa", nlNaam: "Papegaaiplant", standplaats: "Z", kleur: "oranje", bloeiVan: "juli", bloeiTot: "aug", hoogteVan: 50, hoogteTot: 50 },
+            { latijnseNaam: "Asclepias tuber
+osa", nlNaam: "Papegaaiplant", standplaats: "Z", kleur: "oranje", bloeiVan: "juli", bloeiTot: "aug", hoogteVan: 50, hoogteTot: 50 },
             { latijnseNaam: "Aster ageratoides Ashvi", nlNaam: "Herfstaster", standplaats: "Z - HS", kleur: "wit", bloeiVan: "sept", bloeiTot: "okt", hoogteVan: 50, hoogteTot: 60 },
             { latijnseNaam: "Aster ageratoides Asran", nlNaam: "Herfstaster", standplaats: "Z", kleur: "lichtblauw", bloeiVan: "aug", bloeiTot: "okt", hoogteVan: 70, hoogteTot: 70 },
             { latijnseNaam: "Aster azureus", nlNaam: "Herfstaster", standplaats: "Z - HS", kleur: "blauw", bloeiVan: "juli", bloeiTot: "okt", hoogteVan: 50, hoogteTot: 70 },
@@ -153,7 +159,8 @@
             wit: '#ffffff', geel: '#ffd700', roze: '#ffc0cb', rood: '#ff0000',
             paars: '#800080', blauw: '#0000ff', oranje: '#ffa500', bruinrood: '#8b0000',
             groengeel: '#adff2f', lichtroze: '#ffb6c1', lilapaars: '#c8a2c8',
-            cremegeel: '#fffacd', violetblauw: '#4169e1', lichtblauw: '#add8e6'
+            crem
+egeel: '#fffacd', violetblauw: '#4169e1', lichtblauw: '#add8e6'
         };
 
         function getColorHex(color) {
@@ -186,7 +193,8 @@
                     '<div class="plant-card ' + (isInShortlist ? 'selected' : '') + '">' +
                     '<label><input type="checkbox" ' + (isInShortlist ? 'checked' : '') + ' onchange="toggleShortlist('' + plant.latijnseNaam.replace(/'/g, "\'") + '')">' +
                     '<strong>' + plant.latijnseNaam + '</strong></label>' +
-                    '<div class="plant-details"><span><em>' + plant.nlNaam + '</em></span></div>' +
+             
+       '<div class="plant-details"><span><em>' + plant.nlNaam + '</em></span></div>' +
                     '<div class="plant-details">' +
                     '<span><span class="color-indicator" style="background-color: ' + colorHex + '"></span>' + plant.kleur + '</span>' +
                     '<span>🌸 ' + plant.bloeiVan + '-' + plant.bloeiTot + '</span>' +
@@ -222,7 +230,8 @@
                     '📏 ' + plant.hoogteVan + (plant.hoogteTot > plant.hoogteVan ? '-' + plant.hoogteTot : '') + 'cm | ' +
                     '☀️ ' + plant.standplaats +
                     '</div>' +
-                    '</div>' +
+                    '</d
+iv>' +
                     '<button onclick="removeFromShortlist('' + plant.latijnseNaam.replace(/'/g, "\'") + '')">✕</button>' +
                     '</div>';
             }).join('');
@@ -273,7 +282,8 @@
             ).join('');
         }
 
-        function renderBorderPlantTable() {
+        function renderBorderPlantTable
+() {
             const border = borders.find(b => b.id === activeBorderId);
             if (!border) return;
             borderPlantTableBodyEl.innerHTML = border.plants.map(plant => {
@@ -309,7 +319,8 @@
             const plant = shortlist.find(p => p.latijnseNaam === selected);
             if (!plant) return;
             const border = borders.find(b => b.id === activeBorderId);
-            if (!border) return;
+            if (
+!border) return;
             border.plants.push(plant);
             saveState();
             renderBorderPlantTable();
@@ -363,7 +374,8 @@
         document.getElementById('searchInput').addEventListener('input', renderPlantList);
         document.getElementById('colorFilter').addEventListener('change', renderPlantList);
         document.getElementById('standplaatsFilter').addEventListener('change', renderPlantList);
-        document.getElementById('clearShortlistBtn').addEventListener('click', clearShortlist);
+        document.get
+ElementById('clearShortlistBtn').addEventListener('click', clearShortlist);
         document.getElementById('addBorderBtn').addEventListener('click', addNewBorder);
         document.getElementById('addPlantToBorderBtn').addEventListener('click', addPlantToBorder);
         document.getElementById('closeBorderBtn').addEventListener('click', closeBorder);
