@@ -16,26 +16,41 @@ jobs:
       - name: Valideer app (syntax, structuur, koppelingen)
         run: node tests/validate.js
 
+  functioneel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: PDOK-adreszoeker werkt (zelfde aanroep als de app)
+        run: |
+          RESP=$(curl -s "https://api.pdok.nl/bzk/locatieserver/search/v3_1/free?q=Dorpsstraat%2012%2C%20Utrecht&rows=1")
+          echo "$RESP" | head -c 300
+          echo
+          echo "$RESP" | grep -q '"weergavenaam"' || { echo "GEEN weergavenaam in PDOK-antwoord"; exit 1; }
+          echo "$RESP" | grep -Eq '"centroide_ll":"POINT\([-0-9.]+ [0-9.]+\)"' || { echo "GEEN geldige centroide_ll"; exit 1; }
+          echo "PDOK-adreszoeker OK"
+
   live-check:
-    needs: validate
+    needs: [validate, functioneel]
     runs-on: ubuntu-latest
     steps:
       - name: Wacht op GitHub Pages deploy
         run: sleep 90
-      - name: Controleer live site
+      - name: Controleer live site volledig
         run: |
-          URL="https://caspervah.github.io/Tuinplantplan/"
-          echo "Controleren: $URL"
-          sleep 60
+          BASE="https://caspervah.github.io/Tuinplantplan"
           for i in 1 2 3; do
-            BODY=$(curl -sL "$URL" || true)
-            if echo "$BODY" | grep -q 'id="addressGate"' && \
-               echo "$BODY" | grep -q 'id="gardenMap"' && \
-               echo "$BODY" | grep -q 'leaflet.js'; then
-              echo "Live site OK: adres-gate, kaart en leaflet aanwezig."
+            HTML=$(curl -sL "$BASE/" || true)
+            MAPJS=$(curl -sL -o /dev/null -w "%{http_code}" "$BASE/map.js" || true)
+            MAPBODY=$(curl -sL "$BASE/map.js" || true)
+            if echo "$HTML" | grep -q 'id="addressGate"' && \
+               echo "$HTML" | grep -q 'id="gardenMap"' && \
+               echo "$HTML" | grep -q 'leaflet.js' && \
+               [ "$MAPJS" = "200" ] && \
+               echo "$MAPBODY" | grep -q 'submitGateAddress' && \
+               echo "$MAPBODY" | grep -q 'geocodeAddress'; then
+              echo "Live site OK: gate, kaart, leaflet en map.js met adres-logica aanwezig."
               exit 0
             fi
-            echo "Nog niet klaar of incompleet, poging $i..."
+            echo "Nog niet klaar of incompleet (map.js HTTP: $MAPJS), poging $i..."
             sleep 60
           done
           echo "LIVE CHECK GEFAALD"
