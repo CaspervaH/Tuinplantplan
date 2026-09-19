@@ -1,4 +1,4 @@
-// Kaartfunctionaliteit Tuinplantplanner (PDOK + Leaflet)
+// Kaart- en adresfunctionaliteit Tuinplantplanner (Leaflet + PDOK)
 var mapBorderId = null;
 var drawMode = false;
 var drawPoints = [];
@@ -22,19 +22,65 @@ kadasterLayer.addTo(gardenMap);
 var mapShapeLayer = L.layerGroup().addTo(gardenMap);
 var mapMarkerLayer = L.layerGroup().addTo(gardenMap);
 
-function searchAddress() {
-  var q = document.getElementById('mapAddressInput').value.trim();
-  if (!q) { alert('Voer een adres in.'); return; }
+// ===== Adres-gate =====
+function geocodeAddress(q, onSuccess, onFail) {
   fetch('https://api.pdok.nl/bzk/locatieserver/search/v3_1/free?q=' + encodeURIComponent(q) + '&rows=1')
     .then(function (r) { return r.json(); })
     .then(function (d) {
       var doc = d.response && d.response.docs && d.response.docs[0];
       var m = doc && doc.centroide_ll && doc.centroide_ll.match(/POINT\(([-\d.]+) ([-\d.]+)\)/);
-      if (m) { gardenMap.setView([parseFloat(m[2]), parseFloat(m[1])], 18); }
-      else { alert('Adres niet gevonden. Probeer bv. "Straatnaam 12, Plaats".'); }
+      if (m && doc.weergavenaam) {
+        onSuccess(doc.weergavenaam, parseFloat(m[2]), parseFloat(m[1]));
+      } else { onFail(); }
     })
-    .catch(function () { alert('Zoeken mislukt (internetverbinding?).'); });
+    .catch(function () { onFail(); });
 }
+
+function applyAddress(addr, lat, lng, zoomTo) {
+  localStorage.setItem('gardenAddress', JSON.stringify({ addr: addr, lat: lat, lng: lng }));
+  document.body.classList.add('has-address');
+  document.getElementById('addressTitle').textContent = '\uD83D\uDCCD ' + addr;
+  if (zoomTo) gardenMap.setView([lat, lng], 18);
+  window.scrollTo(0, 0);
+}
+
+function submitGateAddress() {
+  var q = document.getElementById('gateAddressInput').value.trim();
+  if (!q) { alert('Voer een adres in, bv. "Dorpsstraat 1, Utrecht".'); return; }
+  var btn = document.getElementById('gateAddressBtn');
+  btn.disabled = true; btn.textContent = 'Zoeken...';
+  geocodeAddress(q, function (addr, lat, lng) {
+    btn.disabled = false; btn.textContent = 'Naar mijn tuin \u2192';
+    applyAddress(addr, lat, lng, true);
+  }, function () {
+    btn.disabled = false; btn.textContent = 'Naar mijn tuin \u2192';
+    alert('Adres niet gevonden. Probeer bv. "Straatnaam 12, Plaats".');
+  });
+}
+
+document.getElementById('gateAddressBtn').addEventListener('click', submitGateAddress);
+document.getElementById('gateAddressInput').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') submitGateAddress();
+});
+document.getElementById('changeAddressBtn').addEventListener('click', function () {
+  document.body.classList.remove('has-address');
+  var input = document.getElementById('gateAddressInput');
+  input.value = '';
+  input.focus();
+  window.scrollTo(0, 0);
+});
+
+// Opgeslagen adres herstellen
+(function () {
+  var saved = null;
+  try { saved = JSON.parse(localStorage.getItem('gardenAddress')); } catch (e) {}
+  if (saved && saved.addr) {
+    document.body.classList.add('has-address');
+    document.getElementById('addressTitle').textContent = '\uD83D\uDCCD ' + saved.addr;
+  } else {
+    setTimeout(function () { document.getElementById('gateAddressInput').focus(); }, 100);
+  }
+})();
 
 function saveMapView() {
   var c0 = gardenMap.getCenter();
@@ -71,8 +117,7 @@ function makePlantPopup(plant) {
   var strong = document.createElement('strong');
   strong.textContent = plant.nlNaam || plant.latijnseNaam;
   div.appendChild(strong);
-  var br = document.createElement('br');
-  div.appendChild(br);
+  div.appendChild(document.createElement('br'));
   var btn = document.createElement('button');
   btn.className = 'btn btn-danger';
   btn.textContent = 'Positie wissen';
@@ -140,10 +185,6 @@ gardenMap.on('click', function (e) {
 
 gardenMap.on('dblclick', function () { if (drawMode) finishDraw(); });
 
-document.getElementById('mapAddressBtn').addEventListener('click', searchAddress);
-document.getElementById('mapAddressInput').addEventListener('keydown', function (e) {
-  if (e.key === 'Enter') searchAddress();
-});
 document.getElementById('mapBorderSelect').addEventListener('change', function (e) {
   mapBorderId = e.target.value || null;
   renderMap();
@@ -171,5 +212,4 @@ document.getElementById('mapKadasterToggle').addEventListener('change', function
 var _origSaveState = saveState;
 saveState = function () { _origSaveState(); renderMap(); };
 
-if (!savedMapView) document.getElementById('mapAddressInput').focus();
 renderMap();
