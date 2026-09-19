@@ -130,7 +130,7 @@
     <span>👆 Klik op de kaart om deze plant te plaatsen</span>
   </div>
   <div id="gardenMap"></div>
-  <p class="map-help">Tip: sleep een plant-marker om te verplaatsen. Dubbelklik beëindigt het intekenen. Kaart: PDOK / Kadaster (kadastrale kaart).</p>
+  <p class="map-help">Tip: klik een plant-marker aan voor opties. Dubbelklik beëindigt het intekenen. Kaart: PDOK / Kadaster (kadastrale kaart).</p>
 </div>
 
 <script>
@@ -505,15 +505,8 @@ function renderMap() {
       radius: 9, color: '#333', weight: 1,
       fillColor: getColorHex(p.kleur) || '#8bc34a', fillOpacity: 0.95
     }).addTo(mapMarkerLayer);
-    marker.bindPopup('<strong>' + esc(p.nlNaam || p.latijnseNaam) + '</strong><br><a href="#" onclick="removePlantPos(\'' + esc(p.latijnseNaam) + '\');return false;">Positie wissen</a>');
+    marker.bindPopup('<strong>' + esc(p.nlNaam || p.latijnseNaam) + '</strong><br><button onclick="removePlantPos(\'' + esc(p.latijnseNaam) + '\')">Positie wissen</button>');
     if (!L.Browser.mobile) marker.bindTooltip(esc(p.nlNaam || p.latijnseNaam));
-    marker.on('dragend', function (e) {
-      var ll = e.target.getLatLng();
-      var b = getMapBorder();
-      var plant = b && b.plants.find(function (x) { return x.latijnseNaam === p.latijnseNaam; });
-      if (plant) { plant.pos = { lat: ll.lat, lng: ll.lng }; saveState(); }
-    });
-    if (!L.Browser.mobile) marker.dragging && marker.dragging.disable();
   });
 }
 
@@ -521,7 +514,7 @@ function removePlantPos(latijnseNaam) {
   var border = getMapBorder();
   if (!border) return;
   var plant = border.plants.find(function (x) { return x.latijnseNaam === latijnseNaam; });
-  if (plant) { plant.pos = null; saveState(); }
+  if (plant) { plant.pos = null; saveState(); gardenMap.closePopup(); }
 }
 
 // Intekenen
@@ -536,7 +529,6 @@ function setDrawMode(on) {
 
 gardenMap.on('click', function (e) {
   if (!drawMode) {
-    // Plant plaatsen
     var border = getMapBorder();
     var sel = document.getElementById('mapPlantSelect');
     if (!border || !sel || !sel.value) return;
