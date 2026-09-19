@@ -63,21 +63,39 @@
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
+.gate-section { background: #fff9f0; border-left: 3px solid var(--accent); text-align: center; padding: 24px 12px; }
+.gate-section p { color: var(--light-text); margin-bottom: 12px; }
+.gate-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.gate-row input { padding: 10px; border-radius: 4px; border: 1px solid var(--border); flex: 1; min-width: 220px; max-width: 420px; font-size: 15px; }
+.gate-row button { background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; padding: 10px 18px; font-size: 15px; }
+.address-title { text-align: center; color: var(--light-text); font-size: 1rem; margin-bottom: 12px; }
+body:not(.has-address) .section { display: none; }
+body:not(.has-address) .address-title { display: none; }
+body.has-address #addressGate { display: none; }
 .map-section { background: #f0f8ff; border-left: 3px solid #4682b4; }
 .map-controls { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; align-items: center; }
 .map-controls select { padding: 6px; border-radius: 4px; border: 1px solid var(--border); min-width: 160px; }
 .map-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; padding: 8px; background: #fff3cd; border-radius: 4px; font-size: 13px; }
-.map-row input { padding: 6px; border-radius: 4px; border: 1px solid var(--border); flex: 1; min-width: 180px; }
 .map-row select { padding: 5px; border-radius: 4px; border: 1px solid var(--border); min-width: 180px; max-width: 100%; }
 #gardenMap { height: 420px; border-radius: 6px; border: 1px solid var(--border); }
 .map-help { font-size: 12px; color: #666; margin-top: 6px; }
 .leaflet-container { font: inherit; }
 </style>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 <script src="map.js" defer></script>
 </head>
 <body>
     <div class="container">
         <h1>Tuinplantplanner</h1>
+        <div id="addressGate" class="gate-section">
+            <h2>Welkom! 🌿</h2>
+            <p>Voer het adres van je tuin in om te beginnen. Daarna kun je planten kiezen en je border op de kaart plannen.</p>
+            <div class="gate-row">
+                <input type="text" id="gateAddressInput" placeholder="Bijv. Dorpsstraat 1, Utrecht">
+                <button id="gateAddressBtn">Naar mijn tuin →</button>
+            </div>
+        </div>
+        <p id="addressTitle" class="address-title"></p>
         <div class="section">
             <h2>Plantenlijst</h2>
             <div class="filter-controls">
@@ -120,16 +138,13 @@
     
 <div class="section map-section">
   <h2>Border op de kaart 🗺️</h2>
-  <div class="map-row">
-    <input type="text" id="mapAddressInput" placeholder="Voer je adres in (bv. Dorpsstraat 1, Utrecht)">
-    <button class="btn btn-primary" id="mapAddressBtn">Zoeken 🔍</button>
-  </div>
   <div class="map-controls">
     <select id="mapBorderSelect"><option value="">Kies een border...</option></select>
     <button class="btn btn-primary" id="mapDrawBtn">Border intekenen</button>
     <button class="btn btn-primary" id="mapFinishDrawBtn" style="display:none;">Klaar ✓</button>
     <button class="btn btn-danger" id="mapClearShapeBtn">Tekening wissen</button>
     <button class="btn btn-secondary" id="mapLocateBtn">📍 Mijn locatie</button>
+    <button class="btn btn-secondary" id="changeAddressBtn">✏️ Adres wijzigen</button>
     <label style="font-size:13px; display:flex; align-items:center; gap:4px;"><input type="checkbox" id="mapKadasterToggle" checked> Kadastrale kaart</label>
   </div>
   <div class="map-row" id="mapPlaceRow" style="display:none;">
