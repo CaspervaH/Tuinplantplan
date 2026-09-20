@@ -128,7 +128,7 @@ window.PlantPicker = (function () {
       '.pp-names strong { font-size: 13px; }' +
       '.pp-names em { display: block; font-size: 11px; color: #6c757d; font-style: normal; }' +
       '.pp-meta { margin-left: auto; display: flex; gap: 10px; font-size: 11px; color: #6c757d; white-space: nowrap; }' +
-      '.pp-empty { color: #6c757d; font-size: 13px; padding: 8px 2px; }';
+      '.pp-empty { color: #6c757d; font-size: 13px; padding: 8px 2px; }' +'.pp-summary { background: #f7faf7; border: 1px solid #dee2e6; border-radius: 6px; padding: 10px 12px; margin-top: 12px; }' +'.pp-summary h4 { color: #4a6b4a; font-size: 0.85rem; margin-bottom: 6px; }' +'.pp-sum-colors { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }' +'.pp-sum-chip { display: inline-flex; align-items: center; gap: 5px; background: white; border: 1px solid #dee2e6; border-radius: 12px; padding: 2px 9px 2px 4px; font-size: 12px; }' +'.pp-sum-chip .dot { width: 13px; height: 13px; border-radius: 50%; border: 1px solid #999; }' +'.pp-sum-heights { font-size: 13px; margin-top: 8px; }' +'.pp-sum-months { display: grid; grid-template-columns: repeat(12, 1fr); gap: 3px; margin-top: 10px; }' +'.pp-sum-month { text-align: center; border: 1px solid #dee2e6; border-radius: 4px; padding: 3px 0; background: white; min-width: 0; }' +'.pp-sum-month .c { display: block; font-weight: bold; font-size: 13px; color: #4a6b4a; }' +'.pp-sum-month .m { display: block; font-size: 10px; color: #6c757d; text-transform: uppercase; }' +'.pp-sum-month.bloei { background: #e8f3e2; border-color: #7cb342; }' +'@media (max-width: 600px) { .pp-sum-months { grid-template-columns: repeat(6, 1fr); } }';
     var style = document.createElement('style');
     style.textContent = css;
     document.head.appendChild(style);
@@ -275,8 +275,59 @@ window.PlantPicker = (function () {
     };
   }
 
+  // Gedeelde samenvatting (kleuren, hoogtes, bloei per maand) - gebruikt in
+  // de shortlist-tab van de planner en in de border-editor.
+  function renderSummary(container, plants, opts) {
+    if (!container) return;
+    opts = opts || {};
+    plants = plants || [];
+    injectStyle();
+    if (!plants.length) {
+      container.innerHTML = '<div class="pp-summary"><h4>' + esc(opts.title || 'Samenvatting') + '</h4>' +
+        '<p style="font-size:13px;color:#6c757d;">' + esc(opts.emptyText || 'Vink planten aan om een samenvatting te zien van kleuren, hoogtes en bloeimaanden.') + '</p></div>';
+      return;
+    }
+    var kleuren = {};
+    plants.forEach(function (p) {
+      var k = p.kleur || 'onbekend';
+      kleuren[k] = (kleuren[k] || 0) + 1;
+    });
+    var kleurHtml = Object.keys(kleuren).sort().map(function (k) {
+      return '<span class="pp-sum-chip"><span class="dot" style="background-color:' + colorHex(k) + ';"></span>' +
+        esc(k) + (kleuren[k] > 1 ? ' \u00d7 ' + kleuren[k] : '') + '</span>';
+    }).join('');
+    var laag = 0, midden = 0, hoog = 0, onbekend = 0;
+    plants.forEach(function (p) {
+      var cat = hoogteCategorie(p);
+      if (cat === 'laag') laag++;
+      else if (cat === 'midden') midden++;
+      else if (cat === 'hoog') hoog++;
+      else onbekend++;
+    });
+    var hoogteHtml = 'Laag (&lt;40 cm): <strong>' + laag + '</strong> \u00b7 ' +
+      'Midden (40-80 cm): <strong>' + midden + '</strong> \u00b7 ' +
+      'Hoog (&gt;80 cm): <strong>' + hoog + '</strong>' +
+      (onbekend ? ' \u00b7 Onbekend: <strong>' + onbekend + '</strong>' : '');
+    var counts = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    plants.forEach(function (p) {
+      bloeiMaanden(p).forEach(function (m) { counts[m]++; });
+    });
+    var maandHtml = MONTHS.map(function (m, i) {
+      var c = counts[i];
+      return '<div class="pp-sum-month' + (c > 0 ? ' bloei' : '') + '"' +
+        (c > 0 ? ' title="' + c + ' bloeiende plant' + (c > 1 ? 'en' : '') + '"' : '') + '>' +
+        '<span class="c">' + (c > 0 ? c : '\u00b7') + '</span><span class="m">' + esc(m) + '</span></div>';
+    }).join('');
+    container.innerHTML = '<div class="pp-summary"><h4>' + esc(opts.title || 'Samenvatting') +
+      ' \u2014 ' + plants.length + ' plant(en)</h4>' +
+      '<div class="pp-sum-colors">' + kleurHtml + '</div>' +
+      '<div class="pp-sum-heights">' + hoogteHtml + '</div>' +
+      '<div class="pp-sum-months">' + maandHtml + '</div></div>';
+  }
+
   return {
     create: create,
+    renderSummary: renderSummary,
     monthIndex: monthIndex,
     bloeiMaanden: bloeiMaanden,
     colorHex: colorHex,
