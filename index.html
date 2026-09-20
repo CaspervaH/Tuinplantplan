@@ -63,9 +63,9 @@
         .tabs button.active { background: var(--primary); color: white; border-color: var(--primary); }
         .tab-pane { display: none; }
         .tab-pane.active { display: block; }
-        .backup-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
-        .backup-bar .btn { margin-right: 0; }
-        .backup-panel { background: white; border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 1px 5px rgba(0,0,0,0.1); padding: 12px; margin-bottom: 12px; font-size: 13px; }
+        .tabs button.settings-tab { flex: 0 0 auto; min-width: 46px; margin-left: auto; font-size: 17px; padding: 10px 12px; }
+        .settings-note { font-size: 13px; color: var(--light-text); margin-bottom: 10px; max-width: 640px; }
+        .backup-actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
         @media (min-width: 768px) {
             .plant-list { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
             .genus-group { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
@@ -123,11 +123,12 @@ body.has-address #addressGate { display: none; }
   <div id="gardenMap"></div>
   <p class="map-help">Teken een border door op de kaart te klikken (hoekpunten); dubbelklik of &quot;Klaar&quot; sluit af. De border wordt daarna automatisch aangemaakt en je kunt hem vullen met planten. Klik op een getekende border om deze te bewerken. Kadastrale percellen verschijnen vanaf zoom 14.</p>
 </div>
-<div id="backupDock"></div>
 <nav id="mainTabs" class="tabs">
     <button data-tab="planten">&#127793; Planten</button>
     <button data-tab="borders">&#127807; Borders</button>
     <button data-tab="shortlist">&#128203; Shortlist</button>
+    <button data-tab="ontwerp">&#127795; Tuinontwerp</button>
+    <button data-tab="instellingen" class="settings-tab" title="Instellingen">&#9881;</button>
 </nav>
         <div class="section tab-pane" id="tab-planten" data-tabpane="planten">
             <h2>Plantenlijst</h2>
@@ -167,7 +168,15 @@ body.has-address #addressGate { display: none; }
                 </div>
             </div>
         </div>
-
+        <div class="section tab-pane" id="tab-ontwerp" data-tabpane="ontwerp">
+            <h2>Tuinontwerp</h2>
+            <p class="settings-note">Tuinobjecten uit je ontwerp (paden, terras, gazon, vijver, hagen, ...) staan hier op een rij. Ze worden op de kaart getoond met de &#128208; Ontwerp-toggle rechtsboven in de kaart. Nieuwe objecten importeer je via Instellingen (&#9881;) &rarr; Importeer JSON, borders teken je op de kaart.</p>
+            <div id="gardenObjectList"></div>
+        </div>
+        <div class="section tab-pane" id="tab-instellingen" data-tabpane="instellingen">
+            <h2>Instellingen</h2>
+            <div id="backupDock"></div>
+        </div>
 
     </div>
     <script src="plants.js"></script>
@@ -529,6 +538,43 @@ body.has-address #addressGate { display: none; }
             localStorage.setItem('borders', JSON.stringify(borders));
         }
 
+        // Tuinontwerp: lijst met tuinobjecten (gardenObjects)
+        const GARDEN_OBJECT_TYPES = {
+            terras: '#c8a06a', pad: '#a08a6a', gazon: '#7cb342', border: '#e57373', haag: '#388e3c',
+            moestuin: '#8d6e63', boom: '#2e7d32', vijver: '#4fc3f7', zithoek: '#ffb74d', zandbak: '#fdd835',
+            speeltoestel: '#f06292', vuurplaats: '#ff7043', plantebak: '#9575cd', techniek: '#90a4ae', misc: '#bdbdbd'
+        };
+
+        function readGardenObjects() {
+            try { return JSON.parse(localStorage.getItem('gardenObjects')) || []; } catch (e) { return []; }
+        }
+
+        function renderGardenObjectList() {
+            const listEl = document.getElementById('gardenObjectList');
+            const objects = readGardenObjects();
+            if (!objects.length) {
+                listEl.innerHTML = '<p class="settings-note">Nog geen tuinobjecten. Importeer een ontwerp via Instellingen (&#9881;) &rarr; Importeer JSON, of teken borders op de kaart.</p>';
+                return;
+            }
+            listEl.innerHTML = objects.map(obj =>
+                '<div class="border-item">' +
+                '<span><span class="color-indicator" style="background-color: ' + (obj.color || GARDEN_OBJECT_TYPES[obj.type] || '#cccccc') + '"></span> <strong>' + esc(obj.name || obj.type) + '</strong> <em style="color: var(--light-text);">(' + esc(obj.type) + (obj.materiaal ? ' &middot; ' + esc(obj.materiaal) : '') + ')</em></span>' +
+                '<span><button data-deleteobject="' + esc(obj.id) + '">✕</button></span>' +
+                '</div>'
+            ).join('');
+        }
+
+        document.getElementById('gardenObjectList').addEventListener('click', function (e) {
+            if (e.target && e.target.tagName === 'BUTTON' && e.target.hasAttribute('data-deleteobject')) {
+                const id = e.target.getAttribute('data-deleteobject');
+                if (confirm('Tuinobject verwijderen?')) {
+                    localStorage.setItem('gardenObjects', JSON.stringify(readGardenObjects().filter(o => o.id !== id)));
+                    renderGardenObjectList();
+                    if (typeof window.renderMap === 'function') window.renderMap();
+                }
+            }
+        });
+
         // Tabs (Planten / Borders / Shortlist)
         const tabsEl = document.getElementById('mainTabs');
         function showTab(name) {
@@ -562,6 +608,7 @@ body.has-address #addressGate { display: none; }
         renderPlantList();
         renderShortlist();
         renderBorderList();
+        renderGardenObjectList();
     </script>
 </body>
 </html>
