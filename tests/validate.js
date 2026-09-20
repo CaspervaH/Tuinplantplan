@@ -9,7 +9,7 @@ const err = (msg) => { errors.push(msg); console.error('  \u2717 ' + msg); };
 function main() {
   console.log('== Tuinplantplanner validatie ==\n');
 
-  for (const f of ['index.html', 'map.js', 'border.html', 'border.js']) {
+  for (const f of ['index.html', 'map.js', 'border.html', 'border.js', 'plantpicker.js']) {
     if (!fs.existsSync(f)) { err(f + ' ontbreekt'); return fail(); }
     ok(f + ' bestaat (' + fs.statSync(f).size + ' bytes)');
   }
@@ -17,6 +17,7 @@ function main() {
   const mapJs = fs.readFileSync('map.js', 'utf8');
   const borderHtml = fs.readFileSync('border.html', 'utf8');
   const borderJs = fs.readFileSync('border.js', 'utf8');
+  const pickerJs = fs.readFileSync('plantpicker.js', 'utf8');
 
   // HTML structuur
   for (const [naam, file] of [['index.html', html], ['border.html', borderHtml]]) {
@@ -49,6 +50,8 @@ function main() {
     try { new Function(src); ok(naam + ' parseert'); }
     catch (e) { err(naam + ' SYNTAXFOUT: ' + e.message); }
   }
+  try { new Function(pickerJs); ok('plantpicker.js parseert'); }
+  catch (e) { err('plantpicker.js SYNTAXFOUT: ' + e.message); }
 
   // getElementById-doelen bestaan in de juiste HTML
   function checkIds(jsSources, htmlText, htmlNaam) {
@@ -61,14 +64,14 @@ function main() {
     if (!missing && ids.size) ok('alle ' + ids.size + ' aangesproken element-ids bestaan in ' + htmlNaam);
   }
   checkIds([mapJs, ...scripts], html, 'index.html');
-  checkIds([borderJs, ...borderScripts], borderHtml, 'border.html');
+  checkIds([borderJs, pickerJs, ...borderScripts], borderHtml, 'border.html');
 
   // HTML-specifieke onderdelen
   const htmlMust = {
     'adres-gate': 'id="addressGate"',
     'adres-titel': 'id="addressTitle"',
     'kaart-container': 'id="gardenMap"',
-    'plantenlijst': 'id="plantList"'
+    'plantenlijst': 'id="plantPickerContainer"'
   };
   for (const [naam, needle] of Object.entries(htmlMust)) {
     if (html.includes(needle)) ok('index bevat: ' + naam);
