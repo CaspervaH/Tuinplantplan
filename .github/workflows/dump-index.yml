@@ -1,0 +1,25 @@
+name: Temp dump index
+on:
+  push:
+    paths:
+      - '.github/workflows/dump-index.yml'
+  workflow_dispatch:
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Split index.html in 2 delen
+        run: |
+          mkdir -p _tmpdump
+          split -n 2 -d index.html _tmpdump/index-part-
+      - name: Committen
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add _tmpdump
+          git commit -m "chore: tijdelijke dump van index.html (wordt na verwerking weer verwijderd)"
+          git push
