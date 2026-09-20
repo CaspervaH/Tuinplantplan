@@ -20,6 +20,11 @@
         .back-link { display: inline-block; color: var(--primary); text-decoration: none; font-size: 14px; margin-bottom: 8px; }
         .section { background: white; border-radius: 6px; box-shadow: 0 1px 5px rgba(0,0,0,0.1); padding: 12px; margin-bottom: 12px; }
         .toolbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 10px; }
+        .border-tabs { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+        .border-tabs button { padding: 8px 14px; border: 1px solid var(--border); background: white; border-radius: 6px; cursor: pointer; font-size: 14px; color: var(--light-text); }
+        .border-tabs button.active { background: var(--primary); color: white; border-color: var(--primary); font-weight: bold; }
+        .btab-pane { display: none; }
+        .btab-pane.active { display: block; }
         .layout { display: grid; grid-template-columns: 1fr; gap: 12px; }
         @media (min-width: 900px) { .layout { grid-template-columns: 3fr 2fr; } }
         #shapeWrap { position: relative; background: #f0fff0; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; height: 480px; }
@@ -37,14 +42,24 @@
         .palette-item.selected { border-color: var(--accent); background: #f0ffe0; }
         .palette-item .dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid #999; flex-shrink: 0; }
         .palette-item .status { margin-left: auto; font-size: 11px; color: var(--light-text); white-space: nowrap; }
-        .add-row { display: flex; gap: 6px; margin: 10px 0; flex-wrap: wrap; }
-        .add-row select { padding: 6px; border: 1px solid var(--border); border-radius: 4px; flex: 1; min-width: 180px; font-size: 13px; }
         h3 { color: var(--primary); font-size: 1rem; margin-bottom: 8px; }
         table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
         th, td { padding: 6px; text-align: left; border-bottom: 1px solid var(--border); }
         th { background: var(--primary); color: white; }
         .color-indicator { display: inline-block; width: 14px; height: 14px; border-radius: 3px; border: 1px solid #ccc; vertical-align: middle; }
         .error-box { text-align: center; padding: 30px 10px; }
+        /* Samenvatting onderaan het kiezen-tabblad */
+        .summary-box { background: #f7faf7; border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; margin-top: 12px; }
+        .summary-box h4 { color: var(--primary); font-size: 0.85rem; margin-bottom: 6px; }
+        .sum-colors { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+        .sum-chip { display: inline-flex; align-items: center; gap: 5px; background: white; border: 1px solid var(--border); border-radius: 12px; padding: 2px 9px 2px 4px; font-size: 12px; }
+        .sum-chip .dot { width: 13px; height: 13px; border-radius: 50%; border: 1px solid #999; }
+        .sum-heights { font-size: 13px; color: var(--text); margin-top: 8px; }
+        .sum-months { display: grid; grid-template-columns: repeat(12, 1fr); gap: 3px; margin-top: 10px; }
+        .sum-month { text-align: center; border: 1px solid var(--border); border-radius: 4px; padding: 3px 0; background: white; min-width: 0; }
+        .sum-month .c { display: block; font-weight: bold; font-size: 13px; color: var(--primary); }
+        .sum-month .m { display: block; font-size: 10px; color: var(--light-text); text-transform: uppercase; }
+        .sum-month.bloei { background: #e8f3e2; border-color: var(--accent); }
     </style>
 </head>
 <body>
@@ -65,38 +80,50 @@
                     <button class="btn btn-danger" id="deleteBorderBtn">Border verwijderen</button>
                     <span id="placedInfo" style="font-size: 13px; color: var(--light-text); margin-left: auto;"></span>
                 </div>
-                <div class="layout">
-                    <div>
-                        <div id="shapeWrap">
-                            <svg id="shapeSvg" xmlns="http://www.w3.org/2000/svg">
-                                <g id="viewGroup"></g>
-                            </svg>
-                            <div class="zoom-controls">
-                                <button id="zoomInBtn" title="Inzoomen">+</button>
-                                <button id="zoomOutBtn" title="Uitzoomen">&minus;</button>
-                                <button id="zoomResetBtn" title="Reset weergave">&#8634;</button>
-                            </div>
-                        </div>
-                        <p class="shape-hint" id="shapeHint">Scroll of gebruik +/&minus; om te zoomen, sleep om te verschuiven. Kies rechts een plant en klik in de border om hem te plaatsen. Sleep een plant om te verplaatsen.</p>
+
+                <div class="border-tabs" id="borderTabs">
+                    <button data-btab="plants" class="active">&#127807; Planten kiezen</button>
+                    <button data-btab="place">&#128205; Plaatsen</button>
+                </div>
+
+                <!-- Tab 1: planten uit de shortlist kiezen -->
+                <div class="btab-pane active" id="btab-plants">
+                    <div id="pickerContainer"></div>
+                    <div class="summary-box" id="borderSummary"></div>
+                    <div style="overflow-x: auto;">
+                        <table>
+                            <thead><tr><th>Plant</th><th>Kleur</th><th>Bloei</th><th>Hoogte</th><th>Standplaats</th><th></th></tr></thead>
+                            <tbody id="plantTableBody"></tbody>
+                        </table>
                     </div>
-                    <div>
-                        <h3>Planten in deze border</h3>
-                        <div class="palette-list" id="paletteList"></div>
-                        <div class="add-row">
-                            <select id="addPlantSelect"><option value="">Plant toevoegen (uit shortlist)...</option></select>
-                            <button class="btn btn-primary" id="addPlantBtn">Toevoegen</button>
+                </div>
+
+                <!-- Tab 2: planten op de tekening plaatsen -->
+                <div class="btab-pane" id="btab-place">
+                    <div class="layout">
+                        <div>
+                            <div id="shapeWrap">
+                                <svg id="shapeSvg" xmlns="http://www.w3.org/2000/svg">
+                                    <g id="viewGroup"></g>
+                                </svg>
+                                <div class="zoom-controls">
+                                    <button id="zoomInBtn" title="Inzoomen">+</button>
+                                    <button id="zoomOutBtn" title="Uitzoomen">&minus;</button>
+                                    <button id="zoomResetBtn" title="Reset weergave">&#8634;</button>
+                                </div>
+                            </div>
+                            <p class="shape-hint" id="shapeHint">Scroll of gebruik +/&minus; om te zoomen, sleep om te verschuiven. Kies rechts een plant en klik in de border om hem te plaatsen. Sleep een plant om te verplaatsen.</p>
                         </div>
-                        <div style="overflow-x: auto;">
-                            <table>
-                                <thead><tr><th>Plant</th><th>Kleur</th><th>Bloei</th><th>Hoogte</th><th>Standplaats</th><th></th></tr></thead>
-                                <tbody id="plantTableBody"></tbody>
-                            </table>
+                        <div>
+                            <h3>Planten in deze border</h3>
+                            <div class="palette-list" id="paletteList"></div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+    <script src="plantpicker.js" defer></script>
     <script src="border.js" defer></script>
 </body>
 </html>
