@@ -1,5 +1,7 @@
-// Border-editor: toont de vorm van de border (niet op een kaart) met zoom/pan,
-// planten plaatsen, slepen en verwijderen. Data in localStorage (zelfde als index).
+// Border-editor met twee tabjes: (1) planten kiezen uit de shortlist
+// (herbruikbaar PlantPicker-component + samenvatting) en (2) planten
+// plaatsen op de tekening (zoom/pan, slepen, verwijderen).
+// Data in localStorage (zelfde als index).
 
 (function () {
   'use strict';
@@ -56,6 +58,26 @@
   function saveState() {
     localStorage.setItem('borders', JSON.stringify(borders));
   }
+
+  // ===== Tabjes =====
+  var TAB_KEY = 'borderEditorTab';
+  function setTab(name) {
+    var buttons = document.querySelectorAll('#borderTabs button');
+    buttons.forEach(function (b) {
+      b.classList.toggle('active', b.getAttribute('data-btab') === name);
+    });
+    document.getElementById('btab-plants').classList.toggle('active', name === 'plants');
+    document.getElementById('btab-place').classList.toggle('active', name === 'place');
+    try { localStorage.setItem(TAB_KEY, name); } catch (e) {}
+    if (name === 'place') {
+      // SVG had afmeting 0 terwijl verborgen: view opnieuw toepassen
+      applyView();
+    }
+  }
+  document.getElementById('borderTabs').addEventListener('click', function (e) {
+    var btn = e.target.closest ? e.target.closest('button[data-btab]') : null;
+    if (btn) setTab(btn.getAttribute('data-btab'));
+  });
 
   // ===== Projectie: lat/lng -> lokale meters (afstand-getrouw, zoombaar) =====
   var lat0 = border.shape[0][0];
@@ -245,11 +267,93 @@
     renderAll();
   });
 
-  // ===== Paneel: palette, tabel, tellers =====
+  // ===== Tab 1: planten kiezen uit de shortlist (herbruikbaar component) =====
+  var picker = window.PlantPicker.create({
+    container: document.getElementById('pickerContainer'),
+    plants: shortlist,
+    emptyText: 'Je shortlist is nog leeg. Ga terug naar de planner en vink daar planten aan om ze aan de shortlist toe te voegen.',
+    isChecked: function (name) {
+      return !!plantByName(name);
+    },
+    onToggle: function (plant, checked) {
+      if (checked) {
+        if (plantByName(plant.latijnseNaam)) return;
+        var copy = JSON.parse(JSON.stringify(plant));
+        copy.pos = null;
+        border.plants.push(copy);
+      } else {
+        border.plants = border.plants.filter(function (p) {
+          return p.latijnseNaam !== plant.latijnseNaam;
+        });
+        if (selectedPlant === plant.latijnseNaam) {
+          selectedPlant = null;
+          svg.classList.remove('placing');
+        }
+      }
+      saveState();
+      renderAll();
+    }
+  });
+
+  // ===== Samenvatting: kleuren, hoogtes, bloei per maand =====
+  var MONTHS = window.PlantPicker.MONTHS;
+
+  function renderSummary() {
+    var box = document.getElementById('borderSummary');
+    var plants = border.plants;
+    if (!plants.length) {
+      box.innerHTML = '<h4>Samenvatting</h4><p style="font-size:13px;color:#6c757d;">Vink hierboven planten aan om een samenvatting te zien van kleuren, hoogtes en bloeimaanden.</p>';
+      return;
+    }
+
+    // Kleuren
+    var kleuren = {};
+    plants.forEach(function (p) {
+      var k = p.kleur || 'onbekend';
+      kleuren[k] = (kleuren[k] || 0) + 1;
+    });
+    var kleurHtml = Object.keys(kleuren).sort().map(function (k) {
+      return '<span class="sum-chip"><span class="dot" style="background-color:' + getColorHex(k) + ';"></span>' +
+        esc(k) + (kleuren[k] > 1 ? ' \u00d7 ' + kleuren[k] : '') + '</span>';
+    }).join('');
+
+    // Hoogtes
+    var laag = 0, midden = 0, hoog = 0, onbekend = 0;
+    plants.forEach(function (p) {
+      var cat = window.PlantPicker.hoogteCategorie(p);
+      if (cat === 'laag') laag++;
+      else if (cat === 'midden') midden++;
+      else if (cat === 'hoog') hoog++;
+      else onbekend++;
+    });
+    var hoogteHtml = '\ud83c\udf31 Laag (&lt;40 cm): <strong>' + laag + '</strong> \u00b7 ' +
+      'Midden (40-80 cm): <strong>' + midden + '</strong> \u00b7 ' +
+      'Hoog (&gt;80 cm): <strong>' + hoog + '</strong>' +
+      (onbekend ? ' \u00b7 Onbekend: <strong>' + onbekend + '</strong>' : '');
+
+    // Bloeimaanden
+    var counts = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    plants.forEach(function (p) {
+      window.PlantPicker.bloeiMaanden(p).forEach(function (m) { counts[m]++; });
+    });
+    var maandHtml = MONTHS.map(function (m, i) {
+      var c = counts[i];
+      return '<div class="sum-month' + (c > 0 ? ' bloei' : '') + '"' +
+        (c > 0 ? ' title="' + c + ' bloeiende plant' + (c > 1 ? 'en' : '') + '"' : '') + '>' +
+        '<span class="c">' + (c > 0 ? c : '\u00b7') + '</span><span class="m">' + esc(m) + '</span></div>';
+    }).join('');
+
+    box.innerHTML = '<h4>Samenvatting van ' + plants.length + ' gekozen plant(en)</h4>' +
+      '<div class="sum-colors">' + kleurHtml + '</div>' +
+      '<div class="sum-heights">' + hoogteHtml + '</div>' +
+      '<div class="sum-months">' + maandHtml + '</div>';
+  }
+
+  // ===== Tab 2-paneel: palette =====
   function renderPalette() {
     var list = document.getElementById('paletteList');
     if (border.plants.length === 0) {
-      list.innerHTML = '<p style="font-size:13px;color:#6c757d;">Nog geen planten in deze border. Voeg hieronder planten uit je shortlist toe.</p>';
+      list.innerHTML = '<p style="font-size:13px;color:#6c757d;">Nog geen planten in deze border. Kies ze in het tabje Planten kiezen.</p>';
       return;
     }
     list.innerHTML = border.plants.map(function (p) {
@@ -297,30 +401,6 @@
     saveState(); renderAll();
   });
 
-  function renderAddSelect() {
-    var sel = document.getElementById('addPlantSelect');
-    var available = shortlist.filter(function (p) {
-      return !border.plants.some(function (bp) { return bp.latijnseNaam === p.latijnseNaam; });
-    });
-    sel.innerHTML = '<option value="">Plant toevoegen (uit shortlist)...</option>' +
-      available.map(function (p) {
-        return '<option value="' + esc(p.latijnseNaam) + '">' + esc(p.latijnseNaam) + ' - ' + esc(p.nlNaam) + '</option>';
-      }).join('');
-  }
-
-  document.getElementById('addPlantBtn').addEventListener('click', function () {
-    var sel = document.getElementById('addPlantSelect');
-    if (!sel.value) return;
-    var plant = shortlist.find(function (p) { return p.latijnseNaam === sel.value; });
-    if (!plant) return;
-    var copy = JSON.parse(JSON.stringify(plant));
-    copy.pos = null;
-    border.plants.push(copy);
-    selectedPlant = copy.latijnseNaam;
-    svg.classList.add('placing');
-    saveState(); renderAll();
-  });
-
   function renderHeader() {
     document.title = border.name + ' \u2013 Tuinplantplanner';
     document.getElementById('borderTitle').textContent = border.name;
@@ -333,10 +413,11 @@
 
   function renderAll() {
     renderHeader();
+    picker.refresh();
+    renderSummary();
     renderPalette();
     drawAllMarkers();
     renderTable();
-    renderAddSelect();
     applyView();
   }
 
@@ -380,5 +461,12 @@
     window.location.href = 'index.html';
   });
 
+  // ===== Start =====
+  var startTab = 'plants';
+  try {
+    var saved = localStorage.getItem(TAB_KEY);
+    if (saved === 'plants' || saved === 'place') startTab = saved;
+  } catch (e) {}
+  setTab(startTab);
   renderAll();
 })();
