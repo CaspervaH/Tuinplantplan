@@ -32,6 +32,52 @@ var mapShapeLayer = L.layerGroup().addTo(gardenMap);
 var mapObjectLayer = L.layerGroup().addTo(gardenMap);
 var mapMarkerLayer = L.layerGroup().addTo(gardenMap);
 var vertexLayer = L.layerGroup().addTo(gardenMap);
+var distLayer = L.layerGroup().addTo(gardenMap);
+
+// ===== Afstanden tussen hoekpunten (echte meters uit de coördinaten) =====
+function distanceMeters(a, b) {
+  var R = 6371000;
+  var dLat = (b[0] - a[0]) * Math.PI / 180;
+  var dLng = (b[1] - a[1]) * Math.PI / 180;
+  var la1 = a[0] * Math.PI / 180, la2 = b[0] * Math.PI / 180;
+  var h = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(la1) * Math.cos(la2) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+function fmtDist(m) {
+  if (m < 1) return Math.round(m * 100) + ' cm';
+  if (m < 10) return (Math.round(m * 10) / 10).toString().replace('.', ',') + ' m';
+  return Math.round(m) + ' m';
+}
+
+function shapeIsClosed(kind, obj) {
+  if (kind === 'border') return true;
+  return !!(obj && obj.closed && obj.shape && obj.shape.length >= 3);
+}
+
+function showDistances(points, closed) {
+  distLayer.clearLayers();
+  if (!points || points.length < 2) return;
+  var total = 0;
+  var n = closed ? points.length : points.length - 1;
+  for (var i = 0; i < n; i++) {
+    var a = points[i], b = points[(i + 1) % points.length];
+    var d = distanceMeters(a, b);
+    total += d;
+    L.marker([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], {
+      interactive: false,
+      icon: L.divIcon({ className: 'dist-label', iconSize: [0, 0], html: fmtDist(d) })
+    }).addTo(distLayer);
+  }
+  var cx = 0, cy = 0;
+  points.forEach(function (p) { cx += p[0]; cy += p[1]; });
+  L.marker([cx / points.length, cy / points.length], {
+    interactive: false,
+    icon: L.divIcon({ className: 'dist-label dist-total', iconSize: [0, 0],
+      html: (closed ? 'Omtrek: ' : 'Lengte: ') + fmtDist(total) })
+  }).addTo(distLayer);
+}
 
 // ===== Adres-gate =====
 function geocodeAddress(q, onSuccess, onFail) {
@@ -267,6 +313,7 @@ function setDrawMode(on, kind) {
   drawMode = on;
   drawKind = on ? (kind || 'border') : null;
   drawPoints = [];
+  distLayer.clearLayers();
   if (drawPreview) { gardenMap.removeLayer(drawPreview); drawPreview = null; }
   if (on) setEditVertices(false);
   document.getElementById('mapDrawBtn').style.display = on ? 'none' : '';
@@ -339,6 +386,7 @@ gardenMap.on('click', function (e) {
   drawPoints.push([e.latlng.lat, e.latlng.lng]);
   if (drawPreview) gardenMap.removeLayer(drawPreview);
   drawPreview = L.polyline(drawPoints, { color: '#2e7d32', dashArray: '6 4', weight: 3 }).addTo(gardenMap);
+  showDistances(drawPoints, false);
 });
 
 gardenMap.on('dblclick', function () { if (drawMode) finishDraw(); });
@@ -346,7 +394,9 @@ gardenMap.on('dblclick', function () { if (drawMode) finishDraw(); });
 // ===== Hoekpunten van vormen slepen (borders en tuinobjecten) =====
 (function () {
   var st = document.createElement('style');
-  st.textContent = '.vertex-marker { width: 14px; height: 14px; background: #1565c0; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,.4); cursor: move; }';
+  st.textContent = '.vertex-marker { width: 14px; height: 14px; background: #1565c0; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,.4); cursor: move; }' +
+    '.dist-label { background: rgba(255,255,255,.92); color: #1565c0; font-size: 11px; font-weight: 600; padding: 1px 5px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.35); white-space: nowrap; transform: translate(-50%, -50%); pointer-events: none; }' +
+    '.dist-total { color: #2e7d32; font-weight: 700; }';
   document.head.appendChild(st);
 })();
 
@@ -356,6 +406,7 @@ function setEditVertices(on) {
   if (!on) {
     selectedShape = null;
     vertexLayer.clearLayers();
+    distLayer.clearLayers();
   }
   var btn = document.getElementById('mapEditShapeBtn');
   if (btn) btn.textContent = on ? '\u2705 Klaar met slepen' : '\uD83D\uDCB0 Hoekpunten slepen';
@@ -377,6 +428,7 @@ function selectShape(kind, obj, arr) {
       obj.shape[i] = [ll.lat, ll.lng];
       if (kind === 'border') renderMap();
       else renderGardenObjects();
+      showDistances(obj.shape, shapeIsClosed(kind, obj));
     });
     mk.on('dragend', function () { saveShapeEdit(); });
     mk.on('contextmenu', function () {
@@ -390,6 +442,7 @@ function selectShape(kind, obj, arr) {
       selectShape(kind, obj, arr);
     });
   });
+  showDistances(obj.shape, shapeIsClosed(kind, obj));
   renderMap();
 }
 
