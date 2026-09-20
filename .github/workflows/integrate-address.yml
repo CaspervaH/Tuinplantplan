@@ -1,0 +1,23 @@
+name: Integrate address.js
+on:
+  push:
+    paths: ['.github/workflows/integrate-address.yml']
+  workflow_dispatch:
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          if grep -q 'address.js' index.html; then
+            echo "al geintegreerd"
+          else
+            sed -i 's|<script src="map.js" defer></script>|<script src="map.js" defer></script>\n<script src="address.js" defer></script>|' index.html
+            git add index.html
+            git commit -m "index.html: address.js toevoegen (adres-gate hersteld)"
+            git push
+          fi
