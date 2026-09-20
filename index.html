@@ -111,18 +111,6 @@ body.has-address #addressGate { display: none; }
             </div>
         </div>
         <p id="addressTitle" class="address-title"></p>
-<div class="section map-section">
-  <h2>Tuin &amp; borders op de kaart &#128506;</h2>
-  <div class="map-controls">
-    <button class="btn btn-primary" id="mapDrawBtn">Border intekenen</button>
-    <button class="btn btn-primary" id="mapFinishDrawBtn" style="display:none;">Klaar &#10003;</button>
-    <button class="btn btn-secondary" id="mapLocateBtn">&#128205; Mijn locatie</button>
-    <button class="btn btn-secondary" id="changeAddressBtn">&#9998; Adres wijzigen</button>
-    <label style="font-size:13px; display:flex; align-items:center; gap:4px;"><input type="checkbox" id="mapKadasterToggle" checked> Kadastrale kaart</label>
-  </div>
-  <div id="gardenMap"></div>
-  <p class="map-help">Teken een border door op de kaart te klikken (hoekpunten); dubbelklik of &quot;Klaar&quot; sluit af. De border wordt daarna automatisch aangemaakt en je kunt hem vullen met planten. Klik op een getekende border om deze te bewerken. Kadastrale percellen verschijnen vanaf zoom 14.</p>
-</div>
 <nav id="mainTabs" class="tabs">
     <button data-tab="planten">&#127793; Planten</button>
     <button data-tab="borders">&#127807; Borders</button>
@@ -137,6 +125,7 @@ body.has-address #addressGate { display: none; }
         <div class="section shortlist-section tab-pane" id="tab-shortlist" data-tabpane="shortlist">
             <h2>Shortlist (<span id="shortlistCount">0</span> planten)</h2>
             <div class="shortlist-grid" id="shortlist"></div>
+            <div id="shortlistSummary"></div>
             <button class="btn btn-danger" id="clearShortlistBtn">Shortlist leegmaken</button>
         </div>
         <div class="section border-section tab-pane" id="tab-borders" data-tabpane="borders">
@@ -165,7 +154,22 @@ body.has-address #addressGate { display: none; }
         </div>
         <div class="section tab-pane" id="tab-ontwerp" data-tabpane="ontwerp">
             <h2>Tuinontwerp</h2>
-            <p class="settings-note">Tuinobjecten uit je ontwerp (paden, terras, gazon, vijver, hagen, ...) staan hier op een rij. Ze worden op de kaart getoond met de &#128208; Ontwerp-toggle rechtsboven in de kaart. Nieuwe objecten importeer je via Instellingen (&#9881;) &rarr; Importeer JSON, borders teken je op de kaart.</p>
+            <div class="section map-section">
+  <h3>Tuin &amp; borders op de kaart &#128506;</h3>
+  <div class="map-controls">
+    <select id="mapDrawType" title="Welke vorm wil je tekenen?"></select>
+    <button class="btn btn-primary" id="mapDrawBtn">Vorm intekenen</button>
+    <button class="btn btn-primary" id="mapFinishDrawBtn" style="display:none;">Klaar &#10003;</button>
+    <button class="btn btn-secondary" id="mapEditShapeBtn">&#128070; Hoekpunten slepen</button>
+    <button class="btn btn-secondary" id="mapLocateBtn">&#128205; Mijn locatie</button>
+    <button class="btn btn-secondary" id="changeAddressBtn">&#9998; Adres wijzigen</button>
+    <label style="font-size:13px; display:flex; align-items:center; gap:4px;"><input type="checkbox" id="mapKadasterToggle" checked> Kadastrale kaart</label>
+  </div>
+  <div id="gardenMap"></div>
+  <p class="map-help">Kies links een vorm (border, terras, pad, haag, gazon, vijver, ...) en klik de hoekpunten op de kaart; dubbelklik of &quot;Klaar&quot; sluit af. Met &quot;Hoekpunten slepen&quot; kun je daarna elk hoekpunt van een getekende vorm verslepen (rechtsklik op een hoekpunt verwijdert het punt). Klik op een border om planten toe te voegen. Kadastrale percellen verschijnen vanaf zoom 14.</p>
+</div>
+
+            <p class="settings-note">Teken hier je tuinontwerp op de kaart: borders, terras, paden, hagen, gazon, vijver, ... Kies boven de kaart een vorm, klik de hoekpunten aan en sleep ze daarna desgewenst met &quot;Hoekpunten slepen&quot; naar de juiste plek. Onder de kaart staat de lijst met getekende tuinobjecten (via Instellingen kun je ook een ontwerp-JSON importeren).</p>
             <div id="gardenObjectList"></div>
         </div>
         <div class="section tab-pane" id="tab-instellingen" data-tabpane="instellingen">
@@ -265,6 +269,7 @@ body.has-address #addressGate { display: none; }
         });
 function renderShortlist() {
             shortlistCountEl.textContent = shortlist.length;
+            PlantPicker.renderSummary(document.getElementById('shortlistSummary'), shortlist, { title: 'Shortlist-samenvatting' });
             shortlistEl.innerHTML = shortlist.map(plant => {
                 const colorHex = getColorHex(plant.kleur);
                 const name = esc(plant.latijnseNaam);
@@ -497,6 +502,10 @@ function renderShortlist() {
                 p.classList.toggle('active', p.getAttribute('data-tabpane') === name);
             });
             try { localStorage.setItem('activeTab', name); } catch (e) { }
+            if (name === 'ontwerp' && window.gardenMap) {
+                setTimeout(function () { gardenMap.invalidateSize(); }, 50);
+                setTimeout(function () { gardenMap.invalidateSize(); }, 400);
+            }
         }
         tabsEl.addEventListener('click', function (e) {
             const btn = e.target.closest ? e.target.closest('button[data-tab]') : null;
