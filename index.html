@@ -58,6 +58,14 @@
         .btn-primary { background: var(--primary); color: white; }
         .btn-secondary { background: var(--secondary); color: var(--text); border: 1px solid var(--border); }
         .btn-danger { background: #ff6b6b; color: white; }
+        .tabs { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+        .tabs button { flex: 1; min-width: 110px; padding: 10px 12px; border: 1px solid var(--border); background: white; color: var(--text); border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; }
+        .tabs button.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
+        .backup-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+        .backup-bar .btn { margin-right: 0; }
+        .backup-panel { background: white; border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 1px 5px rgba(0,0,0,0.1); padding: 12px; margin-bottom: 12px; font-size: 13px; }
         @media (min-width: 768px) {
             .plant-list { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
             .genus-group { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
@@ -77,6 +85,8 @@
 .address-title { text-align: center; color: var(--light-text); font-size: 1rem; margin-bottom: 12px; }
 body:not(.has-address) .section { display: none; }
 body:not(.has-address) .address-title { display: none; }
+body:not(.has-address) #mainTabs { display: none; }
+body:not(.has-address) #backupDock { display: none; }
 body.has-address #addressGate { display: none; }
 .map-section { background: #f0f8ff; border-left: 3px solid #4682b4; }
 .map-controls { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; align-items: center; }
@@ -101,7 +111,25 @@ body.has-address #addressGate { display: none; }
             </div>
         </div>
         <p id="addressTitle" class="address-title"></p>
-        <div class="section">
+<div class="section map-section">
+  <h2>Tuin &amp; borders op de kaart &#128506;</h2>
+  <div class="map-controls">
+    <button class="btn btn-primary" id="mapDrawBtn">Border intekenen</button>
+    <button class="btn btn-primary" id="mapFinishDrawBtn" style="display:none;">Klaar &#10003;</button>
+    <button class="btn btn-secondary" id="mapLocateBtn">&#128205; Mijn locatie</button>
+    <button class="btn btn-secondary" id="changeAddressBtn">&#9998; Adres wijzigen</button>
+    <label style="font-size:13px; display:flex; align-items:center; gap:4px;"><input type="checkbox" id="mapKadasterToggle" checked> Kadastrale kaart</label>
+  </div>
+  <div id="gardenMap"></div>
+  <p class="map-help">Teken een border door op de kaart te klikken (hoekpunten); dubbelklik of &quot;Klaar&quot; sluit af. De border wordt daarna automatisch aangemaakt en je kunt hem vullen met planten. Klik op een getekende border om deze te bewerken. Kadastrale percellen verschijnen vanaf zoom 14.</p>
+</div>
+<div id="backupDock"></div>
+<nav id="mainTabs" class="tabs">
+    <button data-tab="planten">&#127793; Planten</button>
+    <button data-tab="borders">&#127807; Borders</button>
+    <button data-tab="shortlist">&#128203; Shortlist</button>
+</nav>
+        <div class="section tab-pane" id="tab-planten" data-tabpane="planten">
             <h2>Plantenlijst</h2>
             <div class="filter-controls">
                 <input type="text" id="searchInput" placeholder="Zoeken...">
@@ -110,12 +138,12 @@ body.has-address #addressGate { display: none; }
             </div>
             <div class="plant-list" id="plantList"></div>
         </div>
-        <div class="section shortlist-section">
+        <div class="section shortlist-section tab-pane" id="tab-shortlist" data-tabpane="shortlist">
             <h2>Shortlist (<span id="shortlistCount">0</span> planten)</h2>
             <div class="shortlist-grid" id="shortlist"></div>
             <button class="btn btn-danger" id="clearShortlistBtn">Shortlist leegmaken</button>
         </div>
-        <div class="section border-section">
+        <div class="section border-section tab-pane" id="tab-borders" data-tabpane="borders">
             <h2>Border Planner</h2>
             <button class="add-border-btn" id="addBorderBtn">Nieuwe border aanmaken</button>
             <div class="border-list" id="borderList"></div>
@@ -140,18 +168,6 @@ body.has-address #addressGate { display: none; }
             </div>
         </div>
 
-<div class="section map-section">
-  <h2>Tuin &amp; borders op de kaart &#128506;</h2>
-  <div class="map-controls">
-    <button class="btn btn-primary" id="mapDrawBtn">Border intekenen</button>
-    <button class="btn btn-primary" id="mapFinishDrawBtn" style="display:none;">Klaar &#10003;</button>
-    <button class="btn btn-secondary" id="mapLocateBtn">&#128205; Mijn locatie</button>
-    <button class="btn btn-secondary" id="changeAddressBtn">&#9998; Adres wijzigen</button>
-    <label style="font-size:13px; display:flex; align-items:center; gap:4px;"><input type="checkbox" id="mapKadasterToggle" checked> Kadastrale kaart</label>
-  </div>
-  <div id="gardenMap"></div>
-  <p class="map-help">Teken een border door op de kaart te klikken (hoekpunten); dubbelklik of &quot;Klaar&quot; sluit af. De border wordt daarna automatisch aangemaakt en je kunt hem vullen met planten. Klik op een getekende border om deze te bewerken. Kadastrale percellen verschijnen vanaf zoom 14.</p>
-</div>
 
     </div>
     <script src="plants.js"></script>
@@ -512,6 +528,25 @@ body.has-address #addressGate { display: none; }
             localStorage.setItem('shortlist', JSON.stringify(shortlist));
             localStorage.setItem('borders', JSON.stringify(borders));
         }
+
+        // Tabs (Planten / Borders / Shortlist)
+        const tabsEl = document.getElementById('mainTabs');
+        function showTab(name) {
+            tabsEl.querySelectorAll('button').forEach(function (b) {
+                b.classList.toggle('active', b.getAttribute('data-tab') === name);
+            });
+            document.querySelectorAll('[data-tabpane]').forEach(function (p) {
+                p.classList.toggle('active', p.getAttribute('data-tabpane') === name);
+            });
+            try { localStorage.setItem('activeTab', name); } catch (e) { }
+        }
+        tabsEl.addEventListener('click', function (e) {
+            const btn = e.target.closest ? e.target.closest('button[data-tab]') : null;
+            if (btn) showTab(btn.getAttribute('data-tab'));
+        });
+        let activeTab = 'planten';
+        try { activeTab = localStorage.getItem('activeTab') || 'planten'; } catch (e) { }
+        showTab(activeTab);
 
         // Event listeners
         document.getElementById('searchInput').addEventListener('input', renderPlantList);
