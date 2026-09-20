@@ -4,7 +4,7 @@
 //
 // Gebruik:
 //   var picker = PlantPicker.create({
-//     container: document.getElementById('...'),
+//     container: eenContainerElement,
 //     plants: [...],                  // array plant-objecten
 //     isChecked: function (latijnseNaam) { ... return bool; },
 //     onToggle: function (plant, checked) { ... },
