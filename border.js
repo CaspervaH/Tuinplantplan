@@ -295,58 +295,9 @@
     }
   });
 
-  // ===== Samenvatting: kleuren, hoogtes, bloei per maand =====
-  var MONTHS = window.PlantPicker.MONTHS;
-
+  // ===== Samenvatting: kleuren, hoogtes, bloei per maand (gedeeld component) =====
   function renderSummary() {
-    var box = document.getElementById('borderSummary');
-    var plants = border.plants;
-    if (!plants.length) {
-      box.innerHTML = '<h4>Samenvatting</h4><p style="font-size:13px;color:#6c757d;">Vink hierboven planten aan om een samenvatting te zien van kleuren, hoogtes en bloeimaanden.</p>';
-      return;
-    }
-
-    // Kleuren
-    var kleuren = {};
-    plants.forEach(function (p) {
-      var k = p.kleur || 'onbekend';
-      kleuren[k] = (kleuren[k] || 0) + 1;
-    });
-    var kleurHtml = Object.keys(kleuren).sort().map(function (k) {
-      return '<span class="sum-chip"><span class="dot" style="background-color:' + getColorHex(k) + ';"></span>' +
-        esc(k) + (kleuren[k] > 1 ? ' \u00d7 ' + kleuren[k] : '') + '</span>';
-    }).join('');
-
-    // Hoogtes
-    var laag = 0, midden = 0, hoog = 0, onbekend = 0;
-    plants.forEach(function (p) {
-      var cat = window.PlantPicker.hoogteCategorie(p);
-      if (cat === 'laag') laag++;
-      else if (cat === 'midden') midden++;
-      else if (cat === 'hoog') hoog++;
-      else onbekend++;
-    });
-    var hoogteHtml = '\ud83c\udf31 Laag (&lt;40 cm): <strong>' + laag + '</strong> \u00b7 ' +
-      'Midden (40-80 cm): <strong>' + midden + '</strong> \u00b7 ' +
-      'Hoog (&gt;80 cm): <strong>' + hoog + '</strong>' +
-      (onbekend ? ' \u00b7 Onbekend: <strong>' + onbekend + '</strong>' : '');
-
-    // Bloeimaanden
-    var counts = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    plants.forEach(function (p) {
-      window.PlantPicker.bloeiMaanden(p).forEach(function (m) { counts[m]++; });
-    });
-    var maandHtml = MONTHS.map(function (m, i) {
-      var c = counts[i];
-      return '<div class="sum-month' + (c > 0 ? ' bloei' : '') + '"' +
-        (c > 0 ? ' title="' + c + ' bloeiende plant' + (c > 1 ? 'en' : '') + '"' : '') + '>' +
-        '<span class="c">' + (c > 0 ? c : '\u00b7') + '</span><span class="m">' + esc(m) + '</span></div>';
-    }).join('');
-
-    box.innerHTML = '<h4>Samenvatting van ' + plants.length + ' gekozen plant(en)</h4>' +
-      '<div class="sum-colors">' + kleurHtml + '</div>' +
-      '<div class="sum-heights">' + hoogteHtml + '</div>' +
-      '<div class="sum-months">' + maandHtml + '</div>';
+    window.PlantPicker.renderSummary(document.getElementById('borderSummary'), border.plants);
   }
 
   // ===== Tab 2-paneel: palette =====
