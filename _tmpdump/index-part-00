@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tuinplantplanner</title>
+    <style>
+        :root {
+            --primary: #4a6b4a;
+            --secondary: #f8f9fa;
+            --accent: #7cb342;
+            --border: #dee2e6;
+            --text: #212529;
+            --light-text: #6c757d;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f5f7f5; color: var(--text); line-height: 1.6; padding: 10px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 { color: var(--primary); text-align: center; margin-bottom: 15px; font-size: 1.5rem; }
+        h2 { color: var(--primary); margin-bottom: 10px; font-size: 1.2rem; border-bottom: 2px solid var(--accent); padding-bottom: 5px; }
+        h3 { color: var(--primary); margin-bottom: 8px; font-size: 1rem; }
+        h4 { color: var(--primary); margin-bottom: 6px; font-size: 0.9rem; }
+        .section { background: white; border-radius: 6px; box-shadow: 0 1px 5px rgba(0,0,0,0.1); padding: 12px; margin-bottom: 12px; }
+        .shortlist-section { background: #fff9f0; border-left: 3px solid var(--accent); }
+        .border-section { background: #f0fff0; border-left: 3px solid var(--primary); }
+        .filter-controls { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+        .filter-controls input, .filter-controls select { padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; flex: 1; min-width: 140px; }
+        .filter-controls input[type="text"] { flex: 2; }
+        .plant-list { display: grid; grid-template-columns: 1fr; gap: 8px; margin-bottom: 12px; }
+        .plant-card { border: 1px solid var(--border); border-radius: 4px; padding: 10px; background: white; }
+        .plant-card.selected { border-color: var(--accent); background-color: #f0ffe0; }
+        .plant-card input[type="checkbox"] { margin-right: 8px; }
+        .genus-group { display: grid; grid-template-columns: 1fr; gap: 8px; grid-column: 1 / -1; }
+        .genus-header { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 4px 0; border-bottom: 1px solid var(--accent); }
+        .genus-header strong { color: var(--primary); font-size: 0.95rem; }
+        .genus-header .genus-count { font-size: 12px; color: var(--light-text); }
+        .genus-btn { background: var(--secondary); color: var(--primary); border: 1px solid var(--border); border-radius: 3px; padding: 2px 8px; cursor: pointer; font-size: 11px; margin-left: auto; }
+        .plant-name { font-weight: bold; color: var(--primary); margin-bottom: 3px; font-size: 0.9rem; }
+        .plant-details { font-size: 12px; color: var(--light-text); margin-top: 5px; }
+        .plant-details span { margin-right: 8px; display: inline-block; margin-bottom: 3px; }
+        .color-indicator { display: inline-block; width: 14px; height: 14px; border-radius: 3px; margin-right: 4px; border: 1px solid #ccc; vertical-align: middle; }
+        .shortlist-grid { display: grid; grid-template-columns: 1fr; gap: 6px; }
+        .shortlist-item { background: white; padding: 8px; border-radius: 4px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .shortlist-item button { background: #ff6b6b; color: white; border: none; border-radius: 3px; padding: 2px 6px; cursor: pointer; font-size: 11px; }
+        .border-list { margin-bottom: 12px; }
+        .border-item { background: white; padding: 8px 10px; border-radius: 4px; border: 1px solid var(--border); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .border-item.active { background: #e8f5e8; border-color: var(--accent); }
+        .border-item button { background: var(--primary); color: white; border: none; border-radius: 3px; padding: 3px 6px; cursor: pointer; margin-left: 6px; font-size: 11px; }
+        .border-plant-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+        .border-plant-table th, .border-plant-table td { padding: 6px; text-align: left; border-bottom: 1px solid var(--border); }
+        .border-plant-table th { background: var(--primary); color: white; font-weight: bold; }
+        .add-border-btn { background: var(--accent); color: white; border: none; border-radius: 4px; padding: 8px 12px; cursor: pointer; font-size: 14px; margin-bottom: 10px; width: 100%; }
+        .add-plant-section { margin-top: 12px; padding: 10px; background: #e8f5e8; border-radius: 4px; }
+        .add-plant-section select { padding: 6px; border-radius: 4px; border: 1px solid var(--border); margin-right: 6px; min-width: 160px; font-size: 13px; }
+        .add-plant-section button { background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; padding: 6px 10px; font-size: 13px; }
+        .hidden { display: none; }
+        .btn { padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 4px; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-secondary { background: var(--secondary); color: var(--text); border: 1px solid var(--border); }
+        .btn-danger { background: #ff6b6b; color: white; }
+        .tabs { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+        .tabs button { flex: 1; min-width: 110px; padding: 10px 12px; border: 1px solid var(--border); background: white; color: var(--text); border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; }
+        .tabs button.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
+        .tabs button.settings-tab { flex: 0 0 auto; min-width: 46px; margin-left: auto; font-size: 17px; padding: 10px 12px; }
+        .settings-note { font-size: 13px; color: var(--light-text); margin-bottom: 10px; max-width: 640px; }
+        .backup-actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+        @media (min-width: 768px) {
+            .plant-list { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+            .genus-group { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+            .filter-controls { flex-wrap: nowrap; }
+            .filter-controls input, .filter-controls select { min-width: 180px; }
+            .shortlist-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+        }
+    </style>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+.gate-section { background: #fff9f0; border-left: 3px solid var(--accent); text-align: center; padding: 24px 12px; }
+.gate-section p { color: var(--light-text); margin-bottom: 12px; }
+.gate-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.gate-row input { padding: 10px; border-radius: 4px; border: 1px solid var(--border); flex: 1; min-width: 220px; max-width: 420px; font-size: 15px; }
+.gate-row button { background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; padding: 10px 18px; font-size: 15px; }
+.address-title { text-align: center; color: var(--light-text); font-size: 1rem; margin-bottom: 12px; }
+body:not(.has-address) .section { display: none; }
+body:not(.has-address) .address-title { display: none; }
+body:not(.has-address) #mainTabs { display: none; }
+body:not(.has-address) #backupDock { display: none; }
+body.has-address #addressGate { display: none; }
+.map-section { background: #f0f8ff; border-left: 3px solid #4682b4; }
+.map-controls { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; align-items: center; }
+.map-controls select { padding: 6px; border-radius: 4px; border: 1px solid var(--border); min-width: 160px; }
+#gardenMap { height: 420px; border-radius: 6px; border: 1px solid var(--border); }
+.map-help { font-size: 12px; color: #666; margin-top: 6px; }
+.leaflet-container { font: inherit; }
+</style>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+<script src="map.js" defer></script>
+<script src="photos.js" defer></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Tuinplantplanner</h1>
+        <div id="addressGate" class="gate-section">
+            <h2>Welkom! &#127807;</h2>
+            <p>Voer het adres van je tuin in om te beginnen. Daarna kun je planten kiezen en je border op de kaart plannen.</p>
+            <div class="gate-row">
+                <input type="text" id="gateAddressInput" placeholder="Bijv. Dorpsstraat 1, Utrecht">
+                <button id="gateAddressBtn">Naar mijn tuin &rarr;</button>
+            </div>
+        </div>
+        <p id="addressTitle" class="address-title"></p>
+<nav id="mainTabs" class="tabs">
+    <button data-tab="planten">&#127793; Planten</button>
+    <button data-tab="borders">&#127807; Borders</button>
+    <button data-tab="shortlist">&#128203; Shortlist</button>
+    <button data-tab="ontwerp">&#127795; Tuinontwerp</button>
+    <button data-tab="instellingen" class="settings-tab" title="Instellingen">&#9881;</button>
+</nav>
+        <div class="section tab-pane" id="tab-planten" data-tabpane="planten">
+            <h2>Plantenlijst</h2>
+            <div id="plantPickerContainer"></div>
+        </div>
+        <div class="section shortlist-section tab-pane" id="tab-shortlist" data-tabpane="shortlist">
+            <h2>Shortlist (<span id="shortlistCount">0</span> planten)</h2>
+            <div class="shortlist-grid" id="shortlist"></div>
+            <div id="shortlistSummary"></div>
+            <button class="btn btn-danger" id="clearShortlistBtn">Shortlist leegmaken</button>
+        </div>
+        <div class="section border-section tab-pane" id="tab-borders" data-tabpane="borders">
+            <h2>Border Planner</h2>
+            <button class="add-border-btn" id="addBorderBtn">Nieuwe border aanmaken</button>
+            <div class="border-list" id="borderList"></div>
+            <div id="activeBorderSection" class="hidden">
+                <h3 id="activeBorderName"></h3>
+                <div class="add-plant-section">
+                    <h4>Plant toevoegen:</h4>
+                    <select id="addPlantSelect"><option value="">Selecteer een plant...</option></select>
+                    <button class="btn btn-primary" id="addPlantToBorderBtn">Toevoegen</button>
+                </div>
+                <h4>Plantoverzicht:</h4>
+                <div style="overflow-x: auto;">
+                    <table class="border-plant-table">
+                        <thead><tr><th>Plant</th><th>Kleur</th><th>Bloei van</th><th>Bloei tot</th><th>Hoogte van</th><th>Hoogte tot</th><th>Standplaats</th><th>Actie</th></tr></thead>
+                        <tbody id="borderPlantTableBody"></tbody>
+                    </table>
+                </div>
+                <div style="margin-top: 8px;">
+                    <button class="btn btn-secondary" id="closeBorderBtn">Sluiten</button>
+                    <button class="btn btn-danger" id="clearBorderBtn">Border leegmaken</button>
+                </div>
+            </div>
+        </div>
+        <div class="section tab-pane" id="tab-ontwerp" data-tabpane="ontwerp">
+            <h2>Tuinontwerp</h2>
+            <div class="section map-section">
+  <h3>Tuin &amp; borders op de kaart &#128506;</h3>
+  <div class="map-controls">
+    <select id="mapDrawType" title="Welke vorm wil je tekenen?"></select>
+    <button class="btn btn-primary" id="mapDrawBtn">Vorm intekenen</button>
+    <button class="btn btn-primary" id="mapFinishDrawBtn" style="display:none;">Klaar &#10003;</button>
+    <button class="btn btn-secondary" id="mapEditShapeBtn">&#128070; Hoekpunten slepen</button>
+    <button class="btn btn-secondary" id="mapLocateBtn">&#128205; Mijn locatie</button>
+    <button class="btn btn-secondary" id="changeAddressBtn">&#9998; Adres wijzigen</button>
+    <label style="font-size:13px; display:flex; align-items:center; gap:4px;"><input type="checkbox" id="mapKadasterToggle" checked> Kadastrale kaart</label>
+  </div>
+  <div id="gardenMap"></div>
+  <p class="map-help">Kies links een vorm (border, terras, pad, haag, gazon, vijver, ...) en klik de hoekpunten op de kaart; dubbelklik of &quot;Klaar&quot; sluit af. Met &quot;Hoekpunten slepen&quot; kun je daarna elk hoekpunt van een getekende vorm verslepen (rechtsklik op een hoekpunt verwijdert het punt). Klik op een border om planten toe te voegen. Kadastrale percellen verschijnen vanaf zoom 14.</p>
+</div>
+
+            <p class="settings-note">Teken hier je tuinontwerp op de kaart: borders, terras, paden, hagen, gazon, vijver, ... Kies boven de kaart een vorm, klik de hoekpunten aan en sleep ze daarna desgewenst met &quot;Hoekpunten slepen&quot; naar de juiste plek. Onder de kaart staat de lijst met getekende tuinobjecten (via Instellingen kun je ook een ontwerp-JSON importeren).</p>
+            <div id="gardenObjectList"></div>
+        </div>
+        <div class="section tab-pane" id="tab-instellingen" data-tabpane="instellingen">
+            <h2>Instellingen</h2>
+            <div id="backupDock"></div>
+        </div>
+
+    </div>
+    <script src="plants.js"></script>
+    <script src="plantpicker.js"></script>
+    <script>
+        // Plantendata
+        const plantData = [
+            { latijnseNaam: "Acaena inermis Purpurea", nlNaam: "Stekelnootje", standplaats: "Z", kleur: "bruinrood", bloeiVan: "juni", bloeiTot: "juli", hoogteVan: 10, hoogteTot: 10 },
+            { latijnseNaam: "Allium Millenium", nlNaam: "Sierui", standplaats: "Z", kleur: "paars violet", bloeiVan: "juli", bloeiTot: "sept", hoogteVan: 40, hoogteTot: 40 },
+            { latijnseNaam: "Allium obliquum", nlNaam: "Sierui", standplaats: "Z", kleur: "groengeel", bloeiVan: "mei", bloeiTot: "juni", hoogteVan: 70, hoogteTot: 70 },
+            { latijnseNaam: "Allium Suger Melt", nlNaam: "Sierui", standplaats: "Z", kleur: "lichtroze", bloeiVan: "juli", bloeiTot: "sept", hoogteVan: 25, hoogteTot: 25 },
+            { latijnseNaam: "Allium Summer Beauty", nlNaam: "Sierui", standplaats: "Z", kleur: "lilapaars", bloeiVan: "juli", bloeiTot: "aug", hoogteVan: 40, hoogteTot: 60 },
+            { latijnseNaam: "Allium tuberosum", nlNaam: "Knoflookbieslook", standplaats: "Z", kleur: "wit", bloeiVan: "juli", bloeiTot: "sept", hoogteVan: 30, hoogteTot: 70 },
+            { latijnseNaam: "Allium ursinum", nlNaam: "Daslook", standplaats: "HS - S", kleur: "wit", bloeiVan: "april", bloeiTot: "mei", hoogteVan: 20, hoogteTot: 20 },
+            { latijnseNaam: "Amsonia Blue Ice", nlNaam: "Blauwe ster", standplaats: "Z - HS", kleur: "blauw", bloeiVan: "mei", bloeiTot: "juni", hoogteVan: 40, hoogteTot: 40 },
+            { latijnseNaam: "Anaphalis triplinervis", nlNaam: "Siberisch edelweiss", standplaats: "Z", kleur: "wit", bloeiVan: "juli", bloeiTot: "aug", hoogteVan: 25, hoogteTot: 30 },
+            { latijnseNaam: "Anemone hybrida Honorine Jobert", nlNaam: "Herfstanemoon", standplaats: "Z - HS", kleur: "wit", bloeiVan: "aug", bloeiTot: "okt", hoogteVan: 80, hoogteTot: 80 },
+            { latijnseNaam: "Anemone Konigin Charlotte", nlNaam: "Herfstanemoon", standplaats: "Z - HS", kleur: "zuiverroze", bloeiVan: "sept", bloeiTot: "okt", hoogteVan: 80, hoogteTot: 80 },
+            { latijnseNaam: "Anemone hupehensis Pretty Lady Maria", nlNaam: "Herfstanemoon", standplaats: "HS", kleur: "wit", bloeiVan: "aug", bloeiTot: "sept", hoogteVan: 40, hoogteTot: 50 },
+            { latijnseNaam: "Anemone hupehensis September Charm", nlNaam: "Herfstanemoon", standplaats: "Z - S", kleur: "roze", bloeiVan: "aug", bloeiTot: "okt", hoogteVan: 90, hoogteTot: 90 },
+            { latijnseNaam: "Anemone hybrida Splendens", nlNaam: "Herfstanemoon", standplaats: "Z - HS", kleur: "paars - roze", bloeiVan: "aug", bloeiTot: "okt", hoogteVan: 80, hoogteTot: 80 },
+            { latijnseNaam: "Anemone virginiana", nlNaam: "Anemoon", standplaats: "Z - HS", kleur: "wit", bloeiVan: "mei", bloeiTot: "juni", hoogteVan: 40, hoogteTot: 40 },
+            { latijnseNaam: "Anthemis tinctoria", nlNaam: "Gele kamille", standplaats: "Z - HS", kleur: "geel", bloeiVan: "juni", bloeiTot: "sept", hoogteVan: 40, hoogteTot: 50 },
+            { latijnseNaam: "Anthericum ramosum", nlNaam: "Berg- of graslelie", standplaats: "Z", kleur: "wit", bloeiVan: "juni", bloeiTot: "sept", hoogteVan: 60, hoogteTot: 60 },
+            { latijnseNaam: "Aquilegia vulgaris Alba", nlNaam: "Akelei", standplaats: "Z", kleur: "wit", bloeiVan: "mei", bloeiTot: "juni", hoogteVan: 30, hoogteTot: 50 },
+            { latijnseNaam: "Aquilegia vulgaris mix", nlNaam: "Akelei", standplaats: "Z - HS", kleur: "diverse kleuren", bloeiVan: "mei", bloeiTot: "juni", hoogteVan: 30, hoogteTot: 70 },
+            { latijnseNaam: "Aquilegia vulgaris Pink", nlNaam: "Akelei", standplaa
