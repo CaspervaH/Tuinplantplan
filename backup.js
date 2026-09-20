@@ -1,4 +1,5 @@
 // Backup: exporteer & importeer plannerdata (localStorage) als JSON — Tuinplantplanner
+// Compacte versie: knop onder de kaart (#backupDock) met uitklapbaar paneel.
 (function () {
   var KEYS = ['shortlist', 'borders', 'gardenObjects', 'gardenAddress', 'mapView'];
   var LAST = 'lastBackupAt';
@@ -77,26 +78,37 @@
   }
 
   function buildUI() {
-    var mapEl = document.getElementById('gardenMap');
-    var anchorSection = mapEl ? mapEl.closest('section') : null;
-    var sec = document.createElement('section');
-    sec.className = 'section';
-    sec.innerHTML =
-      '<h2>Backup &#128190;</h2>' +
-      '<p style="font-size:0.92em;color:#555;max-width:640px;">Je gegevens (shortlist, borders, tuinobjecten zoals paden en terrassen, kaartgegevens en adres) staan in deze browser (localStorage) en zijn dus alleen voor jou zichtbaar. ' +
-      'Exporteer regelmatig een JSON-backup als veiligheid, of om je tuin over te zetten naar een ander apparaat of een andere browser.</p>' +
-      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;">' +
+    var dock = document.getElementById('backupDock');
+    var bar = document.createElement('div');
+    bar.className = 'backup-bar';
+    bar.innerHTML =
+      '<button id="backupToggleBtn" class="btn">Backup &#128190;</button>' +
+      '<span id="backupStatus" style="font-weight:600;font-size:13px;"></span>';
+    var panel = document.createElement('div');
+    panel.className = 'backup-panel';
+    panel.style.display = 'none';
+    panel.innerHTML =
+      '<p style="margin:0 0 8px;color:#555;max-width:640px;">Je gegevens (shortlist, borders, tuinobjecten zoals paden en terrassen, kaartgegevens en adres) staan in deze browser (localStorage) en zijn dus alleen voor jou zichtbaar. Exporteer regelmatig een JSON-backup als veiligheid, of om je tuin over te zetten naar een ander apparaat of een andere browser.</p>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
       '<button id="backupExportBtn" class="btn">Exporteer JSON</button>' +
       '<button id="backupImportBtn" class="btn">Importeer JSON</button>' +
       '</div>' +
       '<input type="file" id="backupFileInput" accept=".json,application/json" style="display:none;">' +
-      '<span id="backupStatus" style="font-weight:600;"></span>' +
       '<p id="backupLast" style="font-size:0.85em;color:#777;margin-top:6px;"></p>';
-    if (anchorSection && anchorSection.parentNode) {
-      anchorSection.parentNode.insertBefore(sec, anchorSection);
+    if (dock) {
+      dock.appendChild(bar);
+      dock.appendChild(panel);
     } else {
-      document.body.appendChild(sec);
+      // Fallback (oude layout zonder #backupDock): bar vóór de kaartsectie
+      var mapEl = document.getElementById('gardenMap');
+      var anchor = mapEl ? mapEl.closest('section') : null;
+      if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(bar, anchor);
+      else document.body.appendChild(bar);
+      document.body.appendChild(panel);
     }
+    document.getElementById('backupToggleBtn').addEventListener('click', function () {
+      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    });
     document.getElementById('backupExportBtn').addEventListener('click', doExport);
     document.getElementById('backupImportBtn').addEventListener('click', function () {
       document.getElementById('backupFileInput').click();
