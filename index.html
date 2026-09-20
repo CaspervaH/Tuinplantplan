@@ -132,12 +132,7 @@ body.has-address #addressGate { display: none; }
 </nav>
         <div class="section tab-pane" id="tab-planten" data-tabpane="planten">
             <h2>Plantenlijst</h2>
-            <div class="filter-controls">
-                <input type="text" id="searchInput" placeholder="Zoeken...">
-                <select id="colorFilter"><option value="">Alle kleuren</option><option value="wit">Wit</option><option value="geel">Geel</option><option value="roze">Roze</option><option value="rood">Rood</option><option value="paars">Paars</option><option value="blauw">Blauw</option><option value="oranje">Oranje</option></select>
-                <select id="standplaatsFilter"><option value="">Alle standplaatsen</option><option value="Z">Zon</option><option value="HS">Halfschaduw</option><option value="S">Schaduw</option></select>
-            </div>
-            <div class="plant-list" id="plantList"></div>
+            <div id="plantPickerContainer"></div>
         </div>
         <div class="section shortlist-section tab-pane" id="tab-shortlist" data-tabpane="shortlist">
             <h2>Shortlist (<span id="shortlistCount">0</span> planten)</h2>
@@ -180,6 +175,7 @@ body.has-address #addressGate { display: none; }
 
     </div>
     <script src="plants.js"></script>
+    <script src="plantpicker.js"></script>
     <script>
         // Plantendata
         const plantData = [
@@ -224,7 +220,6 @@ body.has-address #addressGate { display: none; }
         let activeBorderId = null;
         const allPlants = [...plantData, ...(window.PLANTEN_EXTRA || [])];
 
-        const plantListEl = document.getElementById('plantList');
         const shortlistEl = document.getElementById('shortlist');
         const shortlistCountEl = document.getElementById('shortlistCount');
         const borderListEl = document.getElementById('borderList');
@@ -249,109 +244,26 @@ body.has-address #addressGate { display: none; }
             return '#cccccc';
         }
 
-        function getGenus(plant) {
-            return (plant.latijnseNaam || '').split(' ')[0] || 'Overig';
-        }
-
-        function renderPlantList() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const colorFilter = document.getElementById('colorFilter').value;
-            const standplaatsFilter = document.getElementById('standplaatsFilter').value;
-
-            const filteredPlants = allPlants.filter(plant => {
-                const naam = (plant.latijnseNaam || '').toLowerCase();
-                const nlNaam = (plant.nlNaam || '').toLowerCase();
-                const kleur = (plant.kleur || '').toLowerCase();
-                const standplaats = plant.standplaats || '';
-                const matchesSearch = naam.includes(searchTerm) || nlNaam.includes(searchTerm);
-                const matchesColor = !colorFilter || kleur.includes(colorFilter.toLowerCase());
-                const matchesStandplaats = !standplaatsFilter ||
-                    (standplaats.includes("Z") && standplaatsFilter.includes("Z")) ||
-                    (standplaats.includes("HS") && standplaatsFilter.includes("HS")) ||
-                    (standplaats.includes("S") && standplaatsFilter.includes("S"));
-                return matchesSearch && matchesColor && matchesStandplaats;
-            });
-
-            // Groepeer per geslacht (eerste woord van de Latijnse naam)
-            const genera = {};
-            filteredPlants.forEach(plant => {
-                const g = getGenus(plant);
-                (genera[g] = genera[g] || []).push(plant);
-            });
-            const genusNames = Object.keys(genera).sort((a, b) => a.localeCompare(b, 'nl'));
-
-            plantListEl.innerHTML = genusNames.map(genus => {
-                const plants = genera[genus];
-                const onShortlist = plants.filter(p => shortlist.some(s => s.latijnseNaam === p.latijnseNaam)).length;
-                const allOnShortlist = onShortlist === plants.length;
-                const cards = plants.map(plant => {
-                    const isInShortlist = shortlist.some(p => p.latijnseNaam === plant.latijnseNaam);
-                    const colorHex = getColorHex(plant.kleur);
-                    const name = esc(plant.latijnseNaam);
-                    return '<div class="plant-card ' + (isInShortlist ? 'selected' : '') + '">' +
-                        '<label><input type="checkbox" data-name="' + name + '" ' + (isInShortlist ? 'checked' : '') + '>' +
-                        '<strong>' + name + '</strong></label>' +
-                        '<div class="plant-details"><span><em>' + esc(plant.nlNaam) + '</em></span></div>' +
-                        '<div class="plant-details">' +
-                        '<span><span class="color-indicator" style="background-color: ' + colorHex + '"></span>' + esc(plant.kleur) + '</span>' +
-                        '<span>&#127804; ' + esc(plant.bloeiVan || '-') + '-' + esc(plant.bloeiTot || '-') + '</span>' +
-                        '<span>&#128207; ' + (plant.hoogteVan || '-') + (plant.hoogteTot > plant.hoogteVan ? '-' + plant.hoogteTot : '') + 'cm</span>' +
-                        '<span>&#9728; ' + esc(plant.standplaats || '-') + '</span>' +
-                        '</div>' +
-                        '</div>';
-                }).join('');
-                return '<div class="genus-group">' +
-                    '<div class="genus-header">' +
-                    '<strong>' + esc(genus) + '</strong>' +
-                    '<span class="genus-count">' + plants.length + ' soorten' + (onShortlist ? ' &middot; ' + onShortlist + ' op shortlist' : '') + '</span>' +
-                    '<button class="genus-btn" data-genus="' + esc(genus) + '">' + (allOnShortlist ? '\u2715 Van shortlist af' : '+ Heel geslacht') + '</button>' +
-                    '</div>' + cards + '</div>';
-            }).join('');
-        }
-
-        plantListEl.addEventListener('change', function (e) {
-            if (e.target && e.target.type === 'checkbox') {
-                toggleShortlist(e.target.getAttribute('data-name'));
+                // Plantenlijst via het gedeelde PlantPicker-component (plantpicker.js),
+        // hetzelfde component als in de border-editor.
+        const plantPicker = PlantPicker.create({
+            container: document.getElementById('plantPickerContainer'),
+            plants: allPlants,
+            emptyText: 'Geen planten beschikbaar.',
+            isChecked: function (name) {
+                return shortlist.some(p => p.latijnseNaam === name);
+            },
+            onToggle: function (plant, checked) {
+                if (checked) {
+                    if (!shortlist.some(p => p.latijnseNaam === plant.latijnseNaam)) shortlist.push(plant);
+                } else {
+                    shortlist = shortlist.filter(p => p.latijnseNaam !== plant.latijnseNaam);
+                }
+                saveState();
+                renderShortlist();
             }
         });
-
-        plantListEl.addEventListener('click', function (e) {
-            const btn = e.target.closest ? e.target.closest('.genus-btn') : null;
-            if (btn) {
-                e.preventDefault();
-                toggleGenus(btn.getAttribute('data-genus'));
-            }
-        });
-
-        function toggleGenus(genus) {
-            const plants = allPlants.filter(p => getGenus(p) === genus);
-            if (plants.length === 0) return;
-            const allOn = plants.every(p => shortlist.some(s => s.latijnseNaam === p.latijnseNaam));
-            if (allOn) {
-                const names = new Set(plants.map(p => p.latijnseNaam));
-                shortlist = shortlist.filter(p => !names.has(p.latijnseNaam));
-            } else {
-                plants.forEach(p => {
-                    if (!shortlist.some(s => s.latijnseNaam === p.latijnseNaam)) shortlist.push(p);
-                });
-            }
-            saveState();
-            renderPlantList();
-            renderShortlist();
-        }
-
-        function toggleShortlist(latijnseNaam) {
-            const plant = allPlants.find(p => p.latijnseNaam === latijnseNaam);
-            if (!plant) return;
-            const index = shortlist.findIndex(p => p.latijnseNaam === latijnseNaam);
-            if (index === -1) shortlist.push(plant);
-            else shortlist.splice(index, 1);
-            saveState();
-            renderPlantList();
-            renderShortlist();
-        }
-
-        function renderShortlist() {
+function renderShortlist() {
             shortlistCountEl.textContent = shortlist.length;
             shortlistEl.innerHTML = shortlist.map(plant => {
                 const colorHex = getColorHex(plant.kleur);
@@ -381,7 +293,7 @@ body.has-address #addressGate { display: none; }
         function removeFromShortlist(latijnseNaam) {
             shortlist = shortlist.filter(p => p.latijnseNaam !== latijnseNaam);
             saveState();
-            renderPlantList();
+            plantPicker.refresh();
             renderShortlist();
         }
 
@@ -389,7 +301,7 @@ body.has-address #addressGate { display: none; }
             if (confirm('Shortlist leegmaken?')) {
                 shortlist = [];
                 saveState();
-                renderPlantList();
+                plantPicker.refresh();
                 renderShortlist();
             }
         }
@@ -595,9 +507,6 @@ body.has-address #addressGate { display: none; }
         showTab(activeTab);
 
         // Event listeners
-        document.getElementById('searchInput').addEventListener('input', renderPlantList);
-        document.getElementById('colorFilter').addEventListener('change', renderPlantList);
-        document.getElementById('standplaatsFilter').addEventListener('change', renderPlantList);
         document.getElementById('clearShortlistBtn').addEventListener('click', clearShortlist);
         document.getElementById('addBorderBtn').addEventListener('click', addNewBorder);
         document.getElementById('addPlantToBorderBtn').addEventListener('click', addPlantToBorder);
@@ -605,7 +514,7 @@ body.has-address #addressGate { display: none; }
         document.getElementById('clearBorderBtn').addEventListener('click', clearBorder);
 
         // Init: render alles bij het laden van de pagina
-        renderPlantList();
+        plantPicker.refresh();
         renderShortlist();
         renderBorderList();
         renderGardenObjectList();
