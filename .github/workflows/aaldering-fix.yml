@@ -1,0 +1,33 @@
+name: Aaldering data-fix
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['scripts/aaldering-fix.js']
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node scripts/aaldering-fix.js
+      - name: Commit wijzigingen
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add plants.js index.html
+          if git diff --cached --quiet; then
+            echo "Geen wijzigingen"
+          else
+            git commit -m "plants.js + index.html: Aaldering-data aangevuld, OCR-naamfouten gecorrigeerd, duplicaten eruit, isBeschikbaarBijAaldering + eigen-planten-integratie"
+            git push
+          fi
+      - name: Rapport als issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh issue create --title "Aaldering data-fix rapport" --body-file report.md || echo "issue aanmaken mislukt"

@@ -72,19 +72,36 @@ window.PlantPicker = (function () {
   }
 
   var COLOR_HEX = {
-    wit: '#ffffff', geel: '#ffd700', roze: '#ffc0cb', rood: '#ff0000',
-    paars: '#800080', blauw: '#0000ff', oranje: '#ffa500', bruinrood: '#8b0000',
-    groengeel: '#adff2f', lichtroze: '#ffb6c1', lilapaars: '#c8a2c8',
-    cremegeel: '#fffacd', violetblauw: '#4169e1', lichtblauw: '#add8e6'
+    wit: '#ffffff', creme: '#fff8dc', geel: '#ffd700', groengeel: '#adff2f',
+    geelgroen: '#adff2f', warmgeel: '#f5c542', cremegeel: '#fffacd',
+    roze: '#ffc0cb', lichtroze: '#ffb6c1', donkerroze: '#ff69b4',
+    rood: '#e01111', donkerrood: '#8b0000', bordeaux: '#6d071a', bruinrood: '#8b0000',
+    roodbruin: '#a0522d', bruin: '#8b4513', oranje: '#ffa500', abrikoos: '#f4a460',
+    zalm: '#fa8072', perzik: '#ffdab9', paars: '#800080', donkerpaars: '#4b0082',
+    lila: '#c8a2c8', lilapaars: '#c8a2c8', lilaroze: '#d8b2d8', mauve: '#e0b0ff',
+    violet: '#8f00ff', violetblauw: '#4169e1', blauwpaars: '#483d8b', blauwrood: '#8a2be2',
+    roodviolet: '#c71585', blauw: '#3a5fcd', lichtblauw: '#add8e6', hemelsblauw: '#87ceeb',
+    groen: '#4c9a4c', groengrijs: '#8fbc8f', groenwit: '#eef5e9', grijs: '#a9b0b6',
+    zilver: '#c0c0c0', zilvergrijs: '#b8bcb8', magenta: '#ff00ff', brons: '#cd7f32',
+    koper: '#b87333', beige: '#f5f5dc', zwart: '#3b3b3b'
   };
+
+  function foldAccents(s) {
+    return String(s).replace(/[\u00e0-\u00e5]/g, 'a').replace(/[\u00e8-\u00eb]/g, 'e')
+      .replace(/[\u00ec-\u00ef]/g, 'i').replace(/[\u00f2-\u00f6]/g, 'o')
+      .replace(/[\u00f9-\u00fc]/g, 'u').replace(/\u00e7/g, 'c');
+  }
 
   function colorHex(color) {
     if (!color) return '#cccccc';
-    var c = String(color).toLowerCase().replace(/s+/g, '');
+    var c = foldAccents(String(color).toLowerCase()).replace(/[^a-z]/g, '');
+    if (!c || c === 'onbekend') return '#cccccc';
+    if (COLOR_HEX[c]) return COLOR_HEX[c];
+    var best = null;
     for (var key in COLOR_HEX) {
-      if (c.indexOf(key) !== -1) return COLOR_HEX[key];
+      if (c.indexOf(key) !== -1 && (!best || key.length > best.length)) best = key;
     }
-    return '#cccccc';
+    return best ? COLOR_HEX[best] : '#cccccc';
   }
 
   function hoogteCategorie(plant) {
@@ -102,7 +119,7 @@ window.PlantPicker = (function () {
   }
 
   function genusOf(plant) {
-    var parts = String(plant.latijnseNaam || '').trim().split(/s+/);
+    var parts = String(plant.latijnseNaam || '').trim().split(/\s+/);
     return parts[0] || 'Overig';
   }
 
