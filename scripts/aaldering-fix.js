@@ -1,5 +1,8 @@
-// scripts/aaldering-fix.js — data-kwaliteitsfix voor plants.js (r3, definitief).
-// Draait in GitHub Actions. Idempotent: alleen lege velden vullen.
+// scripts/aaldering-fix.js — data-kwaliteitsfix voor plants.js (r4).
+// r4: HERSTEL — de vorige ronden voegden isBeschikbaarBijAaldering ook toe
+// aan functie-bodies in het inline script van index.html (regex te breed),
+// wat een syntaxfout gaf. Nu: alle flags eruit, alleen binnen plantData
+// opnieuw toevoegen, daarna parse-check van alle inline scripts.
 var fs = require('fs');
 var vm = require('vm');
 
@@ -17,71 +20,7 @@ function norm(s) {
 var report = [];
 function log(s) { report.push(s); console.log(s); }
 
-var REGEX_FIXES = [
-  [/Andenken an Alma P\u00f6tschke Aster'/g, "Andenken an Alma P\u00f6tschke'"],
-  [/Geranium\s+[Ff]oundling[^'",]*/g, "Geranium 'Foundling'"],
-  [/Suger Melt/g, 'Sugar Melt'],
-  [/Zuiverkaas/g, 'Zilverkaars'],
-  [/Elenw\u00c3\u00a9/g, 'Elenw\u00e9'],
-  [/Epimedium wushanense 135/g, 'Epimedium wushanense'],
-  [/Pottentilla/g, 'Potentilla'],
-  [/Phlox \(Arjan Schepers\) \?/g, 'Phlox (Arjan Schepers)']
-];
-
-// vul-sleutels: exact genormaliseerde namen (ronde 3: vooral kleuren van planten zonder kleur)
-var FILLS = {
-  'adiantum venustrum': { kl: 'wit' },
-  'agastache rugosum alabaster': { kl: 'wit' },
-  'agastache rugosa little adder': { kl: 'violetblauw' },
-  'ajuga reptans alba': { kl: 'wit' },
-  'ajuga reptans atropurpurea': { kl: 'blauw - paars' },
-  'ajuga reptans chocolate chips': { kl: 'blauw' },
-  'ajuga reptans catlins giant': { kl: 'blauw' },
-  'ajuga pyramidalis metallica crispa': { kl: 'paars' },
-  'ajuga reptans rosea': { kl: 'roze' },
-  'actaea simplex atropurpurea': { kl: 'wit' },
-  'actaea japonica cheju do': { kl: 'wit' },
-  'actaea simplex white pearl': { kl: 'wit' },
-  'aruncus misty lace': { kl: 'wit' },
-  'asclepias incarnata': { kl: 'roze' },
-  'astilboides tabularis': { kl: 'wit' },
-  'blechnum penna marina': { kl: 'groen' },
-  'boehmeria nivea': { kl: 'groen' },
-  'campanula rapunculus': { kl: 'blauw' },
-  'chrysanthemum weisse melanie': { kl: 'wit' },
-  'chrysosplenium alternifolium': { kl: 'geel - groen' },
-  'convallaria majalis bridal choice': { kl: 'wit' },
-  'erigeron annuus': { kl: 'wit' },
-  'euphorbia myrsinites': { kl: 'geel - groen' },
-  'fragaria ananassa': { kl: 'wit' },
-  'fuchsia dying embers': { kl: 'violet - rood' },
-  'fuchsia genii': { kl: 'rood - violet' },
-  'fuchsia hatschbachii': { kl: 'rood' },
-  'geranium magnificum turco': { kl: 'blauw - violet' },
-  'isotoma fluviatilis': { kl: 'blauw' },
-  'lysimachia nemorum': { kl: 'geel' },
-  'muehlenbeckia axillaris': { kl: 'groen - wit' },
-  'parthenocissus quinquefolia': { kl: 'groen - wit' },
-  'persicaria filiformis alba': { kl: 'wit' },
-  'persicaria indian summer': { kl: 'rood' },
-  'plectranthus mona lavender': { kl: 'lila' },
-  'polemonium heaven scent': { kl: 'blauw' },
-  'potentilla atrosanguinea': { kl: 'donkerrood' },
-  'salvia pink dream': { kl: 'roze' },
-  'salvia greggii salmon dance': { kl: 'zalm' },
-  'salvia nemorosa azure snow': { kl: 'wit - blauw' },
-  'sambucus nigra': { kl: 'wit' },
-  'tanacetum parthenium': { kl: 'wit' },
-  'taxus baccata': { kl: 'groen' },
-  'taxus fastigiata': { kl: 'groen' },
-  'thymus serpyllum minor': { kl: 'roze - paars' },
-  'tolmiea menziesii cool gold': { kl: 'bruinrood' },
-  'trifolium repens': { kl: 'wit' },
-  'patrinia monandra': { kl: 'geel' },
-  'saxifraga stolonifera': { kl: 'wit' },
-  'epimedium wushanense': { kl: 'wit' }
-};
-
+// ---- plants.js: idempotent opnieuw verwerken (geen wijzigingen t.o.v. r3) ----
 var src = fs.readFileSync('plants.js', 'utf8');
 var ctx = { window: {} };
 vm.createContext(ctx);
@@ -89,63 +28,11 @@ vm.runInContext(src, ctx);
 var plants = ctx.window.PLANTEN_EXTRA;
 if (!Array.isArray(plants)) throw new Error('plants.js: window.PLANTEN_EXTRA is geen array');
 
-log('# Aaldering data-fix rapport (ronde 3)');
+log('# Aaldering data-fix rapport (ronde 4 — herstel index.html)');
 log('');
-log('Planten bij start: ' + plants.length);
-
-var regexHits = {};
-REGEX_FIXES.forEach(function (rf) {
-  plants.forEach(function (p) {
-    ['latijnseNaam', 'nlNaam'].forEach(function (f) {
-      if (p[f] && rf[0].test(p[f])) {
-        regexHits[f + ':' + rf[1]] = (regexHits[f + ':' + rf[1]] || 0) + 1;
-        p[f] = p[f].replace(rf[0], rf[1]);
-      }
-    });
-    rf[0].lastIndex = 0;
-  });
-});
-plants.forEach(function (p) {
-  if (p.kleur && /William Stearn|zhushanese|Cc02|Garne/.test(p.kleur)) p.kleur = '';
-});
-log('Regex-correcties: ' + JSON.stringify(regexHits));
-
-function applyFill(p, f) {
-  if (!p.nlNaam && f.nl) p.nlNaam = f.nl;
-  if (!p.standplaats && f.sp) p.standplaats = f.sp;
-  if (!p.kleur && f.kl) p.kleur = f.kl;
-  if (!p.bloeiVan && f.van) p.bloeiVan = f.van;
-  if (!p.bloeiTot && f.tot) p.bloeiTot = f.tot;
-  if ((p.hoogteVan == null || p.hoogteVan === '') && f.hv != null) p.hoogteVan = f.hv;
-  if ((p.hoogteTot == null || p.hoogteTot === '') && f.ht != null) p.hoogteTot = f.ht;
-}
-
-var fillsMatched = [], fillsMissing = [];
-Object.keys(FILLS).forEach(function (key) {
-  var hit = false;
-  plants.forEach(function (p) {
-    if (norm(p.latijnseNaam) === key) { applyFill(p, FILLS[key]); hit = true; }
-  });
-  if (hit) fillsMatched.push(key); else fillsMissing.push(key);
-});
-log('Aangevuld: ' + fillsMatched.length + ' planten');
-if (fillsMissing.length) log('NIET gevonden: ' + fillsMissing.join('; '));
+log('Planten in plants.js: ' + plants.length);
 
 plants.forEach(function (p) { p.isBeschikbaarBijAaldering = true; });
-
-var seen = {}, deduped = [], removed = [];
-plants.forEach(function (p) {
-  var k = norm(p.latijnseNaam);
-  if (seen[k]) { removed.push(p.latijnseNaam); return; }
-  seen[k] = true; deduped.push(p);
-});
-plants = deduped;
-log('Duplicaten verwijderd: ' + removed.length + (removed.length ? ' (' + removed.join('; ') + ')' : ''));
-log('Planten na fix: ' + plants.length);
-
-var noKleur = plants.filter(function (p) { return !p.kleur; });
-log('Nog zonder kleur: ' + noKleur.length);
-noKleur.forEach(function (p) { log('  - ' + p.latijnseNaam); });
 
 function q(s) { return JSON.stringify(s == null ? '' : s); }
 function num(n) { return (n == null || n === '') ? 'null' : String(n); }
@@ -167,22 +54,54 @@ var out = [
   ''
 ].join('\n');
 fs.writeFileSync('plants.js', out);
+log('plants.js herschreven (ongewijzigde data, alleen stabiele opmaak)');
 
+// ---- index.html: herstel + correcte integratie ----
 var idx = fs.readFileSync('index.html', 'utf8');
+
+// 1. alle eerder toegevoegde flags verwijderen (ook de verkeerde)
+var before = (idx.match(/, isBeschikbaarBijAaldering: true \}/g) || []).length;
+idx = idx.split(', isBeschikbaarBijAaldering: true }').join(' }');
+log('Verwijderde flag-invoegingen (inclusief eventueel foute): ' + before);
+
+// 2. alleen binnen plantData-array opnieuw toevoegen
+var start = idx.indexOf('plantData = [');
+if (start === -1) throw new Error('plantData-array niet gevonden in index.html');
+var end = idx.indexOf('];', start);
+if (end === -1) throw new Error('plantData-array loopt niet af');
+var slice = idx.slice(start, end);
+var flagged = 0;
+slice = slice.replace(/\{[^{}]*latijnseNaam[^{}]*\}/g, function (m) {
+  if (m.indexOf('isBeschikbaarBijAaldering') !== -1) return m;
+  flagged++;
+  return m.replace(/\s*\}\s*$/, ', isBeschikbaarBijAaldering: true }');
+});
+idx = idx.slice(0, start) + slice + idx.slice(end);
+log('plantData-entries van flag voorzien: ' + flagged);
+
+// 3. customplants-integratie (idempotent)
 var apNew = 'const allPlants = [...plantData, ...(window.PLANTEN_EXTRA || []), ...((window.CustomPlants && window.CustomPlants.all()) || [])];';
 if (idx.indexOf('customplants.js') === -1) {
   var tagOld = '<script src="plants.js"></script>';
   if (idx.indexOf(tagOld) === -1) throw new Error('plants.js-script-tag niet gevonden');
   idx = idx.replace(tagOld, tagOld + '\n    <script src="customplants.js"></script>');
+  log('customplants.js-tag toegevoegd');
 }
 if (idx.indexOf(apNew) === -1) {
   idx = idx.replace('const allPlants = [...plantData, ...(window.PLANTEN_EXTRA || [])];', apNew);
+  log('allPlants-regel uitgebreid met eigen planten');
 }
-idx = idx.replace(/\{[^{}]*latijnseNaam[^{}]*\}/g, function (m) {
-  if (m.indexOf('isBeschikbaarBijAaldering') !== -1) return m;
-  return m.replace(/\s*\}\s*$/, ', isBeschikbaarBijAaldering: true }');
+
+// 4. parse-check alle inline scripts (valideert het herstel)
+var blocks = idx.match(/<script>([\s\S]*?)<\/script>/g) || [];
+blocks.forEach(function (b, i) {
+  var code = b.slice(8, -9);
+  new Function(code); // gooit fout bij syntaxfout
 });
+log('Parse-check: ' + blocks.length + ' inline script(s) in index.html parseeren correct');
+
+if (!idx.trimEnd().endsWith('</html>')) throw new Error('index.html eindigt niet op </html>');
 fs.writeFileSync('index.html', idx);
-log('index.html gecontroleerd/bijgewerkt');
+log('index.html hersteld en weggeschreven');
 fs.writeFileSync('report.md', report.join('\n') + '\n');
 console.log('Klaar.');
