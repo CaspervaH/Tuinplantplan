@@ -180,38 +180,39 @@ body.has-address #addressGate { display: none; }
 
     </div>
     <script src="plants.js"></script>
+    <script src="customplants.js"></script>
     <script src="plantpicker.js"></script>
     <script>
         // Plantendata
         const plantData = [
-            { latijnseNaam: "Acaena inermis Purpurea", nlNaam: "Stekelnootje", standplaats: "Z", kleur: "bruinrood", bloeiVan: "juni", bloeiTot: "juli", hoogteVan: 10, hoogteTot: 10 },
-            { latijnseNaam: "Allium Millenium", nlNaam: "Sierui", standplaats: "Z", kleur: "paars violet", bloeiVan: "juli", bloeiTot: "sept", hoogteVan: 40, hoogteTot: 40 },
-            { latijnseNaam: "Allium obliquum", nlNaam: "Sierui", standplaats: "Z", kleur: "groengeel", bloeiVan: "mei", bloeiTot: "juni", hoogteVan: 70, hoogteTot: 70 },
-            { latijnseNaam: "Allium Suger Melt", nlNaam: "Sierui", standplaats: "Z", kleur: "lichtroze", bloeiVan: "juli", bloeiTot: "sept", hoogteVan: 25, hoogteTot: 25 },
-            { latijnseNaam: "Allium Summer Beauty", nlNaam: "Sierui", standplaats: "Z", kleur: "lilapaars", bloeiVan: "juli", bloeiTot: "aug", hoogteVan: 40, hoogteTot: 60 },
-            { latijnseNaam: "Allium tuberosum", nlNaam: "Knoflookbieslook", standplaats: "Z", kleur: "wit", bloeiVan: "juli", bloeiTot: "sept", hoogteVan: 30, hoogteTot: 70 },
-            { latijnseNaam: "Allium ursinum", nlNaam: "Daslook", standplaats: "HS - S", kleur: "wit", bloeiVan: "april", bloeiTot: "mei", hoogteVan: 20, hoogteTot: 20 },
-            { latijnseNaam: "Amsonia Blue Ice", nlNaam: "Blauwe ster", standplaats: "Z - HS", kleur: "blauw", bloeiVan: "mei", bloeiTot: "juni", hoogteVan: 40, hoogteTot: 40 },
-            { latijnseNaam: "Anaphalis triplinervis", nlNaam: "Siberisch edelweiss", standplaats: "Z", kleur: "wit", bloeiVan: "juli", bloeiTot: "aug", hoogteVan: 25, hoogteTot: 30 },
-            { latijnseNaam: "Anemone hybrida Honorine Jobert", nlNaam: "Herfstanemoon", standplaats: "Z - HS", kleur: "wit", bloeiVan: "aug", bloeiTot: "okt", hoogteVan: 80, hoogteTot: 80 },
-            { latijnseNaam: "Anemone Konigin Charlotte", nlNaam: "Herfstanemoon", standplaats: "Z - HS", kleur: "zuiverroze", bloeiVan: "sept", bloeiTot: "okt", hoogteVan: 80, hoogteTot: 80 },
-            { latijnseNaam: "Anemone hupehensis Pretty Lady Maria", nlNaam: "Herfstanemoon", standplaats: "HS", kleur: "wit", bloeiVan: "aug", bloeiTot: "sept", hoogteVan: 40, hoogteTot: 50 },
-            { latijnseNaam: "Anemone hupehensis September Charm", nlNaam: "Herfstanemoon", standplaats: "Z - S", kleur: "roze", bloeiVan: "aug", bloeiTot: "okt", hoogteVan: 90, hoogteTot: 90 },
-            { latijnseNaam: "Anemone hybrida Splendens", nlNaam: "Herfstanemoon", standplaats: "Z - HS", kleur: "paars - roze", bloeiVan: "aug", bloeiTot: "okt", hoogteVan: 80, hoogteTot: 80 },
-            { latijnseNaam: "Anemone virginiana", nlNaam: "Anemoon", standplaats: "Z - HS", kleur: "wit", bloeiVan: "mei", bloeiTot: "juni", hoogteVan: 40, hoogteTot: 40 },
-            { latijnseNaam: "Anthemis tinctoria", nlNaam: "Gele kamille", standplaats: "Z - HS", kleur: "geel", bloeiVan: "juni", bloeiTot: "sept", hoogteVan: 40, hoogteTot: 50 },
-            { latijnseNaam: "Anthericum ramosum", nlNaam: "Berg- of graslelie", standplaats: "Z", kleur: "wit", bloeiVan: "juni", bloeiTot: "sept", hoogteVan: 60, hoogteTot: 60 },
-            { latijnseNaam: "Aquilegia vulgaris Alba", nlNaam: "Akelei", standplaats: "Z", kleur: "wit", bloeiVan: "mei", bloeiTot: "juni", hoogteVan: 30, hoogteTot: 50 },
-            { latijnseNaam: "Aquilegia vulgaris mix", nlNaam: "Akelei", standplaats: "Z - HS", kleur: "diverse kleuren", bloeiVan: "mei", bloeiTot: "juni", hoogteVan: 30, hoogteTot: 70 },
-            { latijnseNaam: "Aquilegia vulgaris Pink", nlNaam: "Akelei", standplaats: "Z - HS", kleur: "roze", bloeiVan: "mei", bloeiTot: "juni", hoogteVan: 30, hoogteTot: 50 },
-            { latijnseNaam: "Armeria maritima Rubrifolia", nlNaam: "Engels gras", standplaats: "Z", kleur: "rood", bloeiVan: "mei", bloeiTot: "aug", hoogteVan: 20, hoogteTot: 20 },
-            { latijnseNaam: "Artemisia abrotanum Coca Cola", nlNaam: "Cola plant", standplaats: "Z - HS", kleur: "cremegeel", bloeiVan: "juli", bloeiTot: "juli", hoogteVan: 100, hoogteTot: 100 },
-            { latijnseNaam: "Asarum caudatum", nlNaam: "Mansoor", standplaats: "HS - S", kleur: "bruinrood", bloeiVan: "april", bloeiTot: "juni", hoogteVan: 15, hoogteTot: 15 },
-            { latijnseNaam: "Asclepias tuberosa", nlNaam: "Papegaaiplant", standplaats: "Z", kleur: "oranje", bloeiVan: "juli", bloeiTot: "aug", hoogteVan: 50, hoogteTot: 50 },
-            { latijnseNaam: "Aster ageratoides Ashvi", nlNaam: "Herfstaster", standplaats: "Z - HS", kleur: "wit", bloeiVan: "sept", bloeiTot: "okt", hoogteVan: 50, hoogteTot: 60 },
-            { latijnseNaam: "Aster ageratoides Asran", nlNaam: "Herfstaster", standplaats: "Z", kleur: "lichtblauw", bloeiVan: "aug", bloeiTot: "okt", hoogteVan: 70, hoogteTot: 70 },
-            { latijnseNaam: "Aster azureus", nlNaam: "Herfstaster", standplaats: "Z - HS", kleur: "blauw", bloeiVan: "juli", bloeiTot: "okt", hoogteVan: 50, hoogteTot: 70 },
-            { latijnseNaam: "Achillea filipendulina Cloth of Gold", nlNaam: "Duizendblad", standplaats: "Z", kleur: "geel", bloeiVan: "juli", bloeiTot: "aug", hoogteVan: 100, hoogteTot: 100 }
+            { latijnseNaam: "Acaena inermis Purpurea", nlNaam: "Stekelnootje", standplaats: "Z", kleur: "bruinrood", bloeiVan: "juni", bloeiTot: "juli", hoogteVan: 10, hoogteTot: 10, isBeschikbaarBijAaldering: true },
+            { latijnseNaam: "Allium Millenium", nlNaam: "Sierui", standplaats: "Z", kleur: "paars violet", bloeiVan: "juli", bloeiTot: "sept", hoogteVan: 40, hoogteTot: 40, isBeschikbaarBijAaldering: true },
+            { latijnseNaam: "Allium obliquum", nlNaam: "Sierui", standplaats: "Z", kleur: "groengeel", bloeiVan: "mei", bloeiTot: "juni", hoogteVan: 70, hoogteTot: 70, isBeschikbaarBijAaldering: true },
+            { latijnseNaam: "Allium Suger Melt", nlNaam: "Sierui", standplaats: "Z", kleur: "lichtroze", bloeiVan: "juli", bloeiTot: "sept", hoogteVan: 25, hoogteTot: 25, isBeschikbaarBijAaldering: true },
+            { latijnseNaam: "Allium Summer Beauty", nlNaam: "Sierui", standplaats: "Z", kleur: "lilapaars", bloeiVan: "juli", bloeiTot: "aug", hoogteVan: 40, hoogteTot: 60, isBeschikbaarBijAaldering: true },
+            { latijnseNaam: "Allium tuberosum", nlNaam: "Knoflookbieslook", standplaats: "Z", kleur: "wit", bloeiVan: "juli", bloeiTot: "sept", hoogteVan: 30, hoogteTot: 70, isBeschikbaarBijAaldering: true },
+            { latijnseNaam: "Allium ursinum", nlNaam: "Daslook", standplaats: "HS - S", kleur: "wit", bloeiVan: "april", bloeiTot: "mei", hoogteVan: 20, hoogteTot: 20, isBeschikbaarBijAaldering: true },
+            { latijnseNaam: "Amsonia Blue Ice", nlNaam: "Blauwe ster", standplaats: "Z - HS", kleur: "blauw", bloeiVan: "mei", bloeiTot: "juni", hoogteVan: 40, hoogteTot: 40, isBeschikbaarBijAaldering: true },
+            { latijnseNaam: "Anaphalis triplinervis", nlNaam: "Siberisch edelweiss", standplaats: "Z", kleur: "wit", bloeiVan: "juli", bloeiTot: "aug", hoogteVan: 25, hoogteTot: 30, isBeschikbaarBijAaldering: true },
+            { latijnseNaam: "Anemone hybrida Honorine Jobert", nlNaam: "Herfstanemoon", standplaats: "Z - HS", kleur: "wit", bloeiVan: "aug", bloeiTot: "okt", hoogteVan: 80, hoogteTot: 80, isBeschikbaarBijAaldering: true },
+            { latijnseNaam: "Anemone Konigin Charlotte", nlNaam: "Herfstanemoon", standplaats: "Z - HS", kleur: "zuiverroze", bloeiVan: "sept", bloeiTot: "okt", hoogteVan: 80, hoogteTot: 80, isBeschikbaarBijAaldering: true },
+            { latijnseNaam: "Anemone hupehensis Pretty Lady Maria", nlNaam: "Herfstanemoon", standplaats: "HS", kleur: "wit", bloeiVan: "aug", bloeiTot: "sept", hoogteVan: 40, hoogteTot: 50, isBeschikbaarBijAaldering: true },
+            { latijnseNaam: "Anemone hupehensis September Charm", nlNaam: "Herfstanemoon", standplaats: "Z - S", kleur: "roze", bloeiVan: "aug", bloeiTot: "okt", hoogteVan: 90, hoogteTot: 90, isBeschikbaarBijAaldering: true },
+            { latijnseNaam: "Anemone hybrida Splendens", nlNaam: "Herfstanemoon", standplaats: "Z - HS", kleur: "paars - roze", bloeiVan: "aug", bloeiTot: "okt", hoogteVan: 80, hoogteTot: 80, isBeschikbaarBijAaldering: true },
+            { latijnseNaam: "Anemone virginiana", nlNaam: "Anemoon", standplaats: "Z - HS", kleur: "wit", bloeiVan: "mei", bloeiTot: "juni", hoogteVan: 40, hoogteTot: 40, isBeschikbaarBijAaldering: true },
+            { latijnseNaam: "Anthemis tinctoria", nlNaam: "Gele kamille", standplaats: "Z - HS", kleur: "geel", bloeiVan: "juni", bloeiTot: "sept", hoogteVan: 40, hoogteTot: 50, isBeschikbaarBijAaldering: true },
+            { latijnseNaam: "Anthericum ramosum", nlNaam: "Berg- of graslelie", standplaats: "Z", kleur: "wit", bloeiVan: "juni", bloeiTot: "sept", hoogteVan: 60, hoogteTot: 60, isBeschikbaarBijAaldering: true },
+            { latijnseNaam: "Aquilegia vulgaris Alba", nlNaam: "Akelei", standplaats: "Z", kleur: "wit", bloeiVan: "mei", bloeiTot: "juni", hoogteVan: 30, hoogteTot: 50, isBeschikbaarBijAaldering: true },
+            { latijnseNaam: "Aquilegia vulgaris mix", nlNaam: "Akelei", standplaats: "Z - HS", kleur: "diverse kleuren", bloeiVan: "mei", bloeiTot: "juni", hoogteVan: 30, hoogteTot: 70, isBeschikbaarBijAaldering: true },
+            { latijnseNaam: "Aquilegia vulgaris Pink", nlNaam: "Akelei", standplaats: "Z - HS", kleur: "roze", bloeiVan: "mei", bloeiTot: "juni", hoogteVan: 30, hoogteTot: 50, isBeschikbaarBijAaldering: true },
+            { latijnseNaam: "Armeria maritima Rubrifolia", nlNaam: "Engels gras", standplaats: "Z", kleur: "rood", bloeiVan: "mei", bloeiTot: "aug", hoogteVan: 20, hoogteTot: 20, isBeschikbaarBijAaldering: true },
+            { latijnseNaam: "Artemisia abrotanum Coca Cola", nlNaam: "Cola plant", standplaats: "Z - HS", kleur: "cremegeel", bloeiVan: "juli", bloeiTot: "juli", hoogteVan: 100, hoogteTot: 100, isBeschikbaarBijAaldering: true },
+            { latijnseNaam: "Asarum caudatum", nlNaam: "Mansoor", standplaats: "HS - S", kleur: "bruinrood", bloeiVan: "april", bloeiTot: "juni", hoogteVan: 15, hoogteTot: 15, isBeschikbaarBijAaldering: true },
+            { latijnseNaam: "Asclepias tuberosa", nlNaam: "Papegaaiplant", standplaats: "Z", kleur: "oranje", bloeiVan: "juli", bloeiTot: "aug", hoogteVan: 50, hoogteTot: 50, isBeschikbaarBijAaldering: true },
+            { latijnseNaam: "Aster ageratoides Ashvi", nlNaam: "Herfstaster", standplaats: "Z - HS", kleur: "wit", bloeiVan: "sept", bloeiTot: "okt", hoogteVan: 50, hoogteTot: 60, isBeschikbaarBijAaldering: true },
+            { latijnseNaam: "Aster ageratoides Asran", nlNaam: "Herfstaster", standplaats: "Z", kleur: "lichtblauw", bloeiVan: "aug", bloeiTot: "okt", hoogteVan: 70, hoogteTot: 70, isBeschikbaarBijAaldering: true },
+            { latijnseNaam: "Aster azureus", nlNaam: "Herfstaster", standplaats: "Z - HS", kleur: "blauw", bloeiVan: "juli", bloeiTot: "okt", hoogteVan: 50, hoogteTot: 70, isBeschikbaarBijAaldering: true },
+            { latijnseNaam: "Achillea filipendulina Cloth of Gold", nlNaam: "Duizendblad", standplaats: "Z", kleur: "geel", bloeiVan: "juli", bloeiTot: "aug", hoogteVan: 100, hoogteTot: 100, isBeschikbaarBijAaldering: true }
         ];
 
         function esc(s) {
@@ -223,7 +224,7 @@ body.has-address #addressGate { display: none; }
         let borders = [];
         try { borders = JSON.parse(localStorage.getItem('borders')) || []; } catch (e) { borders = []; }
         let activeBorderId = null;
-        const allPlants = [...plantData, ...(window.PLANTEN_EXTRA || [])];
+        const allPlants = [...plantData, ...(window.PLANTEN_EXTRA || []), ...((window.CustomPlants && window.CustomPlants.all()) || [])];
 
         const shortlistEl = document.getElementById('shortlist');
         const shortlistCountEl = document.getElementById('shortlistCount');
@@ -256,14 +257,11 @@ body.has-address #addressGate { display: none; }
             plants: allPlants,
             emptyText: 'Geen planten beschikbaar.',
             isChecked: function (name) {
-                return shortlist.some(p => p.latijnseNaam === name);
-            },
+                return shortlist.some(p => p.latijnseNaam === name);, isBeschikbaarBijAaldering: true },
             onToggle: function (plant, checked) {
                 if (checked) {
-                    if (!shortlist.some(p => p.latijnseNaam === plant.latijnseNaam)) shortlist.push(plant);
-                } else {
-                    shortlist = shortlist.filter(p => p.latijnseNaam !== plant.latijnseNaam);
-                }
+                    if (!shortlist.some(p => p.latijnseNaam === plant.latijnseNaam)) shortlist.push(plant);, isBeschikbaarBijAaldering: true } else {
+                    shortlist = shortlist.filter(p => p.latijnseNaam !== plant.latijnseNaam);, isBeschikbaarBijAaldering: true }
                 saveState();
                 renderShortlist();
             }
@@ -285,8 +283,7 @@ function renderShortlist() {
                     '</div>' +
                     '</div>' +
                     '<button data-remove="' + name + '">\u2715</button>' +
-                    '</div>';
-            }).join('');
+                    '</div>';, isBeschikbaarBijAaldering: true }).join('');
             updateAddPlantSelect();
         }
 
@@ -300,8 +297,7 @@ function renderShortlist() {
             shortlist = shortlist.filter(p => p.latijnseNaam !== latijnseNaam);
             saveState();
             plantPicker.refresh();
-            renderShortlist();
-        }
+            renderShortlist();, isBeschikbaarBijAaldering: true }
 
         function clearShortlist() {
             if (confirm('Shortlist leegmaken?')) {
@@ -377,8 +373,7 @@ function renderShortlist() {
                     '<td>' + (plant.hoogteTot > plant.hoogteVan ? plant.hoogteTot + 'cm' : '') + '</td>' +
                     '<td>' + esc(plant.standplaats || '-') + '</td>' +
                     '<td><button class="btn btn-danger" data-removefromborder="' + name + '">\u2715</button></td>' +
-                    '</tr>';
-            }).join('');
+                    '</tr>';, isBeschikbaarBijAaldering: true }).join('');
         }
 
         borderPlantTableBodyEl.addEventListener('click', function (e) {
@@ -395,8 +390,7 @@ function renderShortlist() {
             addPlantSelectEl.innerHTML = '<option value="">Selecteer een plant...</option>' +
                 availablePlants.map(plant =>
                     '<option value="' + esc(plant.latijnseNaam) + '">' + esc(plant.latijnseNaam) + ' - ' + esc(plant.nlNaam) + '</option>'
-                ).join('');
-        }
+                ).join('');, isBeschikbaarBijAaldering: true }
 
         function addPlantToBorder() {
             const selected = addPlantSelectEl.value;
@@ -411,8 +405,7 @@ function renderShortlist() {
             saveState();
             renderBorderPlantTable();
             updateAddPlantSelect();
-            addPlantSelectEl.value = '';
-        }
+            addPlantSelectEl.value = '';, isBeschikbaarBijAaldering: true }
 
         function removePlantFromBorder(latijnseNaam) {
             const border = borders.find(b => b.id === activeBorderId);
@@ -420,8 +413,7 @@ function renderShortlist() {
             border.plants = border.plants.filter(p => p.latijnseNaam !== latijnseNaam);
             saveState();
             renderBorderPlantTable();
-            updateAddPlantSelect();
-        }
+            updateAddPlantSelect();, isBeschikbaarBijAaldering: true }
 
         function clearBorder() {
             const border = borders.find(b => b.id === activeBorderId);
