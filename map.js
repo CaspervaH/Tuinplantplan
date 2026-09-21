@@ -396,7 +396,9 @@ gardenMap.on('dblclick', function () { if (drawMode) finishDraw(); });
   var st = document.createElement('style');
   st.textContent = '.vertex-marker { width: 14px; height: 14px; background: #1565c0; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,.4); cursor: move; }' +
     '.dist-label { background: rgba(255,255,255,.92); color: #1565c0; font-size: 11px; font-weight: 600; padding: 1px 5px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.35); white-space: nowrap; transform: translate(-50%, -50%); pointer-events: none; }' +
-    '.dist-total { color: #2e7d32; font-weight: 700; }';
+    '.dist-total { color: #2e7d32; font-weight: 700; }' +
+    '.vertex-add { width: 18px; height: 18px; background: rgba(255,255,255,.95); color: #1565c0; border: 2px solid #1565c0; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,.4); cursor: copy; font-size: 14px; font-weight: 700; line-height: 14px; text-align: center; font-family: sans-serif; }' +
+    '.vertex-add:hover { background: #1565c0; color: #fff; }';
   document.head.appendChild(st);
 })();
 
@@ -442,6 +444,23 @@ function selectShape(kind, obj, arr) {
       selectShape(kind, obj, arr);
     });
   });
+  // Midden van elk segment: klik = hoekpunt toevoegen
+  var nSeg = shapeIsClosed(kind, obj) ? obj.shape.length : obj.shape.length - 1;
+  for (var j = 0; j < nSeg; j++) {
+    (function (segIdx) {
+      var a = obj.shape[segIdx], b = obj.shape[(segIdx + 1) % obj.shape.length];
+      var mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      var am = L.marker(mid, {
+        icon: L.divIcon({ className: 'vertex-add', iconSize: [18, 18], html: '+' })
+      }).addTo(vertexLayer);
+      am.bindTooltip('hoekpunt toevoegen');
+      am.on('click', function () {
+        obj.shape.splice(segIdx + 1, 0, mid.slice());
+        saveShapeEdit();
+        selectShape(kind, obj, arr);
+      });
+    })(j);
+  }
   showDistances(obj.shape, shapeIsClosed(kind, obj));
   renderMap();
 }
