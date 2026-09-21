@@ -257,11 +257,11 @@ body.has-address #addressGate { display: none; }
             plants: allPlants,
             emptyText: 'Geen planten beschikbaar.',
             isChecked: function (name) {
-                return shortlist.some(p => p.latijnseNaam === name);, isBeschikbaarBijAaldering: true },
+                return shortlist.some(p => p.latijnseNaam === name); },
             onToggle: function (plant, checked) {
                 if (checked) {
-                    if (!shortlist.some(p => p.latijnseNaam === plant.latijnseNaam)) shortlist.push(plant);, isBeschikbaarBijAaldering: true } else {
-                    shortlist = shortlist.filter(p => p.latijnseNaam !== plant.latijnseNaam);, isBeschikbaarBijAaldering: true }
+                    if (!shortlist.some(p => p.latijnseNaam === plant.latijnseNaam)) shortlist.push(plant); } else {
+                    shortlist = shortlist.filter(p => p.latijnseNaam !== plant.latijnseNaam); }
                 saveState();
                 renderShortlist();
             }
@@ -283,7 +283,7 @@ function renderShortlist() {
                     '</div>' +
                     '</div>' +
                     '<button data-remove="' + name + '">\u2715</button>' +
-                    '</div>';, isBeschikbaarBijAaldering: true }).join('');
+                    '</div>'; }).join('');
             updateAddPlantSelect();
         }
 
@@ -297,7 +297,7 @@ function renderShortlist() {
             shortlist = shortlist.filter(p => p.latijnseNaam !== latijnseNaam);
             saveState();
             plantPicker.refresh();
-            renderShortlist();, isBeschikbaarBijAaldering: true }
+            renderShortlist(); }
 
         function clearShortlist() {
             if (confirm('Shortlist leegmaken?')) {
@@ -373,7 +373,7 @@ function renderShortlist() {
                     '<td>' + (plant.hoogteTot > plant.hoogteVan ? plant.hoogteTot + 'cm' : '') + '</td>' +
                     '<td>' + esc(plant.standplaats || '-') + '</td>' +
                     '<td><button class="btn btn-danger" data-removefromborder="' + name + '">\u2715</button></td>' +
-                    '</tr>';, isBeschikbaarBijAaldering: true }).join('');
+                    '</tr>'; }).join('');
         }
 
         borderPlantTableBodyEl.addEventListener('click', function (e) {
@@ -390,7 +390,7 @@ function renderShortlist() {
             addPlantSelectEl.innerHTML = '<option value="">Selecteer een plant...</option>' +
                 availablePlants.map(plant =>
                     '<option value="' + esc(plant.latijnseNaam) + '">' + esc(plant.latijnseNaam) + ' - ' + esc(plant.nlNaam) + '</option>'
-                ).join('');, isBeschikbaarBijAaldering: true }
+                ).join(''); }
 
         function addPlantToBorder() {
             const selected = addPlantSelectEl.value;
@@ -405,7 +405,7 @@ function renderShortlist() {
             saveState();
             renderBorderPlantTable();
             updateAddPlantSelect();
-            addPlantSelectEl.value = '';, isBeschikbaarBijAaldering: true }
+            addPlantSelectEl.value = ''; }
 
         function removePlantFromBorder(latijnseNaam) {
             const border = borders.find(b => b.id === activeBorderId);
@@ -413,7 +413,7 @@ function renderShortlist() {
             border.plants = border.plants.filter(p => p.latijnseNaam !== latijnseNaam);
             saveState();
             renderBorderPlantTable();
-            updateAddPlantSelect();, isBeschikbaarBijAaldering: true }
+            updateAddPlantSelect(); }
 
         function clearBorder() {
             const border = borders.find(b => b.id === activeBorderId);
