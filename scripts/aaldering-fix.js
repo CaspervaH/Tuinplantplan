@@ -1,12 +1,8 @@
-// scripts/aaldering-fix.js — data-kwaliteitsfix voor plants.js.
-// Draait in GitHub Actions (volledige checkout; plants.js is te groot voor
-// directe API-fetch). Taken:
-//  1. OCR-naamfouten corrigeren
-//  2. ontbrekende gegevens aanvullen (PDF-heranalyse pagina 1 + botanische kennis)
-//  3. duplicaten verwijderen
-//  4. isBeschikbaarBijAaldering: true op alle Aaldering-planten
-//  5. index.html: flag op de inline planten + koppeling customplants.js
-// Schrijft report.md voor het rapport-issue.
+// scripts/aaldering-fix.js — data-kwaliteitsfix voor plants.js (r2).
+// Draait in GitHub Actions. Taken: OCR-naamfouten corrigeren (exact + regex),
+// ontbrekende gegevens aanvullen (exact + fuzzy token-match), duplicaten
+// verwijderen, isBeschikbaarBijAaldering: true op alles, index.html-integratie.
+// Schrijft report.md voor het rapport-issue. Idempotent: alleen lege velden vullen.
 var fs = require('fs');
 var vm = require('vm');
 
@@ -24,29 +20,26 @@ function norm(s) {
 var report = [];
 function log(s) { report.push(s); console.log(s); }
 
-// ---- 1. exacte naamcorrecties (latijnseNaam) ----
+// ---- naamcorrecties ----
 var NAME_FIXES = {
   "Veronia crinita Alba'": "Vernonia crinita 'Alba'",
   "Anemone hybrida Coupe d'Argent'": "Anemone hybrida 'Coupe d'Argent'",
-  "Aster novae-angliae 'Andenken an Alma P\u00f6tschke Aster": "Aster novae-angliae 'Andenken an Alma P\u00f6tschke'",
   "Penstemon 'Andenken an Friedrich Hahn' ('Garne Slangekop": "Penstemon 'Andenken an Friedrich Hahn'",
   "Tanecetum partemonium": "Tanacetum parthenium",
   "salvia nemorosa azure snow": "Salvia nemorosa 'Azure Snow'",
-  "Geranium foundling Anke": "Geranium 'Foundling'",
   "Epimedium Sphinx Twinkler ('Spine Tingler'": "Epimedium 'Spine Tingler'",
   "Epimedium 'White Pink Form' (zhushanense Cc02": "Epimedium 'White Pink Form'",
   "kniphofia caulescens": "Kniphofia caulescens"
 };
-// substring-correcties (alle tekstvelden)
-var SUB_FIXES = [
-  ['Suger Melt', 'Sugar Melt'],
-  ['Zuiverkaas', 'Zilverkaars']
+var REGEX_FIXES = [
+  [/Andenken an Alma P\u00f6tschke Aster'/g, "Andenken an Alma P\u00f6tschke'"],
+  [/Geranium\s+[Ff]oundling[^'",]*/g, "Geranium 'Foundling'"],
+  [/Suger Melt/g, 'Sugar Melt'],
+  [/Zuiverkaas/g, 'Zilverkaars']
 ];
 
-// ---- 2. aanvullen van ontbrekende gegevens ----
-// key = genormaliseerde latijnseNaam; alleen lege velden worden gevuld.
+// ---- aanvullen van ontbrekende gegevens (key = genormaliseerde naam) ----
 var FILLS = {
-  // pagina 1 van de PDF (kolommen waren in de OCR verschoven)
   'adiantum venustrum': { nl: 'Venushaar', sp: 'Z - HS', kl: 'wit', van: 'juni', tot: 'aug', hv: 80, ht: 100 },
   'agastache alabaster': { nl: 'Anijshysop', sp: 'Z - HS', kl: 'wit', van: 'juli', tot: 'sept', hv: 120, ht: 120 },
   'agastache blue fortune': { nl: 'Anijshysop', sp: 'Z', kl: 'blauwpaars', van: 'juli', tot: 'aug', hv: 75, ht: 75 },
@@ -64,7 +57,6 @@ var FILLS = {
   'alchemilla mollis': { nl: 'Vrouwenmantel', sp: 'HS - S', kl: 'geel', van: 'mei', tot: 'aug', hv: 50, ht: 50 },
   'alchemilla vulgaris': { nl: 'Vrouwenmantel', sp: 'Z - HS', kl: 'geel', van: 'april', tot: 'juni', hv: 20, ht: 40 },
   'allium senescens lisa blue': { nl: 'Sierui', sp: 'Z', kl: 'lilaroze', van: 'aug', tot: 'sept', hv: 30, ht: 30 },
-  // lege rijen aanvullen uit botanische kennis (alleen vertrouwde soorten)
   'amsonia hubrichtii': { sp: 'Z', kl: 'lichtblauw', van: 'aug', tot: 'sep', hv: 90, ht: 90 },
   'anemone ranunculoides': { nl: 'Geel anemoon', sp: 'HS - S', kl: 'geel', van: 'mrt', tot: 'mei', hv: 25, ht: 25 },
   'buddleja black night': { nl: 'Vlinderstruik', sp: 'Z', kl: 'donkerpaars', van: 'juli', tot: 'sep', hv: 150, ht: 150 },
@@ -104,37 +96,35 @@ vm.runInContext(src, ctx);
 var plants = ctx.window.PLANTEN_EXTRA;
 if (!Array.isArray(plants)) throw new Error('plants.js: window.PLANTEN_EXTRA is geen array');
 
-log('# Aaldering data-fix rapport');
+log('# Aaldering data-fix rapport (ronde 2)');
 log('');
 log('Planten bij start: ' + plants.length);
 
-// naamcorrecties
 var fixesApplied = [], fixesMissing = [];
 Object.keys(NAME_FIXES).forEach(function (oldName) {
   var hit = plants.some(function (p) { return p.latijnseNaam === oldName; });
   if (hit) fixesApplied.push(oldName); else fixesMissing.push(oldName);
   plants.forEach(function (p) { if (p.latijnseNaam === oldName) p.latijnseNaam = NAME_FIXES[oldName]; });
 });
-SUB_FIXES.forEach(function (pair) {
+var regexHits = {};
+REGEX_FIXES.forEach(function (rf) {
   plants.forEach(function (p) {
     ['latijnseNaam', 'nlNaam'].forEach(function (f) {
-      if (p[f] && p[f].indexOf(pair[0]) !== -1) p[f] = p[f].split(pair[0]).join(pair[1]);
+      if (p[f] && rf[0].test(p[f])) {
+        regexHits[f] = (regexHits[f] || 0) + 1;
+        p[f] = p[f].replace(rf[0], rf[1]);
+      }
     });
+    rf[0].lastIndex = 0;
   });
 });
-// kapotte kleurwaarden opruimen (OCR-rommel)
 plants.forEach(function (p) {
   if (p.kleur && /William Stearn|zhushanese|Cc02|Garne/.test(p.kleur)) p.kleur = '';
 });
-log('Naamcorrecties toegepast: ' + fixesApplied.length + (fixesApplied.length ? ' (' + fixesApplied.join('; ') + ')' : ''));
-if (fixesMissing.length) log('Naamcorrecties NIET gevonden: ' + fixesMissing.join('; '));
+log('Exacte naamcorrecties: ' + fixesApplied.length + ' toegepast' + (fixesMissing.length ? ' · niet gevonden: ' + fixesMissing.join('; ') : ''));
+log('Regex-correcties toegepast: ' + JSON.stringify(regexHits));
 
-// aanvullen
-var fillsMatched = [], fillsMissing = Object.keys(FILLS).slice();
-plants.forEach(function (p) {
-  var key = norm(p.latijnseNaam);
-  if (!FILLS[key]) return;
-  var f = FILLS[key];
+function applyFill(p, f) {
   if (!p.nlNaam && f.nl) p.nlNaam = f.nl;
   if (!p.standplaats && f.sp) p.standplaats = f.sp;
   if (!p.kleur && f.kl) p.kleur = f.kl;
@@ -142,17 +132,40 @@ plants.forEach(function (p) {
   if (!p.bloeiTot && f.tot) p.bloeiTot = f.tot;
   if ((p.hoogteVan == null || p.hoogteVan === '') && f.hv != null) p.hoogteVan = f.hv;
   if ((p.hoogteTot == null || p.hoogteTot === '') && f.ht != null) p.hoogteTot = f.ht;
-  p.isBeschikbaarBijAaldering = true;
-  fillsMatched.push(key);
-  var i = fillsMissing.indexOf(key); if (i !== -1) fillsMissing.splice(i, 1);
-});
-log('Aangevuld: ' + fillsMatched.length + ' planten');
-if (fillsMissing.length) log('Vul-sleutels NIET gevonden in plants.js: ' + fillsMissing.join('; '));
+}
 
-// flag op alles
+// pas 1: exacte match
+var fillsMissing = [];
+Object.keys(FILLS).forEach(function (key) {
+  var hit = false;
+  plants.forEach(function (p) {
+    if (norm(p.latijnseNaam) === key) { applyFill(p, FILLS[key]); hit = true; }
+  });
+  if (!hit) fillsMissing.push(key);
+});
+log('Exact aangevuld: ' + (Object.keys(FILLS).length - fillsMissing.length) + ' planten');
+
+// pas 2: fuzzy — plant waarvan de genormaliseerde naam alle woorden van de sleutel bevat
+var fuzzy = [];
+fillsMissing.forEach(function (key) {
+  var tokens = key.split(' ');
+  var candidates = plants.filter(function (p) {
+    var n = ' ' + norm(p.latijnseNaam) + ' ';
+    return tokens.every(function (t) { return n.indexOf(' ' + t) !== -1 || n.indexOf(t) !== -1; });
+  });
+  if (candidates.length === 1) {
+    applyFill(candidates[0], FILLS[key]);
+    fuzzy.push(key + ' -> ' + candidates[0].latijnseNaam);
+  } else if (candidates.length > 1) {
+    fuzzy.push(key + ' ?? meerdere kandidaten: ' + candidates.map(function (c) { return c.latijnseNaam; }).join(' | '));
+  } else {
+    fuzzy.push(key + ' ?? geen kandidaat');
+  }
+});
+if (fuzzy.length) log('Fuzzy-matches:'); fuzzy.forEach(function (s) { log('  ' + s); });
+
 plants.forEach(function (p) { p.isBeschikbaarBijAaldering = true; });
 
-// duplicaten eruit (op genormaliseerde naam, eerste exemplaar blijft)
 var seen = {}, deduped = [], removed = [];
 plants.forEach(function (p) {
   var k = norm(p.latijnseNaam);
@@ -160,11 +173,12 @@ plants.forEach(function (p) {
   seen[k] = true; deduped.push(p);
 });
 plants = deduped;
-log('Duplicaten verwijderd: ' + removed.length + (removed.length ? ' (' + removed.join('; ') + ')' : ''));
+log('Duplicaten verwijderd: ' + removed.length);
 log('Planten na fix: ' + plants.length);
-var noKleur = plants.filter(function (p) { return !p.kleur; }).length;
-var noHoogte = plants.filter(function (p) { return p.hoogteVan == null && p.hoogteTot == null; }).length;
-log('Nog zonder kleur: ' + noKleur + ' · nog zonder hoogte: ' + noHoogte);
+
+var noKleur = plants.filter(function (p) { return !p.kleur; });
+log('Nog zonder kleur: ' + noKleur.length);
+noKleur.forEach(function (p) { log('  - ' + p.latijnseNaam); });
 
 // ---- plants.js herschrijven ----
 function q(s) { return JSON.stringify(s == null ? '' : s); }
@@ -188,28 +202,22 @@ var out = [
 ].join('\n');
 fs.writeFileSync('plants.js', out);
 
-// ---- index.html ----
+// ---- index.html (idempotent) ----
 var idx = fs.readFileSync('index.html', 'utf8');
+var apNew = 'const allPlants = [...plantData, ...(window.PLANTEN_EXTRA || []), ...((window.CustomPlants && window.CustomPlants.all()) || [])];';
 if (idx.indexOf('customplants.js') === -1) {
   var tagOld = '<script src="plants.js"></script>';
-  if (idx.indexOf(tagOld) === -1) throw new Error('plants.js-script-tag niet gevonden in index.html');
+  if (idx.indexOf(tagOld) === -1) throw new Error('plants.js-script-tag niet gevonden');
   idx = idx.replace(tagOld, tagOld + '\n    <script src="customplants.js"></script>');
 }
-var apOld = 'const allPlants = [...plantData, ...(window.PLANTEN_EXTRA || [])];';
-var apNew = 'const allPlants = [...plantData, ...(window.PLANTEN_EXTRA || []), ...((window.CustomPlants && window.CustomPlants.all()) || [])];';
 if (idx.indexOf(apNew) === -1) {
-  if (idx.indexOf(apOld) === -1) throw new Error('allPlants-regel niet gevonden in index.html');
-  idx = idx.replace(apOld, apNew);
+  idx = idx.replace('const allPlants = [...plantData, ...(window.PLANTEN_EXTRA || [])];', apNew);
 }
-var flagged = 0;
 idx = idx.replace(/\{[^{}]*latijnseNaam[^{}]*\}/g, function (m) {
   if (m.indexOf('isBeschikbaarBijAaldering') !== -1) return m;
-  flagged++;
   return m.replace(/\s*\}\s*$/, ', isBeschikbaarBijAaldering: true }');
 });
 fs.writeFileSync('index.html', idx);
-log('index.html: ' + flagged + ' inline planten van een isBeschikbaarBijAaldering-flag voorzien');
-log('index.html: customplants.js geïntegreerd en eigen planten meegenomen in allPlants');
-
+log('index.html gecontroleerd/bijgewerkt (customplants.js + flag)');
 fs.writeFileSync('report.md', report.join('\n') + '\n');
 console.log('Klaar.');
