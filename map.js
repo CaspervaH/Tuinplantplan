@@ -33,6 +33,8 @@ var mapObjectLayer = L.layerGroup().addTo(gardenMap);
 var mapMarkerLayer = L.layerGroup().addTo(gardenMap);
 var vertexLayer = L.layerGroup().addTo(gardenMap);
 var distLayer = L.layerGroup().addTo(gardenMap);
+var freehandOn = false;    // vrij tekenen met Apple Pencil / vinger
+var holeTarget = null;     // object waarin nu een gat wordt getekend
 
 // ===== Afstanden tussen hoekpunten (echte meters uit de coördinaten) =====
 function distanceMeters(a, b) {
@@ -194,6 +196,8 @@ function renderMap() {
 // - closed + >=3 punten -> vlak (bv. terras, gazon, moestuin)
 // - anders              -> lijn (bv. pad, haag); met widthM schaalt de
 //   getekende breedte automatisch mee met het zoomniveau (echte meters)
+// - holes (optioneel): array van ringen [[lat,lng],...] die als gat in het
+//   vlak worden getekend (bv. een rond pad met gazon in het midden)
 function readGardenObjects() {
   try { return JSON.parse(localStorage.getItem('gardenObjects')) || []; }
   catch (e) { return []; }
@@ -250,9 +254,10 @@ function renderGardenObjects() {
         weight: isSel ? 3 : 1, fillColor: color, fillOpacity: 0.9
       }).addTo(mapObjectLayer);
     } else if (obj.closed && obj.shape.length >= 3) {
-      var polyOpts = { color: isSel ? '#1565c0' : color, weight: isSel ? 5 : 2, fillOpacity: 0.3 };
+      var polyOpts = { color: isSel ? '#1565c0' : color, weight: isSel ? 5 : 2, fillOpacity: 0.3, fillRule: 'evenodd' };
       if (isSel) polyOpts.dashArray = '8 4';
-      layer = L.polygon(obj.shape, polyOpts).addTo(mapObjectLayer);
+      var rings = [obj.shape].concat((obj.holes && obj.holes.length) ? obj.holes : []);
+      layer = L.polygon(rings, polyOpts).addTo(mapObjectLayer);
     } else {
       // Lijn: breedte in meters (widthM) als die gegeven is, anders vaste weight
       var weight = obj.weight || 4;
@@ -356,6 +361,27 @@ function finishDraw() {
     }
     return;
   }
+  if (kind === 'hole') {
+    if (drawPoints.length < 3) {
+      alert('Te weinig punten: teken minimaal 3 punten rondom het gat.');
+      return;
+    }
+    if (!holeTarget) { setDrawMode(false); return; }
+    var hArr = readGardenObjects();
+    var hObj = null;
+    for (var qi = 0; qi < hArr.length; qi++) if (hArr[qi].id === holeTarget.id) hObj = hArr[qi];
+    var hId = holeTarget.id;
+    holeTarget = null;
+    if (!hObj) { setDrawMode(false); return; }
+    if (!hObj.holes) hObj.holes = [];
+    hObj.holes.push(drawPoints.slice());
+    localStorage.setItem('gardenObjects', JSON.stringify(hArr));
+    setDrawMode(false);
+    if (typeof renderGardenObjectList === 'function') renderGardenObjectList();
+    setEditVertices(true);
+    selectShape('object', hObj, hArr);
+    return;
+  }
   // Tuinobject (terras, pad, haag, gazon, ...)
   var minPts = LINE_TYPES[kind] ? 2 : 1;
   if (drawPoints.length < minPts) {
@@ -383,13 +409,195 @@ function finishDraw() {
 gardenMap.on('click', function (e) {
   if (editVerticesMode) return;
   if (!drawMode) return;
+  if (freehandOn) return; // bij vrij tekenen komt de vorm uit de penstreep
   drawPoints.push([e.latlng.lat, e.latlng.lng]);
   if (drawPreview) gardenMap.removeLayer(drawPreview);
   drawPreview = L.polyline(drawPoints, { color: '#2e7d32', dashArray: '6 4', weight: 3 }).addTo(gardenMap);
   showDistances(drawPoints, false);
 });
 
-gardenMap.on('dblclick', function () { if (drawMode) finishDraw(); });
+gardenMap.on('dblclick', function () { if (drawMode && !freehandStroke) finishDraw(); });
+
+// ===== Vrij tekenen met Apple Pencil / vinger (freehand) =====
+// Modus aan zetten, type kiezen in de lijst, en de vorm in \u00e9\u00e9n streep
+// trekken: pen op het scherm, omtrek volgen, pen los. De streep wordt met
+// Douglas-Peucker vereenvoudigd tot hoekpunten en meteen opgeslagen. De pen
+// tekent altijd; de vinger tekent alleen als het vinkje "vinger tekent mee"
+// aanstaat (zo blijft pannen/zoomen met vingers mogelijk = palmondersteuning).
+var freehandStroke = null; // { id, pts, line }
+var freehandBtn = null, freehandFingerCb = null, freehandFingerLb = null;
+
+function buildFreehandControls() {
+  var drawBtn = document.getElementById('mapDrawBtn');
+  if (!drawBtn || freehandBtn) return;
+  freehandBtn = document.createElement('button');
+  freehandBtn.type = 'button';
+  freehandBtn.className = drawBtn.className || '';
+  freehandBtn.textContent = '\uD83D\uDCDD Vrij tekenen';
+  freehandBtn.addEventListener('click', function () { setFreehand(!freehandOn); });
+  drawBtn.parentNode.insertBefore(freehandBtn, drawBtn.nextSibling);
+  freehandFingerCb = document.createElement('input');
+  freehandFingerCb.type = 'checkbox';
+  freehandFingerCb.id = 'mapFreehandFinger';
+  freehandFingerCb.style.display = 'none';
+  freehandFingerCb.style.marginLeft = '10px';
+  freehandFingerCb.style.verticalAlign = 'middle';
+  freehandFingerLb = document.createElement('label');
+  freehandFingerLb.htmlFor = 'mapFreehandFinger';
+  freehandFingerLb.textContent = 'vinger tekent mee';
+  freehandFingerLb.style.display = 'none';
+  freehandFingerLb.style.fontSize = '13px';
+  freehandFingerLb.style.marginLeft = '4px';
+  freehandFingerLb.style.verticalAlign = 'middle';
+  freehandFingerLb.style.cursor = 'pointer';
+  freehandFingerLb.title = 'Aanvinken als je zonder Apple Pencil met een vinger wilt tekenen';
+  drawBtn.parentNode.insertBefore(freehandFingerCb, freehandBtn.nextSibling);
+  drawBtn.parentNode.insertBefore(freehandFingerLb, freehandFingerCb.nextSibling);
+}
+
+function setFreehand(on) {
+  freehandOn = on;
+  if (freehandBtn) {
+    freehandBtn.textContent = on ? '\u2705 Klaar met vrij tekenen' : '\uD83D\uDCDD Vrij tekenen';
+    var disp = on ? 'inline' : 'none';
+    if (freehandFingerCb) freehandFingerCb.style.display = disp;
+    if (freehandFingerLb) freehandFingerLb.style.display = disp;
+  }
+  if (on) {
+    var sel = document.getElementById('mapDrawType');
+    holeTarget = null;
+    setDrawMode(true, sel ? sel.value : 'border');
+  } else {
+    cancelStroke();
+    setDrawMode(false);
+  }
+}
+
+function pointerMayDraw(e) {
+  if (e.pointerType === 'pen') return true;
+  if (e.pointerType === 'touch' && freehandFingerCb && freehandFingerCb.checked) return true;
+  return false;
+}
+
+function startStroke(e) {
+  if (!freehandOn || !drawMode) return;
+  if (!pointerMayDraw(e) || freehandStroke) return;
+  e.preventDefault();
+  try { gardenMap.dragging.disable(); } catch (err) {}
+  try { gardenMap.touchZoom.disable(); } catch (err) {}
+  freehandStroke = { id: e.pointerId, pts: [], line: null };
+  addStrokePoint(e);
+}
+
+function addStrokePoint(e) {
+  if (!freehandStroke || e.pointerId !== freehandStroke.id) return;
+  var ll = gardenMap.mouseEventToLatLng(e);
+  var pt = [ll.lat, ll.lng];
+  var pts = freehandStroke.pts;
+  var last = pts[pts.length - 1];
+  if (last && Math.abs(last[0] - pt[0]) * 111320 < 0.01 && Math.abs(last[1] - pt[1]) * 111320 < 0.01) return;
+  pts.push(pt);
+  if (freehandStroke.line) freehandStroke.line.setLatLngs(pts);
+  else freehandStroke.line = L.polyline(pts, { color: '#2e7d32', weight: 4, lineCap: 'round' }).addTo(gardenMap);
+}
+
+function cancelStroke() {
+  if (freehandStroke && freehandStroke.line) gardenMap.removeLayer(freehandStroke.line);
+  freehandStroke = null;
+  try { gardenMap.dragging.enable(); } catch (err) {}
+  try { gardenMap.touchZoom.enable(); } catch (err) {}
+}
+
+function pointSegDist(p, a, b) {
+  var dx = b[0] - a[0], dy = b[1] - a[1];
+  var len2 = dx * dx + dy * dy;
+  if (len2 === 0) return Math.sqrt((p[0] - a[0]) * (p[0] - a[0]) + (p[1] - a[1]) * (p[1] - a[1]));
+  var t = ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / len2;
+  if (t < 0) t = 0; if (t > 1) t = 1;
+  var x = a[0] + t * dx, y = a[1] + t * dy;
+  return Math.sqrt((p[0] - x) * (p[0] - x) + (p[1] - y) * (p[1] - y));
+}
+
+// Douglas-Peucker: punten vereenvoudigen tot een tolerantie in meters
+function simplifyLatLng(pts, tolM) {
+  if (!pts || pts.length < 3) return pts ? pts.slice() : [];
+  var lat0 = pts[0][0];
+  var cos0 = Math.cos(lat0 * Math.PI / 180);
+  var lng0 = pts[0][1];
+  var m = pts.map(function (p) {
+    return [(p[1] - lng0) * 111320 * cos0, (p[0] - lat0) * 111320];
+  });
+  var keep = pts.map(function () { return false; });
+  keep[0] = true; keep[keep.length - 1] = true;
+  (function rdp(a, b) {
+    var idx = -1, maxD = 0;
+    for (var i = a + 1; i < b; i++) {
+      var d = pointSegDist(m[i], m[a], m[b]);
+      if (d > maxD) { maxD = d; idx = i; }
+    }
+    if (maxD > tolM && idx > 0) { keep[idx] = true; rdp(a, idx); rdp(idx, b); }
+  })(0, m.length - 1);
+  var out = [];
+  for (var k = 0; k < pts.length; k++) if (keep[k]) out.push(pts[k]);
+  return out;
+}
+
+function endStroke(e) {
+  if (!freehandStroke || e.pointerId !== freehandStroke.id) return;
+  var pts = freehandStroke.pts.slice();
+  var kind = drawKind || 'border';
+  cancelStroke();
+  if (!freehandOn || !drawMode) return;
+  var tol = Math.max(0.15, metersPerPixel() * 1.5); // fijner dan ~1,5 px is trilling
+  drawPoints = simplifyLatLng(pts, tol);
+  dedupePoints();
+  var minPts = kind === 'hole' ? 3 : (LINE_TYPES[kind] ? 2 : (kind === 'border' ? 3 : 1));
+  if (drawPoints.length < minPts) {
+    drawPoints = [];
+    distLayer.clearLayers();
+    alert('Te korte streep: teken de omtrek van de vorm iets groter en probeer opnieuw.');
+    return;
+  }
+  finishDraw();
+  // na succes: meteen weer tekenbaar (doorlopend tekenen), behalve bij een gat
+  if (freehandOn && !drawMode && kind !== 'hole') {
+    setDrawMode(true, kind);
+  }
+}
+
+var mapContainerEl = gardenMap.getContainer();
+mapContainerEl.addEventListener('pointerdown', function (e) { startStroke(e); }, true);
+mapContainerEl.addEventListener('pointermove', function (e) { addStrokePoint(e); }, true);
+['pointerup', 'pointercancel'].forEach(function (ev) {
+  mapContainerEl.addEventListener(ev, function (e) { endStroke(e); }, true);
+});
+buildFreehandControls();
+
+// ===== Gat in een vlak ("donut"): bv. een rond pad met gazon in het midden =====
+var holeBtn = null;
+function buildHoleButton() {
+  var eb = document.getElementById('mapEditShapeBtn');
+  if (!eb || holeBtn) return;
+  holeBtn = document.createElement('button');
+  holeBtn.type = 'button';
+  holeBtn.className = eb.className || '';
+  holeBtn.textContent = '\uD83D\uDD73\uFE0F Gat inmaken';
+  holeBtn.style.display = 'none';
+  holeBtn.addEventListener('click', function () {
+    if (!selectedShape || selectedShape.kind !== 'object' || !selectedShape.obj.closed) return;
+    if (freehandOn) { setFreehand(false); } // eerst modus netjes afsluiten
+    holeTarget = selectedShape.obj;
+    setDrawMode(true, 'hole');
+  });
+  eb.parentNode.insertBefore(holeBtn, eb.nextSibling);
+}
+function updateHoleBtn() {
+  if (!holeBtn) return;
+  var show = editVerticesMode && selectedShape && selectedShape.kind === 'object' &&
+    selectedShape.obj.closed && selectedShape.obj.shape.length >= 3;
+  holeBtn.style.display = show ? '' : 'none';
+}
+buildHoleButton();
 
 // ===== Hoekpunten van vormen slepen (borders en tuinobjecten) =====
 (function () {
@@ -398,7 +606,11 @@ gardenMap.on('dblclick', function () { if (drawMode) finishDraw(); });
     '.dist-label { background: rgba(255,255,255,.92); color: #1565c0; font-size: 11px; font-weight: 600; padding: 1px 5px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.35); white-space: nowrap; transform: translate(-50%, -50%); pointer-events: none; }' +
     '.dist-total { color: #2e7d32; font-weight: 700; }' +
     '.vertex-add { width: 18px; height: 18px; background: rgba(255,255,255,.95); color: #1565c0; border: 2px solid #1565c0; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,.4); cursor: copy; font-size: 14px; font-weight: 700; line-height: 14px; text-align: center; font-family: sans-serif; }' +
-    '.vertex-add:hover { background: #1565c0; color: #fff; }';
+    '.vertex-add:hover { background: #1565c0; color: #fff; }' +
+    '.vertex-hole { background: #ff9800; }' +
+    '.vertex-hole-add { color: #ef6c00; border-color: #ef6c00; }' +
+    '.freehand-active { cursor: crosshair !important; }' +
+    '@media (pointer: coarse) { .vertex-marker { width: 22px !important; height: 22px !important; } .vertex-add { width: 26px !important; height: 26px !important; line-height: 22px !important; font-size: 18px !important; } }';
   document.head.appendChild(st);
 })();
 
@@ -413,55 +625,70 @@ function setEditVertices(on) {
   var btn = document.getElementById('mapEditShapeBtn');
   if (btn) btn.textContent = on ? '\u2705 Klaar met slepen' : '\uD83D\uDCB0 Hoekpunten slepen';
   gardenMap.getContainer().style.cursor = on ? 'pointer' : '';
+  updateHoleBtn();
   renderMap();
 }
 
 function selectShape(kind, obj, arr) {
   selectedShape = { kind: kind, obj: obj, arr: arr };
   vertexLayer.clearLayers();
-  obj.shape.forEach(function (pt, i) {
-    var mk = L.marker(pt, {
-      draggable: true,
-      icon: L.divIcon({ className: 'vertex-marker', iconSize: [14, 14] })
-    }).addTo(vertexLayer);
-    mk.bindTooltip('hoekpunt ' + (i + 1) + ' \u2014 sleep om te verplaatsen, rechtsklik om te verwijderen');
-    mk.on('drag', function (e) {
-      var ll = e.target.getLatLng();
-      obj.shape[i] = [ll.lat, ll.lng];
-      if (kind === 'border') renderMap();
-      else renderGardenObjects();
-      showDistances(obj.shape, shapeIsClosed(kind, obj));
-    });
-    mk.on('dragend', function () { saveShapeEdit(); });
-    mk.on('contextmenu', function () {
-      var minPts = kind === 'border' ? 3 : (LINE_TYPES[obj.type] ? 2 : 1);
-      if (obj.shape.length <= minPts) {
-        alert('Deze vorm heeft te weinig punten om er een te verwijderen.');
-        return;
-      }
-      obj.shape.splice(i, 1);
-      saveShapeEdit();
-      selectShape(kind, obj, arr);
-    });
-  });
-  // Midden van elk segment: klik = hoekpunt toevoegen
-  var nSeg = shapeIsClosed(kind, obj) ? obj.shape.length : obj.shape.length - 1;
-  for (var j = 0; j < nSeg; j++) {
-    (function (segIdx) {
-      var a = obj.shape[segIdx], b = obj.shape[(segIdx + 1) % obj.shape.length];
-      var mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
-      var am = L.marker(mid, {
-        icon: L.divIcon({ className: 'vertex-add', iconSize: [18, 18], html: '+' })
+  var rings = [{ pts: obj.shape, hole: -1 }];
+  if (obj.holes) obj.holes.forEach(function (h, hi) { rings.push({ pts: h, hole: hi }); });
+  rings.forEach(function (ring) {
+    ring.pts.forEach(function (pt, i) {
+      var mk = L.marker(pt, {
+        draggable: true,
+        icon: L.divIcon({ className: ring.hole < 0 ? 'vertex-marker' : 'vertex-marker vertex-hole', iconSize: [14, 14] })
       }).addTo(vertexLayer);
-      am.bindTooltip('hoekpunt toevoegen');
-      am.on('click', function () {
-        obj.shape.splice(segIdx + 1, 0, mid.slice());
+      mk.bindTooltip((ring.hole < 0 ? 'hoekpunt ' : 'gat ' + (ring.hole + 1) + ', punt ') + (i + 1) + ' \u2014 sleep om te verplaatsen, rechtsklik om te verwijderen');
+      mk.on('drag', function (e) {
+        var ll = e.target.getLatLng();
+        ring.pts[i] = [ll.lat, ll.lng];
+        if (kind === 'border') renderMap();
+        else renderGardenObjects();
+        showDistances(obj.shape, shapeIsClosed(kind, obj));
+      });
+      mk.on('dragend', function () { saveShapeEdit(); });
+      mk.on('contextmenu', function () {
+        var minPts = ring.hole < 0 ? (kind === 'border' ? 3 : (LINE_TYPES[obj.type] ? 2 : 1)) : 3;
+        if (ring.hole >= 0 && ring.pts.length <= minPts) {
+          if (confirm('Dit gat verwijderen?')) {
+            obj.holes.splice(ring.hole, 1);
+            saveShapeEdit();
+            selectShape(kind, obj, arr);
+          }
+          return;
+        }
+        if (ring.pts.length <= minPts) {
+          alert('Deze vorm heeft te weinig punten om er een te verwijderen.');
+          return;
+        }
+        ring.pts.splice(i, 1);
         saveShapeEdit();
         selectShape(kind, obj, arr);
       });
-    })(j);
-  }
+    });
+    // Midden van elk segment: klik = hoekpunt toevoegen
+    var closed = ring.hole < 0 ? shapeIsClosed(kind, obj) : true;
+    var nSeg = closed ? ring.pts.length : ring.pts.length - 1;
+    for (var j = 0; j < nSeg; j++) {
+      (function (segIdx) {
+        var a = ring.pts[segIdx], b = ring.pts[(segIdx + 1) % ring.pts.length];
+        var mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+        var am = L.marker(mid, {
+          icon: L.divIcon({ className: ring.hole < 0 ? 'vertex-add' : 'vertex-add vertex-hole-add', iconSize: [18, 18], html: '+' })
+        }).addTo(vertexLayer);
+        am.bindTooltip('hoekpunt toevoegen');
+        am.on('click', function () {
+          ring.pts.splice(segIdx + 1, 0, mid.slice());
+          saveShapeEdit();
+          selectShape(kind, obj, arr);
+        });
+      })(j);
+    }
+  });
   showDistances(obj.shape, shapeIsClosed(kind, obj));
+  updateHoleBtn();
   renderMap();
 }
 
