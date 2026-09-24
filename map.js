@@ -35,6 +35,9 @@ var vertexLayer = L.layerGroup().addTo(gardenMap);
 var distLayer = L.layerGroup().addTo(gardenMap);
 var freehandOn = false;    // vrij tekenen met Apple Pencil / vinger
 var holeTarget = null;     // object waarin nu een gat wordt getekend
+var circleMode = false;    // perfecte cirkel tekenen (tik middelpunt, tik rand)
+var circleCenter = null;
+var circlePreview = null;  // L.circle als live voorbeeld van de cirkel
 
 // ===== Afstanden tussen hoekpunten (echte meters uit de coördinaten) =====
 function distanceMeters(a, b) {
@@ -324,6 +327,8 @@ function setDrawMode(on, kind) {
   document.getElementById('mapDrawBtn').style.display = on ? 'none' : '';
   document.getElementById('mapFinishDrawBtn').style.display = on ? '' : 'none';
   gardenMap.getContainer().style.cursor = on ? 'crosshair' : '';
+  if (!on) { circleCenter = null; if (circlePreview) { gardenMap.removeLayer(circlePreview); circlePreview = null; } }
+  updateCircleBtn();
 }
 
 function dedupePoints() {
@@ -409,6 +414,26 @@ function finishDraw() {
 gardenMap.on('click', function (e) {
   if (editVerticesMode) return;
   if (!drawMode) return;
+  if (circleMode) {
+    if (!circleCenter) {
+      circleCenter = [e.latlng.lat, e.latlng.lng];
+      circlePreview = L.circle(circleCenter, { radius: 1, color: '#1565c0', weight: 2, dashArray: '6 4', fillOpacity: 0.1 }).addTo(gardenMap);
+    } else {
+      var rM = distanceMeters(circleCenter, [e.latlng.lat, e.latlng.lng]);
+      if (rM < 0.2) {
+        alert('Tik eerst het middelpunt en daarna een punt op de rand van de cirkel (iets verder van het midden).');
+        return;
+      }
+      var cKind = drawKind || 'border';
+      drawPoints = makeCirclePoints(circleCenter, rM, 48);
+      circleCenter = null;
+      if (circlePreview) { gardenMap.removeLayer(circlePreview); circlePreview = null; }
+      finishDraw();
+      // na succes: meteen weer cirkel-modus voor het volgende rondje
+      if (circleMode && !drawMode && cKind !== 'hole') setDrawMode(true, cKind);
+    }
+    return;
+  }
   if (freehandOn) return; // bij vrij tekenen komt de vorm uit de penstreep
   drawPoints.push([e.latlng.lat, e.latlng.lng]);
   if (drawPreview) gardenMap.removeLayer(drawPreview);
@@ -416,7 +441,7 @@ gardenMap.on('click', function (e) {
   showDistances(drawPoints, false);
 });
 
-gardenMap.on('dblclick', function () { if (drawMode && !freehandStroke) finishDraw(); });
+gardenMap.on('dblclick', function () { if (circleMode) return; if (drawMode && !freehandStroke) finishDraw(); });
 
 // ===== Vrij tekenen met Apple Pencil / vinger (freehand) =====
 // Modus aan zetten, type kiezen in de lijst, en de vorm in \u00e9\u00e9n streep
@@ -464,6 +489,7 @@ function setFreehand(on) {
     if (freehandFingerLb) freehandFingerLb.style.display = disp;
   }
   if (on) {
+    if (circleMode) setCircleMode(false);
     var sel = document.getElementById('mapDrawType');
     holeTarget = null;
     setDrawMode(true, sel ? sel.value : 'border');
@@ -480,6 +506,7 @@ function pointerMayDraw(e) {
 }
 
 function startStroke(e) {
+  if (circleMode) return; // bij cirkel teken je met tikken, niet met een streep
   if (!freehandOn || !drawMode) return;
   if (!pointerMayDraw(e) || freehandStroke) return;
   e.preventDefault();
@@ -598,6 +625,56 @@ function updateHoleBtn() {
   holeBtn.style.display = show ? '' : 'none';
 }
 buildHoleButton();
+
+// ===== Perfecte cirkel tekenen (tik middelpunt, tik rand) =====
+var circleBtn = null;
+function buildCircleButton() {
+  var db = document.getElementById('mapDrawBtn');
+  if (!db || circleBtn) return;
+  circleBtn = document.createElement('button');
+  circleBtn.type = 'button';
+  circleBtn.className = db.className || '';
+  circleBtn.textContent = '\u2B55 Cirkel';
+  circleBtn.title = 'Perfecte cirkel: tik het middelpunt en daarna de rand';
+  circleBtn.addEventListener('click', function () { setCircleMode(!circleMode); });
+  db.parentNode.insertBefore(circleBtn, db.nextSibling);
+}
+function setCircleMode(on) {
+  circleMode = on;
+  if (on) {
+    if (freehandOn) setFreehand(false);
+    holeTarget = null;
+    var sel = document.getElementById('mapDrawType');
+    setDrawMode(true, sel ? sel.value : 'border');
+  } else {
+    circleCenter = null;
+    if (circlePreview) { gardenMap.removeLayer(circlePreview); circlePreview = null; }
+    setDrawMode(false);
+  }
+  updateCircleBtn();
+}
+function updateCircleBtn() {
+  if (!circleBtn) return;
+  circleBtn.textContent = circleMode ? '\u2705 Klaar met cirkel' : '\u2B55 Cirkel';
+}
+function makeCirclePoints(center, radiusM, n) {
+  var pts = [];
+  var latRad = center[0] * Math.PI / 180;
+  for (var i = 0; i < n; i++) {
+    var a = 2 * Math.PI * i / n;
+    var dLat = (radiusM * Math.cos(a)) / 111320;
+    var dLng = (radiusM * Math.sin(a)) / (111320 * Math.cos(latRad));
+    pts.push([center[0] + dLat, center[1] + dLng]);
+  }
+  return pts;
+}
+// Live voorbeeld: cirkel meelaten groeien met de pen/vinger
+gardenMap.on('mousemove', function (e) {
+  if (circleMode && circleCenter && circlePreview) {
+    circlePreview.setRadius(Math.max(0.2, distanceMeters(circleCenter, [e.latlng.lat, e.latlng.lng])));
+  }
+});
+buildCircleButton();
 
 // ===== Hoekpunten van vormen slepen (borders en tuinobjecten) =====
 (function () {
