@@ -1,5 +1,7 @@
 // Backup: exporteer & importeer plannerdata (localStorage) als JSON — Tuinplantplanner
 // v3: rechtstreeks in het Instellingen-tabblad (#backupDock), geen uitklapknop meer.
+// v4: geharde import — maximale bestandsgrootte, strikte structuurcontrole per sleutel
+//     en weigering bij HTML/script/event-handler-patronen in de gegevens.
 (function () {
   var KEYS = ['shortlist', 'borders', 'gardenObjects', 'gardenAddress', 'mapView'];
   var LAST = 'lastBackupAt';
@@ -49,7 +51,46 @@
     setStatus('Backup gedownload.');
   }
 
+  // ---- Beveiliging (v4): import is data-only, nooit code ----
+  // 1. maximaal 2 MB, 2. alleen de 5 bekende sleutels, 3. elke waarde moet
+  //    geldige JSON zijn met de verwachte structuur, 4. alle tekst wordt
+  //    gescand op HTML/script/event-handler-patronen -> import geweigerd.
+  //    De app voert geïmporteerde gegevens nooit uit als code (JSON.parse +
+  //    escaping bij het tonen); deze laag is een extra vangnet.
+  var MAX_BYTES = 2 * 1024 * 1024;
+  var DANGEROUS = /<\s*\/?\s*(script|iframe|object|embed|svg|link|style|img|video|audio|body|input|form|meta|base)\b|javascript\s*:|data\s*:\s*text\s*\/html|\bon[a-z]+\s*=/i;
+
+  function deepScan(value, depth) {
+    if (depth > 12) return true; // abnormaal diep genest = verdacht
+    if (typeof value === 'string') return DANGEROUS.test(value);
+    if (Array.isArray(value)) {
+      for (var i = 0; i < value.length; i++) {
+        if (deepScan(value[i], depth + 1)) return true;
+      }
+      return false;
+    }
+    if (value && typeof value === 'object') {
+      for (var k in value) {
+        if (Object.prototype.hasOwnProperty.call(value, k) && deepScan(value[k], depth + 1)) return true;
+      }
+    }
+    return false;
+  }
+
+  // Verwachte structuur per sleutel (exports slaan elke sleutel op als JSON-string)
+  var EXPECT = {
+    shortlist: function (v) { return Array.isArray(v) && v.every(function (x) { return typeof x === 'string'; }); },
+    gardenObjects: function (v) { return Array.isArray(v) && v.every(function (x) { return x && typeof x === 'object' && !Array.isArray(x); }); },
+    borders: function (v) { return v && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).every(function (k) { return typeof k === 'string' && v[k] && typeof v[k] === 'object'; }); },
+    gardenAddress: function (v) { return v && typeof v === 'object' && !Array.isArray(v); },
+    mapView: function (v) { return v && typeof v === 'object' && !Array.isArray(v); }
+  };
+
   function doImport(file) {
+    if (file.size > MAX_BYTES) {
+      setStatus('Import geweigerd: bestand is groter dan 2 MB — dit is geen normale backup.');
+      return;
+    }
     var reader = new FileReader();
     reader.onload = function () {
       var payload;
@@ -59,16 +100,38 @@
         setStatus('Dit lijkt geen Tuinplantplanner-backup te zijn.');
         return;
       }
+      // Eerst ALLES valideren; pas daarna wegschrijven (nooit half importeren).
+      var validated = {};
+      try {
+        KEYS.forEach(function (k) {
+          if (!Object.prototype.hasOwnProperty.call(payload.data, k)) return;
+          var v = payload.data[k];
+          if (typeof v === 'string') v = JSON.parse(v); // exports slaan JSON-strings op
+          if (!EXPECT[k](v)) throw new Error('structuur van sleutel "' + k + '" klopt niet');
+          if (deepScan(v, 0)) throw new Error('DANGER');
+          validated[k] = v;
+        });
+      } catch (e) {
+        if (String(e.message) === 'DANGER') {
+          setStatus('Import geweigerd: het bestand bevat mogelijk schadelijke code (HTML/script in de gegevens).');
+        } else {
+          setStatus('Import geweigerd: ' + (e.message || 'de inhoud past niet bij de app') + '.');
+        }
+        return;
+      }
+      if (!Object.keys(validated).length) {
+        setStatus('Er staan geen bruikbare gegevens in dit bestand.');
+        return;
+      }
       var hasData = Object.keys(readAll()).length > 0;
       if (hasData && !window.confirm('Importeren vervangt de gegevens die in dit bestand zitten (shortlist, borders, tuinobjecten, kaartgegevens en adres). Gegevens die niet in het bestand staan, blijven gewoon staan. Doorgaan?')) return;
       // Alleen sleutels die in het bestand zitten worden vervangen,
       // zodat je bv. alleen tuinobjecten (gardenObjects) kunt importeren
       // zonder je shortlist of borders te verliezen.
       KEYS.forEach(function (k) {
-        if (Object.prototype.hasOwnProperty.call(payload.data, k)) {
+        if (Object.prototype.hasOwnProperty.call(validated, k)) {
           localStorage.removeItem(k);
-          var v = payload.data[k];
-          localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
+          localStorage.setItem(k, JSON.stringify(validated[k]));
         }
       });
       setStatus('Geïmporteerd — pagina wordt herladen...');
@@ -87,7 +150,7 @@
       '<button id="backupImportBtn" class="btn">Importeer JSON</button>' +
       '</div>' +
       '<input type="file" id="backupFileInput" style="display:none;">' +
-      '<p style="font-size:0.8em;color:#777;margin:6px 0 0;">Tip (iPhone/iPad): het geëxporteerde bestand staat meestal in Bestanden → Downloads. Kies bij “Importeer JSON” voor “Bestanden kiezen”.</p>' +
+      '<p style="font-size:0.8em;color:#777;margin:6px 0 0;">Tip (iPhone/iPad): het geëxporteerde bestand staat meestal in Bestanden \u2192 Downloads. Kies bij \u201cImporteer JSON\u201d voor \u201cBestanden kiezen\u201d.</p>' +
       '<span id="backupStatus" style="font-weight:600;"></span>' +
       '<p id="backupLast" style="font-size:0.85em;color:#777;margin-top:6px;"></p>';
     document.getElementById('backupExportBtn').addEventListener('click', doExport);
