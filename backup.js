@@ -86,7 +86,8 @@
       '<button id="backupExportBtn" class="btn">Exporteer JSON</button>' +
       '<button id="backupImportBtn" class="btn">Importeer JSON</button>' +
       '</div>' +
-      '<input type="file" id="backupFileInput" accept=".json,application/json" style="display:none;">' +
+      '<input type="file" id="backupFileInput" style="display:none;">' +
+      '<p style="font-size:0.8em;color:#777;margin:6px 0 0;">Tip (iPhone/iPad): het geëxporteerde bestand staat meestal in Bestanden → Downloads. Kies bij “Importeer JSON” voor “Bestanden kiezen”.</p>' +
       '<span id="backupStatus" style="font-weight:600;"></span>' +
       '<p id="backupLast" style="font-size:0.85em;color:#777;margin-top:6px;"></p>';
     document.getElementById('backupExportBtn').addEventListener('click', doExport);
