@@ -1,7 +1,7 @@
 // Kaart- en adresfunctionaliteit Tuinplantplanner (Leaflet + PDOK)
 // Nieuwe flow: vormen (borders én tuinobjecten zoals terras, pad, haag) teken
-// je direct op de kaart; planten plaatsen gebeurt op de aparte border-editor
-// (border.html). Hoekpunten van getekende vormen kun je verslepen.
+// je direct op de kaart; planten plaatsen gebeurt in de Borders-tab van de
+// planner (index.html). Hoekpunten van getekende vormen kun je verslepen.
 
 var drawMode = false;
 var drawKind = null; // 'border' of een tuinobject-type (terras, pad, ...)
@@ -156,7 +156,9 @@ gardenMap.on('moveend zoomend', saveMapView);
 
 // ===== Alle borders op de kaart tonen =====
 function openBorderEditor(borderId) {
-  window.location.href = 'border.html?id=' + encodeURIComponent(borderId);
+  try { localStorage.setItem('activeTab', 'borders'); } catch (e) {}
+  try { localStorage.setItem('openBorderId', borderId); } catch (e) {}
+  window.location.href = 'index.html';
 }
 
 function renderMap() {
@@ -361,9 +363,7 @@ function finishDraw() {
     setDrawMode(false);
     saveState();
     gardenMap.fitBounds(newBorder.shape, { padding: [30, 30] });
-    if (confirm('Border "' + bName + '" is aangemaakt!\n\nNu planten toevoegen en plaatsen in de border-editor?')) {
-      openBorderEditor(newBorder.id);
-    }
+    openBorderEditor(newBorder.id);
     return;
   }
   if (kind === 'hole') {

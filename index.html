@@ -114,9 +114,13 @@ body.has-address #addressGate { display: none; }
 .sl-genus-count { font-weight: 400; color: var(--light-text); font-size: 11px; }
 .sl-table td.sl-sp { min-width: 42px; color: #c9cfc9; font-size: 11px; }
 .sl-table td.sl-sp.ja { color: var(--primary); font-weight: 700; background: #f0ffe0; }
-.sl-table td.sl-hoogte { min-width: 120px; white-space: nowrap; }
-.sl-hoogte-bar { display: inline-block; vertical-align: middle; width: 90px; height: 11px; background: #eef2ee; border: 1px solid var(--border); border-radius: 2px; overflow: hidden; background-image: repeating-linear-gradient(to right, transparent 0, transparent 21px, #ccd5cc 21px, #ccd5cc 22.5px); }
-.sl-hoogte-fill { height: 100%; background: repeating-linear-gradient(45deg, var(--accent) 0, var(--accent) 3px, #9ccc65 3px, #9ccc65 6px); }
+.sl-table td.sl-hoogte { min-width: 160px; white-space: nowrap; }
+.sl-hoogte-bar { display: inline-block; vertical-align: middle; width: 120px; height: 12px; background: #f0f0f0; border: 1px solid #b8c0b8; border-radius: 2px; overflow: hidden; position: relative; background-image: repeating-linear-gradient(to right, transparent 0, transparent 29px, #d0d0d0 29px, #d0d0d0 30px); }
+.sl-hoogte-fill { height: 100%; background: #6d8f6d; }
+.sl-table td.sl-sel { width: 26px; }
+.sl-table td.sl-sel input { cursor: pointer; }
+.sl-legend { font-size: 11px; color: var(--light-text); margin: 4px 0 8px; }
+.sl-legend .sw { display: inline-block; width: 11px; height: 11px; border: 1px solid #b8c0b8; border-radius: 2px; vertical-align: middle; margin: 0 3px 0 10px; }
 .sl-hoogte-txt { display: inline-block; vertical-align: middle; margin-left: 5px; font-size: 10px; color: var(--light-text); }
 .sl-table td.sl-m { min-width: 15px; font-size: 10px; padding: 4px 1px; color: #d8ddd8; }
 .sl-table td.sl-m.bloei { color: var(--primary); font-weight: 700; background: #e8f5e8; }
@@ -165,6 +169,7 @@ body.has-address #addressGate { display: none; }
             <div style="overflow-x: auto;">
                 <table class="sl-table" id="shortlistTable">
                     <thead><tr>
+                        <th class="sl-c-sel"></th>
                         <th class="sl-c-plant">Plant</th>
                         <th class="sl-c-kleur">Kleur</th>
                         <th class="sl-c-sp" title="Zon (Z)">Zon<br><span class="sl-h">Z</span></th>
@@ -188,7 +193,8 @@ body.has-address #addressGate { display: none; }
                     <tbody id="shortlist"></tbody>
                 </table>
             </div>
-            <p class="sl-tip">Op een smal scherm schuift de tabel horizontaal mee. Kolommen: Z = zon, HS = halfschaduw, S = schaduw; per maandkolom zie je een letter als de plant die maand bloeit.</p>
+            <p class="sl-legend">Legenda: <span class="sw" style="background:#6d8f6d"></span>gegroeide hoogte op schaal 0&ndash;2 m &middot; groen vakje in een maandkolom = plant bloeit die maand &middot; Z = zon, HS = halfschaduw, S = schaduw. Op een smal scherm schuift de tabel horizontaal mee.</p>
+            <button class="btn btn-primary" id="slAddSelectionToBorderBtn">Aangevinkte planten aan border toevoegen&hellip;</button>
             <div id="slVisibleInfo" class="sl-visible-info"></div>
             <div id="shortlistSummary"></div>
             <button class="btn btn-danger" id="clearShortlistBtn">Shortlist leegmaken</button>
@@ -199,21 +205,45 @@ body.has-address #addressGate { display: none; }
             <div class="border-list" id="borderList"></div>
             <div id="activeBorderSection" class="hidden">
                 <h3 id="activeBorderName"></h3>
+                <div id="borderShapeBox"></div>
+                <p class="sl-tip" id="borderShapeHint" style="display:none;">Kies hieronder een plant en klik in de vorm om hem te plaatsen; sleep een plant om te verplaatsen (klik op een geplaatste plant = positie wissen).</p>
                 <div class="add-plant-section">
-                    <h4>Plant toevoegen:</h4>
-                    <select id="addPlantSelect"><option value="">Selecteer een plant...</option></select>
-                    <button class="btn btn-primary" id="addPlantToBorderBtn">Toevoegen</button>
+                    <h4>Planten toevoegen</h4>
+                    <p class="sl-tip">Dezelfde lijst als je shortlist, met dezelfde filters. Vink aan wat je in deze border wilt \u2014 de planten staan dan direct in de tabel hieronder.</p>
+                    <div id="borderPickerContainer"></div>
                 </div>
-                <h4>Plantoverzicht:</h4>
+                <h4>Planten in deze border</h4>
                 <div style="overflow-x: auto;">
-                    <table class="border-plant-table">
-                        <thead><tr><th>Plant</th><th>Kleur</th><th>Bloei van</th><th>Bloei tot</th><th>Hoogte van</th><th>Hoogte tot</th><th>Standplaats</th><th>Actie</th></tr></thead>
+                    <table class="sl-table" id="borderPlantTable">
+                        <thead><tr>
+                            <th class="sl-c-sel"></th>
+                            <th class="sl-c-plant">Plant</th>
+                            <th class="sl-c-kleur">Kleur</th>
+                            <th class="sl-c-sp" title="Zon (Z)">Zon<br><span class="sl-h">Z</span></th>
+                            <th class="sl-c-sp" title="Halfschaduw (HS)">Halfschaduw<br><span class="sl-h">HS</span></th>
+                            <th class="sl-c-sp" title="Schaduw (S)">Schaduw<br><span class="sl-h">S</span></th>
+                            <th class="sl-c-hoogte" title="De balk loopt van 0 tot 2 meter">Hoogte <span class="sl-h-sub">(0&ndash;2 m)</span></th>
+                            <th class="sl-c-m" title="januari">jan</th>
+                            <th class="sl-c-m" title="februari">feb</th>
+                            <th class="sl-c-m" title="maart">mrt</th>
+                            <th class="sl-c-m" title="april">apr</th>
+                            <th class="sl-c-m" title="mei">mei</th>
+                            <th class="sl-c-m" title="juni">jun</th>
+                            <th class="sl-c-m" title="juli">jul</th>
+                            <th class="sl-c-m" title="augustus">aug</th>
+                            <th class="sl-c-m" title="september">sep</th>
+                            <th class="sl-c-m" title="oktober">okt</th>
+                            <th class="sl-c-m" title="november">nov</th>
+                            <th class="sl-c-m" title="december">dec</th>
+                            <th></th>
+                        </tr></thead>
                         <tbody id="borderPlantTableBody"></tbody>
                     </table>
                 </div>
+                <div id="borderSummary"></div>
                 <div style="margin-top: 8px;">
-                    <button class="btn btn-secondary" id="closeBorderBtn">Sluiten</button>
                     <button class="btn btn-danger" id="clearBorderBtn">Border leegmaken</button>
+                    <button class="btn btn-secondary" id="closeBorderBtn">Sluiten</button>
                 </div>
             </div>
         </div>
@@ -296,7 +326,10 @@ body.has-address #addressGate { display: none; }
         const activeBorderSectionEl = document.getElementById('activeBorderSection');
         const activeBorderNameEl = document.getElementById('activeBorderName');
         const borderPlantTableBodyEl = document.getElementById('borderPlantTableBody');
-        const addPlantSelectEl = document.getElementById('addPlantSelect');
+        const borderSummaryEl = document.getElementById('borderSummary');
+        const borderPickerContainerEl = document.getElementById('borderPickerContainer');
+        const borderShapeBoxEl = document.getElementById('borderShapeBox');
+        const borderShapeHintEl = document.getElementById('borderShapeHint');
 
         const colorToHex = {
             wit: '#ffffff', geel: '#ffd700', roze: '#ffc0cb', rood: '#ff0000',
@@ -368,9 +401,10 @@ body.has-address #addressGate { display: none; }
                 if (kleuren.indexOf(slFilters.kleur) === -1) slFilters.kleur = '';
                 slFilterKleurEl.value = slFilters.kleur;
             }
-            if (!slFilterMaandEl.options.length) {
+            if (!slFilterMaandEl.getAttribute('data-filled')) {
                 slFilterMaandEl.innerHTML = '<option value="">Bloeimaand: alle</option>' +
                     PlantPicker.MONTHS.map(function (m, i) { return '<option value="' + i + '">' + m + '</option>'; }).join('');
+                slFilterMaandEl.setAttribute('data-filled', '1');
             }
         }
 
@@ -405,9 +439,10 @@ function renderShortlist() {
                 let html = '';
                 if (genus !== currentGenus) {
                     currentGenus = genus;
-                    html += '<tr class="sl-genus"><td colspan="19">' + esc(genus) +
+                    html += '<tr class="sl-genus"><td colspan="20">' + esc(genus) +
                         ' <span class="sl-genus-count">(' + (genusCounts[genus] || 0) + ')</span></td></tr>';
                 }
+                const selChecked = slSelection.indexOf(plant.latijnseNaam) !== -1 ? ' checked' : '';
                 // standplaats in de juiste kolom (Z / HS / S)
                 const tokens = slTokens(plant);
                 const spCols = ['Z', 'HS', 'S'].map(function (t) {
@@ -431,6 +466,7 @@ function renderShortlist() {
                 }).join('');
                 return html +
                     '<tr>' +
+                    '<td class="sl-sel"><input type="checkbox" data-sel="' + name + '"' + selChecked + '></td>' +
                     '<td class="sl-plant"><strong>' + name + '</strong><br><em>' + esc(plant.nlNaam || '') + '</em></td>' +
                     '<td class="sl-kleur"><span class="color-indicator" style="background-color: ' + getColorHex(plant.kleur) + '"></span> ' + esc(plant.kleur || '-') + '</td>' +
                     spCols +
@@ -443,7 +479,7 @@ function renderShortlist() {
             }).join('');
 
             shortlistEl.innerHTML = rows ||
-                '<tr><td colspan="19" class="sl-empty">' +
+                '<tr><td colspan="20" class="sl-empty">' +
                 (shortlist.length
                     ? 'Geen planten voldoen aan de filters.'
                     : 'Nog geen planten op de shortlist &ndash; vink planten aan in het Planten-tabblad.') +
@@ -456,6 +492,42 @@ function renderShortlist() {
                 removeFromShortlist(e.target.getAttribute('data-remove'));
             }
         });
+
+        // ==== Shortlist: meerdere planten tegelijk aan een border toevoegen ====
+        const slSelection = [];
+        shortlistEl.addEventListener('change', function (e) {
+            if (e.target && e.target.hasAttribute && e.target.hasAttribute('data-sel')) {
+                const name = e.target.getAttribute('data-sel');
+                const idx = slSelection.indexOf(name);
+                if (e.target.checked && idx === -1) slSelection.push(name);
+                if (!e.target.checked && idx !== -1) slSelection.splice(idx, 1);
+            }
+        });
+
+        function slAddSelectionToBorder() {
+            if (!slSelection.length) { alert('Vink eerst planten aan in de shortlist (selectievakje vooraan elke rij).'); return; }
+            if (!borders.length) { alert('Je hebt nog geen border. Maak eerst een border aan (of teken er een op de kaart).'); return; }
+            const list = borders.map((b, i) => (i + 1) + ') ' + b.name).join('\n');
+            const answer = prompt('Aan welke border wil je ' + slSelection.length + ' plant(en) toevoegen?\n\n' + list + '\n\nVul het nummer in:');
+            if (!answer) return;
+            const border = borders[Number(answer.trim()) - 1];
+            if (!border) { alert('Dat is geen geldig nummer.'); return; }
+            let added = 0;
+            slSelection.forEach(name => {
+                if (border.plants.some(p => p.latijnseNaam === name)) return;
+                const plant = shortlist.find(p => p.latijnseNaam === name);
+                if (!plant) return;
+                const copy = JSON.parse(JSON.stringify(plant));
+                copy.pos = null;
+                border.plants.push(copy);
+                added++;
+            });
+            saveState();
+            renderBorderList();
+            renderShortlist();
+            alert(added + ' plant(en) toegevoegd aan border \u201c' + border.name + '\u201d.');
+        }
+        document.getElementById('slAddSelectionToBorderBtn').addEventListener('click', slAddSelectionToBorder);
 
         function removeFromShortlist(latijnseNaam) {
             shortlist = shortlist.filter(p => p.latijnseNaam !== latijnseNaam);
@@ -487,10 +559,14 @@ function renderShortlist() {
             const border = typeof borderOrId === 'object' ? borderOrId : borders.find(b => b.id === borderOrId);
             if (!border) return;
             activeBorderId = border.id;
-            activeBorderNameEl.textContent = 'Border: ' + border.name;
+            activeBorderNameEl.textContent = 'Border: ' + border.name + ' (' + border.plants.length + ' planten)';
             activeBorderSectionEl.classList.remove('hidden');
+            borderShape = createBorderShape(borderShapeBoxEl, border, function () {
+                saveState();
+                renderBorderPlantTable();
+            });
+            borderShapeHintEl.style.display = borderShape ? '' : 'none';
             renderBorderPlantTable();
-            updateAddPlantSelect();
         }
 
         function renderBorderList() {
@@ -513,7 +589,7 @@ function renderShortlist() {
             }
             if (e.target && e.target.tagName === 'BUTTON' && e.target.hasAttribute('data-editborder')) {
                 e.stopPropagation();
-                window.location.href = 'border.html?id=' + encodeURIComponent(e.target.getAttribute('data-editborder'));
+                showActiveBorder(e.target.getAttribute('data-editborder'));
                 return;
             }
             const item = e.target.closest ? e.target.closest('.border-item') : null;
@@ -522,54 +598,95 @@ function renderShortlist() {
             }
         });
 
+        // deelrij-HTML die de shortlist-tabel en de border-tabel delen
+        function slRowCells(plant, extraFirst) {
+            const name = esc(plant.latijnseNaam);
+            const tokens = slTokens(plant);
+            const spCols = ['Z', 'HS', 'S'].map(function (t) {
+                const ja = tokens.indexOf(t) !== -1;
+                return '<td class="sl-sp' + (ja ? ' ja' : '') + '">' +
+                    (ja ? t : (tokens.length ? '' : '&middot;')) + '</td>';
+            }).join('');
+            const van = Number(plant.hoogteVan), tot = Number(plant.hoogteTot);
+            const topCm = (tot > 0 ? tot : 0) || (van > 0 ? van : 0);
+            const pct = topCm > 0 ? Math.min(topCm, 200) / 2 : 0;
+            const hTxt = (van > 0 && tot > van) ? (van + '\u2013' + tot + ' cm')
+                : (topCm > 0 ? (topCm + ' cm') : 'onbekend');
+            const bloei = PlantPicker.bloeiMaanden(plant);
+            const maandCols = PlantPicker.MONTHS.map(function (m, i) {
+                const bloeit = bloei.indexOf(i) !== -1;
+                return '<td class="sl-m' + (bloeit ? ' bloei' : '') + '"' +
+                    ' title="' + esc(m) + (bloeit ? ' \u2013 bloeit' : '') + '">' +
+                    (bloeit ? esc(m.charAt(0)) : '') + '</td>';
+            }).join('');
+            return (extraFirst || '') +
+                '<td class="sl-plant"><strong>' + name + '</strong><br><em>' + esc(plant.nlNaam || '') + '</em></td>' +
+                '<td class="sl-kleur"><span class="color-indicator" style="background-color: ' + getColorHex(plant.kleur) + '"></span> ' + esc(plant.kleur || '-') + '</td>' +
+                spCols +
+                '<td class="sl-hoogte" title="' + esc(hTxt) + '">' +
+                '<div class="sl-hoogte-bar"><div class="sl-hoogte-fill" style="width: ' + pct + '%"></div></div>' +
+                '<span class="sl-hoogte-txt">' + esc(hTxt) + '</span></td>' +
+                maandCols;
+        }
+
         function renderBorderPlantTable() {
             const border = borders.find(b => b.id === activeBorderId);
             if (!border) return;
             borderPlantTableBodyEl.innerHTML = border.plants.map(plant => {
-                const colorHex = getColorHex(plant.kleur);
                 const name = esc(plant.latijnseNaam);
-                return '<tr>' +
-                    '<td><strong>' + name + '</strong><br><em>' + esc(plant.nlNaam) + '</em></td>' +
-                    '<td><span class="color-indicator" style="background-color: ' + colorHex + '"></span> ' + esc(plant.kleur) + '</td>' +
-                    '<td>' + esc(plant.bloeiVan || '-') + '</td>' +
-                    '<td>' + esc(plant.bloeiTot || '-') + '</td>' +
-                    '<td>' + (plant.hoogteVan || '-') + 'cm</td>' +
-                    '<td>' + (plant.hoogteTot > plant.hoogteVan ? plant.hoogteTot + 'cm' : '') + '</td>' +
-                    '<td>' + esc(plant.standplaats || '-') + '</td>' +
-                    '<td><button class="btn btn-danger" data-removefromborder="' + name + '">\u2715</button></td>' +
-                    '</tr>'; }).join('');
+                const placed = '<td class="sl-sel" title="' + (plant.pos ? 'geplaatst in de vorm' : 'nog niet geplaatst') + '">' +
+                    (plant.pos ? '&#10003;' : '<button class="btn btn-secondary" data-placeplant="' + name + '" title="Klik en klik daarna in de vorm om deze plant te plaatsen">\u2295</button>') + '</td>';
+                return '<tr>' + slRowCells(plant, placed) +
+                    '<td class="sl-del"><button data-removefromborder="' + name + '">\u2715</button></td>' +
+                    '</tr>'; }).join('') ||
+                '<tr><td colspan="20" class="sl-empty">Nog geen planten in deze border.</td></tr>';
+            PlantPicker.renderSummary(borderSummaryEl, border.plants, { title: 'Samenvatting van deze border' });
+            if (borderShape) borderShape.refresh();
         }
 
         borderPlantTableBodyEl.addEventListener('click', function (e) {
             if (e.target && e.target.tagName === 'BUTTON' && e.target.hasAttribute('data-removefromborder')) {
                 removePlantFromBorder(e.target.getAttribute('data-removefromborder'));
             }
+            if (e.target && e.target.tagName === 'BUTTON' && e.target.hasAttribute('data-placeplant')) {
+                if (borderShape) {
+                    borderShape.placePlant(e.target.getAttribute('data-placeplant'));
+                    alert('Klik nu in de vorm om de plant te plaatsen.');
+                }
+            }
         });
 
-        function updateAddPlantSelect() {
-            const border = borders.find(b => b.id === activeBorderId);
-            const availablePlants = shortlist.filter(p =>
-                !border || !border.plants.some(bp => bp.latijnseNaam === p.latijnseNaam)
-            );
-            addPlantSelectEl.innerHTML = '<option value="">Selecteer een plant...</option>' +
-                availablePlants.map(plant =>
-                    '<option value="' + esc(plant.latijnseNaam) + '">' + esc(plant.latijnseNaam) + ' - ' + esc(plant.nlNaam) + '</option>'
-                ).join(''); }
+        // Picker in de border-tab: zelfde lijst/filters als de shortlist
+        let borderPicker = null;
+        borderPicker = PlantPicker.create({
+            container: borderPickerContainerEl,
+            plants: shortlist,
+            emptyText: 'Je shortlist is nog leeg \u2014 vink eerst planten aan in het Planten-tabblad.',
+            isChecked: function (name) {
+                const border = borders.find(b => b.id === activeBorderId);
+                return !!(border && border.plants.some(p => p.latijnseNaam === name));
+            },
+            onToggle: function (plant, checked) {
+                const border = borders.find(b => b.id === activeBorderId);
+                if (!border) return;
+                if (checked) {
+                    if (border.plants.some(p => p.latijnseNaam === plant.latijnseNaam)) return;
+                    const copy = JSON.parse(JSON.stringify(plant));
+                    copy.pos = null;
+                    border.plants.push(copy);
+                } else {
+                    border.plants = border.plants.filter(p => p.latijnseNaam !== plant.latijnseNaam);
+                }
+                saveState();
+                renderBorderPlantTable();
+                borderPicker.refresh();
+                renderBorderList();
+            }
+        });
 
-        function addPlantToBorder() {
-            const selected = addPlantSelectEl.value;
-            if (!selected) return;
-            const plant = shortlist.find(p => p.latijnseNaam === selected);
-            if (!plant) return;
-            const border = borders.find(b => b.id === activeBorderId);
-            if (!border) return;
-            const copy = JSON.parse(JSON.stringify(plant));
-            copy.pos = null;
-            border.plants.push(copy);
-            saveState();
-            renderBorderPlantTable();
-            updateAddPlantSelect();
-            addPlantSelectEl.value = ''; }
+        function updateAddPlantSelect() { borderPicker.refresh(); }
+
+        function addPlantToBorder() { borderPicker.refresh(); }
 
         function removePlantFromBorder(latijnseNaam) {
             const border = borders.find(b => b.id === activeBorderId);
@@ -577,7 +694,7 @@ function renderShortlist() {
             border.plants = border.plants.filter(p => p.latijnseNaam !== latijnseNaam);
             saveState();
             renderBorderPlantTable();
-            updateAddPlantSelect(); }
+            borderPicker.refresh(); }
 
         function clearBorder() {
             const border = borders.find(b => b.id === activeBorderId);
@@ -586,7 +703,7 @@ function renderShortlist() {
                 border.plants = [];
                 saveState();
                 renderBorderPlantTable();
-                updateAddPlantSelect();
+                borderPicker.refresh();
             }
         }
 
@@ -610,6 +727,90 @@ function renderShortlist() {
         function saveState() {
             localStorage.setItem('shortlist', JSON.stringify(shortlist));
             localStorage.setItem('borders', JSON.stringify(borders));
+        }
+
+        // ==== Vormweergave van een border met sleepbare planten (in de Borders-tab) ====
+        let borderShape = null;
+        function createBorderShape(box, border, onChange) {
+            box.innerHTML = '';
+            if (!border.shape || border.shape.length < 3) return null;
+            const NS = 'http://www.w3.org/2000/svg';
+            function el(tag, attrs) { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); return n; }
+            const lat0 = border.shape[0][0], lng0 = border.shape[0][1];
+            const M_LAT = 110540, M_LNG = 111320 * Math.cos(lat0 * Math.PI / 180);
+            function toLocal(lat, lng) { return { x: (lng - lng0) * M_LNG, y: -(lat - lat0) * M_LAT }; }
+            function toLatLng(x, y) { return { lat: lat0 - y / M_LAT, lng: lng0 + x / M_LNG }; }
+            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            border.shape.forEach(function (pt) { const p = toLocal(pt[0], pt[1]); if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x; if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y; });
+            const w = Math.max(maxX - minX, 1), h = Math.max(maxY - minY, 1);
+            const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+            const wrap = document.createElement('div');
+            wrap.style.cssText = 'position:relative;background:#f0fff0;border:1px solid var(--border);border-radius:6px;overflow:hidden;height:360px;';
+            const svg = el('svg', { xmlns: NS }); svg.style.cssText = 'width:100%;height:100%;display:block;cursor:grab;touch-action:none;';
+            const g = el('g', {});
+            svg.appendChild(g); wrap.appendChild(svg); box.appendChild(wrap);
+            const view = { scale: 1, tx: 0, ty: 0 };
+            function size() { return { w: svg.clientWidth || 600, h: svg.clientHeight || 360 }; }
+            function base() { const s = size(); return Math.min(s.w / w, s.h / h) * 0.8; }
+            function applyView() {
+                const s = size();
+                g.setAttribute('transform', 'translate(' + (s.w / 2 + view.tx) + ',' + (s.h / 2 + view.ty) + ') scale(' + (base() * view.scale) + ') translate(' + (-cx) + ',' + (-cy) + ')');
+                drawAll();
+            }
+            function screenToWorld(cxp, cyp) {
+                const s = size(), b = base(), r = svg.getBoundingClientRect();
+                return { x: (cxp - r.left - s.w / 2 - view.tx) / (b * view.scale) + cx, y: (cyp - r.top - s.h / 2 - view.ty) / (b * view.scale) + cy };
+            }
+            const shapePath = border.shape.map(function (pt, i) { const p = toLocal(pt[0], pt[1]); return (i === 0 ? 'M' : 'L') + p.x + ' ' + p.y; }).join(' ') + ' Z';
+            g.appendChild(el('path', { d: shapePath, fill: '#a5d6a7', 'fill-opacity': '0.5', stroke: '#2e7d32', 'stroke-width': 2, 'vector-effect': 'non-scaling-stroke' }));
+            const plantLayer = el('g', {});
+            g.appendChild(plantLayer);
+            function markerR() { return 10 / (base() * view.scale); }
+            function drawAll() {
+                plantLayer.innerHTML = '';
+                border.plants.forEach(function (plant) {
+                    if (!plant.pos) return;
+                    const p = toLocal(plant.pos.lat, plant.pos.lng);
+                    const m = el('circle', { cx: p.x, cy: p.y, r: markerR(), fill: getColorHex(plant.kleur), stroke: '#333', 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke' });
+                    m.style.cursor = 'move';
+                    let dragging = false, moved = false;
+                    m.addEventListener('pointerdown', function (e) { e.preventDefault(); e.stopPropagation(); dragging = true; moved = false; m.setPointerCapture(e.pointerId); });
+                    m.addEventListener('pointermove', function (e) {
+                        if (!dragging) return; moved = true;
+                        const wp = screenToWorld(e.clientX, e.clientY), ll = toLatLng(wp.x, wp.y);
+                        plant.pos = { lat: ll.lat, lng: ll.lng };
+                        const loc = toLocal(ll.lat, ll.lng);
+                        m.setAttribute('cx', loc.x); m.setAttribute('cy', loc.y);
+                    });
+                    m.addEventListener('pointerup', function (e) {
+                        dragging = false;
+                        if (moved) onChange();
+                        else if (confirm('Positie van ' + (plant.nlNaam || plant.latijnseNaam) + ' wissen?')) { plant.pos = null; onChange(); }
+                    });
+                    plantLayer.appendChild(m);
+                });
+            }
+            svg.addEventListener('wheel', function (e) { e.preventDefault(); const r = svg.getBoundingClientRect(); const px = e.clientX - r.left - size().w / 2, py = e.clientY - r.top - size().h / 2; const f = e.deltaY < 0 ? 1.15 : 1 / 1.15; view.tx = px - (px - view.tx) * f; view.ty = py - (py - view.ty) * f; view.scale = Math.min(Math.max(view.scale * f, 0.2), 60); applyView(); }, { passive: false });
+            let panning = false, panStart = null;
+            svg.addEventListener('pointerdown', function (e) { if (e.target !== svg && e.target.parentNode !== g && e.target.parentNode !== plantLayer && e.target.parentNode !== g.firstChild) return; panning = true; panStart = { x: e.clientX, y: e.clientY, tx: view.tx, ty: view.ty }; svg.setPointerCapture(e.pointerId); svg.style.cursor = 'grabbing'; });
+            svg.addEventListener('pointermove', function (e) { if (!panning) return; view.tx = panStart.tx + (e.clientX - panStart.x); view.ty = panStart.ty + (e.clientY - panStart.y); applyView(); });
+            svg.addEventListener('pointerup', function () { if (panning) { panning = false; svg.style.cursor = 'grab'; } });
+            window.addEventListener('resize', applyView);
+            setTimeout(applyView, 50);
+            let armedPlant = null;
+            svg.addEventListener('click', function (e) {
+                if (!armedPlant) return;
+                const plant = border.plants.find(function (p) { return p.latijnseNaam === armedPlant; });
+                armedPlant = null;
+                if (!plant) return;
+                const wp = screenToWorld(e.clientX, e.clientY), ll = toLatLng(wp.x, wp.y);
+                plant.pos = { lat: ll.lat, lng: ll.lng };
+                onChange();
+            });
+            return {
+                refresh: function () { applyView(); },
+                placePlant: function (name) { armedPlant = name; }
+            };
         }
 
         // Tuinontwerp: lijst met tuinobjecten (gardenObjects)
@@ -671,11 +872,17 @@ function renderShortlist() {
         let activeTab = 'planten';
         try { activeTab = localStorage.getItem('activeTab') || 'planten'; } catch (e) { }
         showTab(activeTab);
+        try {
+            const openId = localStorage.getItem('openBorderId');
+            if (openId) {
+                localStorage.removeItem('openBorderId');
+                if (borders.some(b => b.id === openId)) showActiveBorder(openId);
+            }
+        } catch (e) { }
 
         // Event listeners
         document.getElementById('clearShortlistBtn').addEventListener('click', clearShortlist);
         document.getElementById('addBorderBtn').addEventListener('click', addNewBorder);
-        document.getElementById('addPlantToBorderBtn').addEventListener('click', addPlantToBorder);
         document.getElementById('closeBorderBtn').addEventListener('click', closeBorder);
         document.getElementById('clearBorderBtn').addEventListener('click', clearBorder);
 

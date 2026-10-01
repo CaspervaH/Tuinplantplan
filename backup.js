@@ -82,7 +82,7 @@
 
   // Verwachte structuur per sleutel (exports slaan elke sleutel op als JSON-string)
   // NB: de app zelf slaat shortlist op als array van plant-objecten en borders
-  // als array van border-objecten (zie border.js) — precies wat een eigen
+  // als array van border-objecten — precies wat een eigen
   // export bevat en wat we hier dus strikt verwachten.
   var EXPECT = {
     shortlist: function (v) { return Array.isArray(v) && v.every(function (x) { return x && typeof x === 'object' && !Array.isArray(x) && typeof x.latijnseNaam === 'string'; }); },

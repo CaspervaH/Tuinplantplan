@@ -14,7 +14,7 @@ jobs:
         with:
           node-version: 20
       - name: Valideer app (syntax, structuur, koppelingen)
-        run: node tests/validate.js
+        run: node tests/validate.js && node tests/smoke.js
 
   functioneel:
     runs-on: ubuntu-latest
@@ -41,20 +41,16 @@ jobs:
             HTML=$(curl -sL "$BASE/" || true)
             MAPJS=$(curl -sL -o /dev/null -w "%{http_code}" "$BASE/map.js" || true)
             MAPBODY=$(curl -sL "$BASE/map.js" || true)
-            BORDERHTML=$(curl -sL -o /dev/null -w "%{http_code}" "$BASE/border.html" || true)
-            BORDERJS=$(curl -sL -o /dev/null -w "%{http_code}" "$BASE/border.js" || true)
             if echo "$HTML" | grep -q 'id="addressGate"' && \
                echo "$HTML" | grep -q 'id="gardenMap"' && \
                echo "$HTML" | grep -q 'leaflet.js' && \
                [ "$MAPJS" = "200" ] && \
                echo "$MAPBODY" | grep -q 'submitGateAddress' && \
-               echo "$MAPBODY" | grep -q 'geocodeAddress' && \
-               [ "$BORDERHTML" = "200" ] && \
-               [ "$BORDERJS" = "200" ]; then
-              echo "Live site OK: gate, kaart, leaflet, map.js en border-editor aanwezig."
+               echo "$MAPBODY" | grep -q 'geocodeAddress'; then
+              echo "Live site OK: gate, kaart, leaflet en map.js aanwezig."
               exit 0
             fi
-            echo "Nog niet klaar of incompleet (map.js HTTP: $MAPJS, border.html HTTP: $BORDERHTML, border.js HTTP: $BORDERJS), poging $i..."
+            echo "Nog niet klaar of incompleet (map.js HTTP: $MAPJS), poging $i..."
             sleep 60
           done
           echo "LIVE CHECK GEFAALD"
