@@ -197,11 +197,11 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
     <button class="btn btn-primary" id="mapFinishDrawBtn" style="display:none;">Klaar &#10003;</button>
     <button class="btn btn-secondary" id="mapEditShapeBtn">&#128070; Hoekpunten slepen</button>
     <button class="btn btn-secondary" id="mapLocateBtn">&#128205; Mijn locatie</button>
-    <button class="btn btn-secondary" id="changeAddressBtn">&#9998; Adres wijzigen</button>
+    <button class="btn btn-secondary" id="mapParcelBtn">&#128205; Perceel tonen</button>    <button class="btn btn-secondary" id="changeAddressBtn">&#9998; Adres wijzigen</button>
     <label style="font-size:13px; display:flex; align-items:center; gap:4px;"><input type="checkbox" id="mapKadasterToggle" checked> Kadastrale kaart</label>
   </div>
   <div id="gardenMap"></div>
-  <p class="map-help">Kies links een vorm (border, terras, pad, haag, gazon, vijver, ...) en klik de hoekpunten op de kaart; dubbelklik of &quot;Klaar&quot; sluit af. Met &quot;Hoekpunten slepen&quot; kun je daarna elk hoekpunt van een getekende vorm verslepen (rechtsklik op een hoekpunt verwijdert het punt). Klik op een getekende border om hem in het Planten-tabblad te openen. Kadastrale percellen verschijnen vanaf zoom 14.</p>
+  <p class="map-help">Kies links een vorm (border, terras, pad, haag, gazon, vijver, ...) en klik de hoekpunten op de kaart; dubbelklik of &quot;Klaar&quot; sluit af. Met &quot;Hoekpunten slepen&quot; kun je daarna elk hoekpunt van een getekende vorm verslepen (rechtsklik op een hoekpunt verwijdert het punt). Klik op een getekende border om hem in het Planten-tabblad te openen. Kadastrale percellen verschijnen vanaf zoom 14. Met &quot;Perceel tonen&quot; verschijnen alleen de kadastrale perceelgrenzen en de bebouwing als scherpe vectoren — zonder omliggende percelen of wazige tegels — zodat je onbeperkt kunt inzoomen op je tuin.</p>
 </div>
             <p class="settings-note">Teken hier je tuinontwerp op de kaart: borders, terras, paden, hagen, gazon, vijver, ... Kies boven de kaart een vorm, klik de hoekpunten aan en sleep ze daarna desgewenst met &quot;Hoekpunten slepen&quot; naar de juiste plek. Onder de kaart staat de lijst met getekende tuinobjecten (via Instellingen kun je ook een ontwerp-JSON importeren). Borders maak je uitsluitend hier, door ze op de kaart te tekenen.</p>
             <div id="gardenObjectList"></div>
