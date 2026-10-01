@@ -1,0 +1,35 @@
+name: Shortlist-tabel revamp
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['scripts/shortlist-revamp.js']
+jobs:
+  revamp:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node scripts/shortlist-revamp.js
+      - name: Valideer (tests/validate.js)
+        run: node tests/validate.js
+      - name: Commit en opruimen
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "Geen wijzigingen - script waarschijnlijk al eerder gedraaid"
+          else
+            git commit -m "Shortlist: tabel per geslacht met kolommen (Z/HS/S, hoogtebalk 0-2m, 12 bloeimaanden) + filters bovenaan; tab Shortlist voor Borders"
+            git push
+          fi
+          git rm -q scripts/shortlist-revamp.js .github/workflows/shortlist-revamp.yml
+          if git diff --cached --quiet; then echo "Niets op te ruimen"; else
+            git commit -m "Opruimen: eenmalig shortlist-revamp script + workflow"
+            git push
+          fi
