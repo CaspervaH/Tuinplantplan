@@ -1,9 +1,12 @@
-// scripts/aaldering-fix.js — data-kwaliteitsfix voor plants.js (r5).
-// r5: de 13 volledig lege PDF-rijen aanvullen met data uit betrouwbare bronnen
-//     (Gardenia.net, Missouri Botanical Garden, NC State Extension, Walters
-//     Gardens, NVK Nurseries), naamcorrectie 'Chrystal Blue' -> 'Crystal Blue',
-//     plus een diagnose-overzicht van planten die na deze ronde nog gegevens
-//     missen. Idempotent: draait op de actuele checkout via GitHub Actions.
+// scripts/aaldering-fix.js — data-kwaliteitsfix voor plants.js (r6).
+// r6: volledige synchronisatie met de Aaldering-PDF (883 rijen in
+//     scripts/rows-part-01.txt .. rows-part-09.txt als compacte
+//     JSON-regels, geparsede uit de OCR van alle 31 pagina's). Voor elke PDF-rij: (a) bestaat de plant in plants.js, dan
+//     ontbrekende velden aanvullen uit de PDF-rij; (b) bestaat hij niet, dan
+//     toevoegen — tenzij de naam lijkt op een bestaande (naamcorrectie uit
+//     eerdere rondes of bekende OCR-variant), dan overslaan en rapporteren.
+//     Plus externe aanvulling uit betrouwbare bronnen en diagnose-overzicht.
+//     Idempotent: draait op de actuele checkout via GitHub Actions.
 
 var fs = require('fs');
 var vm = require('vm');
@@ -19,8 +22,26 @@ function norm(s) {
     .trim();
 }
 
+function lev(a, b) {
+  var m = a.length, n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  var prev = new Array(n + 1), cur = new Array(n + 1), i, j;
+  for (j = 0; j <= n; j++) prev[j] = j;
+  for (i = 1; i <= m; i++) {
+    cur[0] = i;
+    for (j = 1; j <= n; j++) {
+      var cost = a.charCodeAt(i - 1) === b.charCodeAt(j - 1) ? 0 : 1;
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+    }
+    var tmp = prev; prev = cur; cur = tmp;
+  }
+  return prev[n];
+}
+
 var report = [];
 function log(s) { report.push(s); console.log(s); }
+function leeg(v) { return v === undefined || v === null || String(v).trim() === ''; }
 
 // ---- plants.js lezen ----
 var src = fs.readFileSync('plants.js', 'utf8');
@@ -30,18 +51,24 @@ vm.runInContext(src, ctx);
 var plants = ctx.window.PLANTEN_EXTRA;
 if (!Array.isArray(plants)) throw new Error('plants.js: window.PLANTEN_EXTRA is geen array');
 
-log('# Aaldering data-fix rapport (ronde 5 — lege PDF-rijen aanvullen)');
+log('# Aaldering data-fix rapport (ronde 6 — volledige PDF-synchronisatie)');
 log('');
 log('Planten in plants.js bij start: ' + plants.length);
 
-// ---- Diagnose: alle Amsonia-entries (lost eerdere tegenstrijdigheid op) ----
-log('');
-log('## Diagnose: Amsonia-entries');
+// ---- hoogte 0/0 is geen echte hoogte: normaliseren naar null ----
+// (o.a. Actaea-entries; hierdoor kunnen externe bronnen ze later vullen)
+var hoogteGefixeerd = 0;
 plants.forEach(function (p) {
-  if (/amsonia/i.test(p.latijnseNaam || '')) log('- ' + JSON.stringify(p));
+  if (p.hoogteVan !== null && p.hoogteVan !== '' && Number(p.hoogteVan) === 0 &&
+      p.hoogteTot !== null && p.hoogteTot !== '' && Number(p.hoogteTot) === 0) {
+    p.hoogteVan = null;
+    p.hoogteTot = null;
+    hoogteGefixeerd++;
+  }
 });
+log('Hoogte 0/0 omgezet naar null (lege hoogte): ' + hoogteGefixeerd + ' planten');
 
-// ---- Naamcorrectie: 'Chrystal Blue' -> 'Crystal Blue' (officiele cultivarnaam) ----
+// ---- naamcorrectie: 'Chrystal Blue' -> 'Crystal Blue' (officiele cultivarnaam) ----
 var naamFixes = 0;
 plants.forEach(function (p) {
   if (p.latijnseNaam && /Chrystal Blue/i.test(p.latijnseNaam)) {
@@ -49,123 +76,185 @@ plants.forEach(function (p) {
     naamFixes++;
   }
 });
-log('');
 log("Naamcorrectie 'Chrystal Blue' -> 'Crystal Blue': " + naamFixes + 'x');
 
-// ---- Fills voor de 13 volledig lege PDF-rijen ----
-// Alleen lege velden vullen; uitzondering amsonia hubrichtii (overwrite: true):
-// de PDF-rij was leeg, dus eventueel eerder ingevulde data is verdacht.
-var FILLS = [
-  { naam: 'Amsonia hubrichtii', key: 'amsonia hubrichtii', regex: /amsonia\s+hu/i, overwrite: true,
-    nlNaam: 'Blauwe ster', standplaats: 'Z - HS', kleur: 'lichtblauw',
-    bloeiVan: 'mei', bloeiTot: 'juni', hoogteVan: 60, hoogteTot: 90,
-    bron: 'Gardenia.net / Walters Gardens / NC State Extension' },
-  { naam: 'Saxifraga paniculata', key: 'saxifraga paniculata',
-    standplaats: 'Z', kleur: 'wit', bloeiVan: 'juni', bloeiTot: 'augustus',
-    hoogteVan: 10, hoogteTot: 30,
-    bron: 'Missouri Botanical Garden / NVK Nurseries' },
-  { naam: "Salvia nemorosa 'Crystal Blue'", key: 'salvia nemorosa crystal blue',
-    standplaats: 'Z', kleur: 'lichtblauw', bloeiVan: 'juni', bloeiTot: 'september',
-    hoogteVan: 40, hoogteTot: 50,
-    bron: 'Walters Gardens / Gardenia.net' },
-  { naam: 'Persicaria affinis', key: 'persicaria affinis',
-    standplaats: 'Z - HS', kleur: 'roze', bloeiVan: 'juni', bloeiTot: 'augustus',
-    hoogteVan: 15, hoogteTot: 25,
-    bron: 'Gardenia.net / BBC Gardeners World Magazine' },
-  { naam: "Penstemon barbatus coccineus 'Jingle Bells'", key: 'penstemon barbatus coccineus jingle bells',
-    standplaats: 'Z', kleur: 'rood', bloeiVan: 'mei', bloeiTot: 'augustus',
-    hoogteVan: 80, hoogteTot: 150,
-    bron: 'Gardenia.net' },
-  { naam: 'Lepechinia hastata', key: 'lepechinia hastata',
-    standplaats: 'Z', kleur: 'paars - rood', bloeiVan: 'augustus', bloeiTot: 'oktober',
-    hoogteVan: 120, hoogteTot: 180,
-    bron: 'Gardenia.net / San Marcos Growers (let op: beperkt winterhard in NL)' },
-  { naam: "Hedera helix 'Spetchley'", key: 'hedera helix spetchley',
-    nlNaam: 'Klimop', standplaats: 'S - HS', kleur: 'groen',
-    bron: 'miniatuur-klimop; bloei onopvallend, hoogte niet van toepassing (klimmer)' },
-  { naam: "Hedera helix 'Natasja'", key: 'hedera helix natasja',
-    nlNaam: 'Klimop', standplaats: 'S - HS', kleur: 'groen',
-    bron: 'klimop-cultivar; hoogte niet van toepassing (klimmer)' },
-  { naam: "Hedera helix 'Erecta'", key: 'hedera helix erecta',
-    nlNaam: 'Klimop', standplaats: 'S - HS', kleur: 'groen',
-    bron: 'klimop-cultivar; hoogte niet van toepassing (klimmer)' },
-  { naam: 'Hedera bloemkool blad', key: 'hedera bloemkool blad',
-    nlNaam: 'Klimop', standplaats: 'S - HS', kleur: 'groen',
-    bron: 'gekroesd-blad-klimop; hoogte niet van toepassing (klimmer)' },
-  { naam: 'Buddleja roze', key: 'buddleja roze',
-    kleur: 'roze',
-    bron: 'kleur staat in de naam zelf; overige gegevens stonden niet in de PDF' }
-];
+// ---- PDF-rijen synchroniseren ----
+// De 883 PDF-rijen staan als compacte JSON-regels in 9 deelbestanden
+// scripts/rows-part-01.txt .. rows-part-09.txt (gegenereerd uit de OCR van
+// de PDF; zie rapport ronde 5/6). Bestandsnamen zijn zero-padded en worden
+// gesorteerd gelezen.
+var rows = [];
+fs.readdirSync('scripts').sort().forEach(function (f) {
+  if (f.indexOf('rows-part-') !== 0) return;
+  fs.readFileSync('scripts/' + f, 'utf8').split('\n').forEach(function (line) {
+    line = line.trim();
+    if (line) rows.push(JSON.parse(line));
+  });
+});
+rows = rows.map(function (r) {
+  return { n: r[0], nl: r[1], sp: r[2], kl: r[3], bv: r[4], bt: r[5], hv: r[6], ht: r[7] };
+});
+log('PDF-rijen in scripts/rows-part-01..09.txt: ' + rows.length);
+log('');
 
-var VELDEN = ['nlNaam', 'standplaats', 'kleur', 'bloeiVan', 'bloeiTot', 'hoogteVan', 'hoogteTot'];
-
-function leeg(v) { return v === undefined || v === null || String(v).trim() === ''; }
-
-function vindFill(f) {
-  var i, j, k;
-  // 1. exact op genormaliseerde naam
-  for (i = 0; i < plants.length; i++) {
-    if (norm(plants[i].latijnseNaam) === f.key) return plants[i];
-  }
-  // 2. fuzzy: alle tokens van de key moeten in de genormaliseerde naam voorkomen
-  var tokens = f.key.split(' ');
-  for (j = 0; j < plants.length; j++) {
-    var n = norm(plants[j].latijnseNaam);
-    if (n && tokens.every(function (t) { return n.indexOf(t) !== -1; })) return plants[j];
-  }
-  // 3. extra regex (vangt eventuele OCR-spelfouten)
-  if (f.regex) {
-    for (k = 0; k < plants.length; k++) {
-      if (f.regex.test(plants[k].latijnseNaam || '')) return plants[k];
-    }
+function vind(naam) {
+  var key = norm(naam);
+  for (var i = 0; i < plants.length; i++) {
+    if (norm(plants[i].latijnseNaam) === key) return plants[i];
   }
   return null;
 }
 
-log('');
-log('## Aanvulling van de lege PDF-rijen');
-var toegevoegd = 0;
-FILLS.forEach(function (f) {
-  var p = vindFill(f);
-  if (!p) {
-    plants.push({
-      latijnseNaam: f.naam,
-      nlNaam: f.nlNaam || '',
-      standplaats: f.standplaats || '',
-      kleur: f.kleur || '',
-      bloeiVan: f.bloeiVan || '',
-      bloeiTot: f.bloeiTot || '',
-      hoogteVan: f.hoogteVan != null ? f.hoogteVan : null,
-      hoogteTot: f.hoogteTot != null ? f.hoogteTot : null
-    });
-    toegevoegd++;
-    log('- ' + f.naam + ': NIET gevonden in plants.js -> toegevoegd als nieuwe entry (' + f.bron + ')');
+// Bekende OCR-rijen waarvan de plantnaam in plants.js al gecorrigeerd is
+// (eerdere rondes) — niet opnieuw toevoegen:
+var SKIP = [
+  'penstemon andenken an friedrich hahn garne slangekop',
+  'epimedium white pink form zhushanense cc02',
+  'epimedium wushanense 135',
+  'tanecetum partemonium',
+  'geranium foundling anke',
+  'aster novae angliae andenken an alma potschke aster',
+  'pottentilla atrosanguinea',
+  'veronia crinita alba'
+];
+
+function lijktOpBestaande(naam) {
+  var key = norm(naam);
+  var best = null, bestRatio = 0;
+  var prefix = key.slice(0, 2);
+  for (var i = 0; i < plants.length; i++) {
+    var pn = norm(plants[i].latijnseNaam);
+    if (!pn || pn.slice(0, 2) !== prefix) continue;
+    var d = lev(key, pn);
+    var ratio = 1 - d / Math.max(key.length, pn.length);
+    if (ratio > bestRatio) { bestRatio = ratio; best = plants[i]; }
+  }
+  // 0.75 i.p.v. 0.80: voorkomt dat OCR-varianten (bijv. 'Anemone hybrida
+  // 'Königin Charlotte'' vs bestaande 'Anemone 'Konigin Charlotte'') als
+  // nieuwe plant worden toegevoegd. Overgeslagen rijen komen in het rapport.
+  return bestRatio >= 0.75 ? best : null;
+}
+
+// NL-namen die OCR-rommel zijn, nooit overnemen:
+var NL_GARBAGE = ['Anke', '?', '-', '9', ''];
+
+var fillFields = [
+  ['nlNaam', 'nl'],
+  ['standplaats', 'sp'],
+  ['kleur', 'kl'],
+  ['bloeiVan', 'bv'],
+  ['bloeiTot', 'bt'],
+  ['hoogteVan', 'hv'],
+  ['hoogteTot', 'ht']
+];
+
+var toegevoegd = 0, gevuldeVelden = 0, gevuldePlanten = 0, overgeslagen = 0;
+var addLog = [], skipLog = [], fillLog = [];
+
+rows.forEach(function (row) {
+  if (leeg(row.n)) return;
+  if (SKIP.indexOf(norm(row.n)) !== -1) {
+    overgeslagen++;
+    skipLog.push("- PDF-rij '" + row.n + "' heeft in plants.js al een gecorrigeerde naam (eerdere fix) — niet opnieuw toegevoegd");
     return;
   }
+  var p = vind(row.n);
+  if (!p) {
+    var dub = lijktOpBestaande(row.n);
+    if (dub) {
+      overgeslagen++;
+      skipLog.push("- PDF-rij '" + row.n + "' lijkt al aanwezig als '" + dub.latijnseNaam + "' — niet toegevoegd");
+      return;
+    }
+    plants.push({
+      latijnseNaam: row.n,
+      nlNaam: (row.nl && NL_GARBAGE.indexOf(row.nl) === -1) ? row.nl : '',
+      standplaats: row.sp || '',
+      kleur: row.kl || '',
+      bloeiVan: row.bv || '',
+      bloeiTot: row.bt || '',
+      hoogteVan: row.hv != null ? row.hv : null,
+      hoogteTot: row.ht != null ? row.ht : null
+    });
+    toegevoegd++;
+    addLog.push('- ' + row.n + ' toegevoegd uit de PDF' +
+      (row.kl ? ' (kleur ' + row.kl + ')' : '') +
+      (row.bv ? ' (bloei ' + row.bv + ' - ' + row.bt + ')' : '') +
+      (row.hv != null ? ' (hoogte ' + row.hv + ' - ' + row.ht + ' cm)' : '') +
+      (row.sp ? ' (' + row.sp + ')' : ''));
+    return;
+  }
+  // bestaand: ontbrekende velden aanvullen uit de PDF-rij
   var gewijzigd = [];
-  VELDEN.forEach(function (v) {
-    if (f[v] === undefined) return;
-    if (f.overwrite || leeg(p[v])) {
-      if (String(p[v] != null ? p[v] : '') !== String(f[v])) {
-        gewijzigd.push(v + ': ' + JSON.stringify(p[v] == null ? '' : p[v]) + ' -> ' + JSON.stringify(f[v]));
-      }
-      p[v] = f[v];
+  fillFields.forEach(function (pair) {
+    var veld = pair[0], key = pair[1];
+    var val = row[key];
+    if (val === undefined || val === null || String(val).trim() === '') return;
+    if (veld === 'nlNaam' && NL_GARBAGE.indexOf(String(val).trim()) !== -1) return;
+    if (leeg(p[veld])) {
+      p[veld] = val;
+      gewijzigd.push(veld);
     }
   });
   if (gewijzigd.length) {
-    log('- ' + p.latijnseNaam + ': ' + gewijzigd.join(', ') + '  [' + f.bron + ']');
-  } else {
-    log('- ' + p.latijnseNaam + ': al volledig, niets gewijzigd');
+    gevuldePlanten++;
+    gevuldeVelden += gewijzigd.length;
+    fillLog.push('- ' + p.latijnseNaam + ': ' + gewijzigd.join(', ') + ' aangevuld uit de PDF');
   }
 });
 
-// Bewust niet ingevuld: geen betrouwbare bron gevonden
+log('## Synchronisatie met de PDF');
 log('');
-log('## Bewust niet ingevuld (geen betrouwbare bron gevonden)');
-["Nepeta nuda 'Overhagen'", "Salvia 'Free Magenta Lips'"].forEach(function (n) {
-  var p = null;
-  plants.forEach(function (q) { if (norm(q.latijnseNaam) === norm(n)) p = q; });
-  log('- ' + n + (p ? ' (staat in de lijst, gegevens blijven voorlopig leeg)' : ' (niet in de lijst aangetroffen)'));
+log('Nieuwe planten toegevoegd: ' + toegevoegd);
+addLog.forEach(function (s) { log(s); });
+log('');
+log('Niet toegevoegd (al aanwezig onder gecorrigeerde/overeenkomende naam): ' + overgeslagen);
+skipLog.forEach(function (s) { log(s); });
+log('');
+log('Bestaande planten met ontbrekende velden aangevuld uit de PDF: ' + gevuldePlanten + ' (' + gevuldeVelden + ' velden)');
+fillLog.forEach(function (s) { log(s); });
+
+// ---- Externe aanvulling (betrouwbare bronnen; alléén lege velden vullen) ----
+// Persicaria affinis: PDF-rij is leeg (kwekerij vermeldt zelf geen gegevens).
+// Actaea/Agastache foeniculum: pagina 1 van de PDF heeft verschoven
+// kolomblokken; data uit Gardenia.net / Missouri Botanical Garden.
+var EXTERN = [
+  { naam: 'Persicaria affinis', nlNaam: 'Duizendknoop', standplaats: 'Z - HS', kleur: 'roze',
+    bloeiVan: 'juni', bloeiTot: 'augustus', hoogteVan: 15, hoogteTot: 25,
+    bron: 'Gardenia.net / BBC Gardeners World Magazine' },
+  { naam: "Actaea simplex 'Atropurpurea'", standplaats: 'HS - S', kleur: 'wit',
+    bloeiVan: 'september', bloeiTot: 'oktober', hoogteVan: 120, hoogteTot: 180,
+    bron: 'Gardenia.net / Missouri Botanical Garden' },
+  { naam: "Actaea japonica 'Cheju Do'", standplaats: 'HS - S', kleur: 'wit',
+    bloeiVan: 'augustus', bloeiTot: 'september', hoogteVan: 60, hoogteTot: 90,
+    bron: 'Missouri Botanical Garden' },
+  { naam: "Actaea simplex 'White Pearl'", standplaats: 'HS - S', kleur: 'wit',
+    bloeiVan: 'september', bloeiTot: 'oktober', hoogteVan: 120, hoogteTot: 150,
+    bron: 'Gardenia.net / RHS' },
+  { naam: 'Agastache foeniculum', standplaats: 'Z - HS', kleur: 'violetblauw',
+    bloeiVan: 'juni', bloeiTot: 'september', hoogteVan: 60, hoogteTot: 90,
+    bron: 'Gardenia.net / Missouri Botanical Garden' }
+];
+log('');
+log('## Externe aanvulling');
+EXTERN.forEach(function (f) {
+  var p = vind(f.naam);
+  if (!p) {
+    plants.push({
+      latijnseNaam: f.naam, nlNaam: f.nlNaam || '', standplaats: f.standplaats || '',
+      kleur: f.kleur || '', bloeiVan: f.bloeiVan || '', bloeiTot: f.bloeiTot || '',
+      hoogteVan: f.hoogteVan != null ? f.hoogteVan : null,
+      hoogteTot: f.hoogteTot != null ? f.hoogteTot : null
+    });
+    log('- ' + f.naam + ': toegevoegd (' + f.bron + ')');
+    return;
+  }
+  var gewijzigd = [];
+  ['nlNaam', 'standplaats', 'kleur', 'bloeiVan', 'bloeiTot', 'hoogteVan', 'hoogteTot'].forEach(function (veld) {
+    if (f[veld] === undefined) return;
+    if (leeg(p[veld])) { p[veld] = f[veld]; gewijzigd.push(veld); }
+  });
+  log('- ' + f.naam + (gewijzigd.length ? ': ' + gewijzigd.join(', ') + ' aangevuld (' + f.bron + ')' : ': al volledig'));
 });
 
 // ---- Overzicht: planten die na deze ronde nog gegevens missen ----
@@ -209,24 +298,22 @@ var out = [
 ].join('\n');
 fs.writeFileSync('plants.js', out);
 log('');
-log('plants.js herschreven: ' + plants.length + ' planten (' + toegevoegd + ' nieuwe entry/entries)');
+log('plants.js herschreven: ' + plants.length + ' planten');
 
 // ---- index.html: idempotent herstel + correcte integratie ----
 var idx = fs.readFileSync('index.html', 'utf8');
 
-// 1. alle eerder toegevoegde flags verwijderen (ook eventuel fouteinserten) 
-var before = (idx.match(/, isBeschikbaarBijAaldering: true }\g/g) || []).length;
+var before = (idx.match(/, isBeschikbaarBijAaldering: true \}/g) || []).length;
 idx = idx.split(', isBeschikbaarBijAaldering: true }').join(' }');
-log('Verwijderde flag-invoegingen in index.html (inclusief eventueel foute): ' + before);
+log('Verwijderde flag-invoegingen in index.html: ' + before);
 
-// 2. alleen binnen plantData-array opnieuw toevoegen
 var start = idx.indexOf('plantData = [');
 if (start === -1) throw new Error('plantData-array niet gevonden in index.html');
 var end = idx.indexOf('];', start);
 if (end === -1) throw new Error('plantData-array loopt niet af');
 var slice = idx.slice(start, end);
 var flagged = 0;
-slice = slice.replace(/\{[^{}]*latijnseNaam[^;}]*\}/g, function (m) {
+slice = slice.replace(/\{[^{}]*latijnseNaam[^{}]*\}/g, function (m) {
   if (m.indexOf('isBeschikbaarBijAaldering') !== -1) return m;
   flagged++;
   return m.replace(/\s*\}\s*$/, ', isBeschikbaarBijAaldering: true }');
@@ -234,7 +321,6 @@ slice = slice.replace(/\{[^{}]*latijnseNaam[^;}]*\}/g, function (m) {
 idx = idx.slice(0, start) + slice + idx.slice(end);
 log('plantData-entries in index.html van flag voorzien: ' + flagged);
 
-// 3. customplants-integratie (idempotent)
 var apNew = 'const allPlants = [...plantData, ...(window.PLANTEN_EXTRA || []), ...((window.CustomPlants && window.CustomPlants.all()) || [])];';
 if (idx.indexOf('customplants.js') === -1) {
   var tagOld = '<script src="plants.js"></script>';
@@ -247,10 +333,9 @@ if (idx.indexOf(apNew) === -1) {
   log('allPlants-regel uitgebreid met eigen planten');
 }
 
-// 4. parse-check alle inline scripts (valideert het herstel)
 var blocks = idx.match(/<script>([\s\S]*?)<\/script>/g) || [];
 blocks.forEach(function (b) {
-  new Function(b.slice(8, -9)); // gooit fout bij syntaxfout
+  new Function(b.slice(8, -9));
 });
 log('Parse-check: ' + blocks.length + ' inline script(s) in index.html parseeren correct');
 
