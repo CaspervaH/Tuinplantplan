@@ -82,8 +82,8 @@ ctx.slFilters.maand = '';
 const navIdx = html.indexOf('<nav id="mainTabs"');
 const nav = html.slice(navIdx, html.indexOf('</nav>', navIdx));
 check('tab 1 = Tuinontwerp', nav.indexOf('data-tab="ontwerp"') < nav.indexOf('data-tab="planten"'));
-check('geen apart Shortlist-tabblad meer', !/data-tab="shortlist"/.test(nav));
-check('geen apart Borders-tabblad meer', !/data-tab="borders"/.test(nav));
+check('Shortlist-tabblad aanwezig', /data-tab="shortlist"/.test(nav));
+check('Borders-tabblad aanwezig', /data-tab="borders"/.test(nav));
 check('geen "Nieuwe border aanmaken"-knop (alleen tekenen)', !html.includes('id="addBorderBtn"'));
 
 // 3. planten-view: alle planten in shortlist-vorm (tabel, hoogtebalk, shortlist-checkbox)
@@ -94,6 +94,9 @@ check('planten-tabel toont bloeimaand-kolommen', ctx.plantTableBodyEl._html.incl
 check('hoogtebalk + vaste tekstbreedte (uitgelijnd)', html.includes('.sl-hoogte-txt { display: inline-block; vertical-align: middle; margin-left: 6px; width: 84px'));
 check('vaste tellers onderaan (pv-foot + summary)', html.includes('id="pvFoot"') && html.includes('id="pvFootSummary"'));
 check('sidebar in de HTML', html.includes('id="plantSidebar"') && html.includes('data-pv="shortlist"'));
+check('teken-statusbalk in de toolbar', html.includes('id="mapDrawStatus"'));
+check('borders-overzicht view in de HTML', html.includes('id="pvViewBorders"') && html.includes('id="pvBordersOverview"'));
+check('teken-guard: klikken op shapes genegeerd tijdens tekenen', (fs.readFileSync('map.js', 'utf8')).includes("if (drawMode || freehandOn || circleMode) { L.DomEvent.stopPropagation(ev); return; }"));
 
 // 4. shortlist-render
 ctx.setShortlist([p]);
@@ -105,7 +108,7 @@ check('shortlist-teller in de sidebar', html.includes('<span class="cnt" id="sho
 
 // 5. borders alleen via tekenen: map.js opent Planten-tab + openBorderId
 const mapJs = fs.readFileSync('map.js', 'utf8');
-check('map.js opent Planten-tab bij border-klik', /localStorage\.setItem\('activeTab', 'planten'\)/.test(mapJs));
+check('map.js opent Borders-tab bij border-klik', /localStorage\.setItem\('activeTab', 'borders'\)/.test(mapJs));
 check('map.js zet openBorderId', mapJs.includes("localStorage.setItem('openBorderId'"));
 
 // 6. border-view: tekening + tabel

@@ -147,6 +147,8 @@ body.has-address #addressGate { display: none; }
 .pv-scroll { flex: 1 1 auto; overflow-y: auto; min-height: 0; padding-right: 4px; }
 .pv-foot { flex: 0 0 auto; margin-top: 10px; padding-top: 10px; border-top: 2px solid var(--accent); background: white; }
 .pv-foot .pp-summary { margin-top: 0; }
+.map-draw-status { font-size: 13px; font-weight: 600; color: #1565c0; background: #e3f2fd; border: 1px solid #90caf9; border-radius: 4px; padding: 4px 8px; align-self: center; }
+.border-card { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: white; border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; }
 .pv-view { display: none; }
 .pv-view.active { display: block; }
 /* hoogtebalk + tekst links uitgelijnd, tekst op vaste plek daarnaast */
@@ -185,6 +187,8 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
 <nav id="mainTabs" class="tabs">
     <button data-tab="ontwerp">&#127795; Tuinontwerp</button>
     <button data-tab="planten">&#127793; Planten</button>
+    <button data-tab="shortlist">&#128203; Shortlist</button>
+    <button data-tab="borders">&#127804; Borders</button>
     <button data-tab="instellingen" class="settings-tab" title="Instellingen">&#9881;</button>
 </nav>
         <div class="section tab-pane" id="tab-ontwerp" data-tabpane="ontwerp">
@@ -195,6 +199,7 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
     <select id="mapDrawType" title="Welke vorm wil je tekenen?"></select>
     <button class="btn btn-primary" id="mapDrawBtn">Vorm intekenen</button>
     <button class="btn btn-primary" id="mapFinishDrawBtn" style="display:none;">Klaar &#10003;</button>
+    <span id="mapDrawStatus" class="map-draw-status" style="display:none;"></span>
     <button class="btn btn-secondary" id="mapEditShapeBtn">&#128070; Hoekpunten slepen</button>
     <button class="btn btn-secondary" id="mapLocateBtn">&#128205; Mijn locatie</button>
     <button class="btn btn-secondary" id="mapParcelBtn">&#128205; Perceel tonen</button>    <button class="btn btn-secondary" id="changeAddressBtn">&#9998; Adres wijzigen</button>
@@ -208,7 +213,7 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
         </div>
         <div class="section tab-pane" id="tab-planten" data-tabpane="planten">
             <h2 id="plantenTabTitle">Planten</h2>
-            <p class="settings-note">Kies links in de zijbalk: alle planten, je shortlist of een border. Planten zet je op de shortlist door ze aan te vinken; planten uit de shortlist sleep je naar een border in de zijbalk. Borders maak je op het Tuinontwerp-tabblad door ze op de kaart te tekenen.</p>
+            <p class="settings-note">Kies via de tabbladen hierboven of links in de zijbalk: alle planten, je shortlist of een border. Planten zet je op de shortlist door ze aan te vinken; planten uit de shortlist sleep je naar een border in de zijbalk. Borders maak je op het Tuinontwerp-tabblad door ze op de kaart te tekenen.</p>
             <div class="pv-layout">
                 <div class="pv-sidebar" id="plantSidebar">
                     <button type="button" class="pv-side-btn" data-pv="planten">&#127793; Planten</button>
@@ -331,6 +336,11 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
                                     <button class="btn btn-danger" id="clearBorderBtn">Border leegmaken</button>
                                 </div>
                             </div>
+                        </div>
+                        <div id="pvViewBorders" class="pv-view">
+                            <h3>Borders</h3>
+                            <p class="sl-tip">Kies hieronder een border om te openen, of teken een nieuwe op de kaart in het Tuinontwerp-tabblad.</p>
+                            <div id="pvBordersOverview"></div>
                         </div>
                     </div>
                     <div class="pv-foot" id="pvFoot"><div id="pvFootSummary"></div></div>
@@ -699,12 +709,14 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
 
         // ==== Zijbalk: keuze Planten / Shortlist / borders ====
         let pvView = 'planten';
+        let lastBorderId = null;
         function setPvView(view, borderId) {
             pvView = view;
             if (view === 'border') {
                 const b = borders.find(x => x.id === borderId);
-                if (!b) { setPvView('planten'); return; }
+                if (!b) { setPvView('borders'); return; }
                 activeBorderId = b.id;
+                lastBorderId = b.id;
             } else {
                 activeBorderId = null;
             }
@@ -713,7 +725,7 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
                 btn.classList.toggle('active', view === 'border' ? (v === 'border:' + activeBorderId) : v === view);
             });
             document.querySelectorAll('.pv-view').forEach(function (el) {
-                el.classList.toggle('active', el.id === 'pvView' + (view === 'border' ? 'Border' : (view === 'shortlist' ? 'Shortlist' : 'Planten')));
+                el.classList.toggle('active', el.id === 'pvView' + (view === 'border' ? 'Border' : (view === 'shortlist' ? 'Shortlist' : (view === 'borders' ? 'Borders' : 'Planten'))));
             });
             if (view === 'border') {
                 showActiveBorder(borders.find(x => x.id === activeBorderId));
@@ -722,8 +734,8 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
                 renderFootSummary();
             }
             renderPvBorderList();
+            renderBordersOverview();
         }
-
         function renderFootSummary() {
             let list = [];
             if (pvView === 'planten') list = shortlist;
@@ -733,7 +745,7 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
                 list = b ? b.plants : [];
             }
             PlantPicker.renderSummary(pvFootSummaryEl, list, {
-                title: pvView === 'border' ? 'Samenvatting van deze border' : 'Shortlist-samenvatting',
+                title: pvView === 'border' ? 'Samenvatting van deze border' : (pvView === 'borders' ? 'Kies een border' : 'Shortlist-samenvatting'),
                 emptyText: 'Vink planten aan (of sleep ze naar een border) om hier de samenvatting te zien.'
             });
         }
@@ -749,6 +761,15 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
             }).join('') ||
                 '<p class="sl-tip">Nog geen borders &ndash; teken er een op de kaart in het Tuinontwerp-tabblad.</p>';
         }
+        function renderBordersOverview() {
+            const el = document.getElementById('pvBordersOverview');
+            if (!el) return;
+            el.innerHTML = borders.map(function (b) {
+                return '<div class="border-card"><div><strong>&#127804; ' + esc(b.name) + '</strong> &mdash; ' + b.plants.length + ' plant(en)</div>' +
+                    '<button type="button" class="btn btn-secondary" data-openborder="' + esc(b.id) + '">Openen</button></div>';
+            }).join('') ||
+                '<p class="sl-tip">Nog geen borders &ndash; teken er een op de kaart in het Tuinontwerp-tabblad.</p>';
+        }
 
         document.getElementById('plantSidebar').addEventListener('click', function (e) {
             const del = e.target.closest ? e.target.closest('[data-deleteborder]') : null;
@@ -760,6 +781,10 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
             else if (v.indexOf('border:') === 0) setPvView('border', v.slice(7));
         });
 
+        document.getElementById('pvBordersOverview').addEventListener('click', function (e) {
+            const btn = e.target.closest ? e.target.closest('[data-openborder]') : null;
+            if (btn) setPvView('border', btn.getAttribute('data-openborder'));
+        });
         function showActiveBorder(border) {
             if (!border) return;
             activeBorderId = border.id;
@@ -988,14 +1013,21 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
         // ==== Tabs: Tuinontwerp - Planten - Instellingen ====
         const tabsEl = document.getElementById('mainTabs');
         function showTab(name) {
-            if (name !== 'ontwerp' && name !== 'planten' && name !== 'instellingen') name = 'planten';
+            if (name !== 'ontwerp' && name !== 'planten' && name !== 'shortlist' && name !== 'borders' && name !== 'instellingen') name = 'planten';
+            const pane = (name === 'shortlist' || name === 'borders') ? 'planten' : name;
             tabsEl.querySelectorAll('button').forEach(function (b) {
                 b.classList.toggle('active', b.getAttribute('data-tab') === name);
             });
             document.querySelectorAll('[data-tabpane]').forEach(function (p) {
-                p.classList.toggle('active', p.getAttribute('data-tabpane') === name);
+                p.classList.toggle('active', p.getAttribute('data-tabpane') === pane);
             });
             try { localStorage.setItem('activeTab', name); } catch (e) { }
+            if (name === 'planten') setPvView('planten');
+            else if (name === 'shortlist') setPvView('shortlist');
+            else if (name === 'borders') {
+                if (lastBorderId && borders.some(b => b.id === lastBorderId)) setPvView('border', lastBorderId);
+                else setPvView('borders');
+            }
             if (name === 'ontwerp' && window.gardenMap) {
                 setTimeout(function () { gardenMap.invalidateSize(); }, 50);
                 setTimeout(function () { gardenMap.invalidateSize(); }, 400);
@@ -1013,7 +1045,7 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
             if (openId) {
                 localStorage.removeItem('openBorderId');
                 if (borders.some(b => b.id === openId)) {
-                    showTab('planten');
+                    showTab('borders');
                     setPvView('border', openId);
                 }
             }
@@ -1027,6 +1059,7 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
         renderPlantTable();
         renderShortlist();
         renderPvBorderList();
+        renderBordersOverview();
         setPvView('planten');
         renderGardenObjectList();
     </script>

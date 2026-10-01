@@ -156,7 +156,8 @@ gardenMap.on('moveend zoomend', saveMapView);
 
 // ===== Alle borders op de kaart tonen =====
 function openBorderEditor(borderId) {
-  try { localStorage.setItem('activeTab', 'planten'); } catch (e) {}
+  if (drawMode || freehandOn || circleMode) return;
+  try { localStorage.setItem('activeTab', 'borders'); } catch (e) {}
   try { localStorage.setItem('openBorderId', borderId); } catch (e) {}
   window.location.href = 'index.html';
 }
@@ -175,7 +176,8 @@ function renderMap() {
       if (isSel) polyOpts.dashArray = '8 4';
       var poly = L.polygon(border.shape, polyOpts).addTo(mapShapeLayer);
       poly.bindTooltip(border.name + (editVerticesMode ? ' \u2014 klik om hoekpunten te slepen' : ' \u2014 klik om te bewerken'));
-      poly.on('click', function () {
+      poly.on('click', function (ev) {
+        if (drawMode || freehandOn || circleMode) { L.DomEvent.stopPropagation(ev); return; }
         if (editVerticesMode) { selectShape('border', border, borders); }
         else { openBorderEditor(border.id); }
       });
@@ -187,7 +189,10 @@ function renderMap() {
         fillColor: getColorHex(p.kleur) || '#8bc34a', fillOpacity: 0.95
       }).addTo(mapMarkerLayer);
       marker.bindTooltip((p.nlNaam || p.latijnseNaam) + ' (' + border.name + ')');
-      marker.on('click', function () { openBorderEditor(border.id); });
+      marker.on('click', function (ev) {
+        if (drawMode || freehandOn || circleMode) { L.DomEvent.stopPropagation(ev); return; }
+        openBorderEditor(border.id);
+      });
     });
   });
   renderGardenObjects();
@@ -277,7 +282,8 @@ function renderGardenObjects() {
       }).addTo(mapObjectLayer);
     }
     layer.bindTooltip(label + (editVerticesMode ? ' \u2014 klik om hoekpunten te slepen' : ''));
-    layer.on('click', function () {
+    layer.on('click', function (ev) {
+      if (drawMode || freehandOn || circleMode) { L.DomEvent.stopPropagation(ev); return; }
       if (editVerticesMode) selectShape('object', obj, objs);
     });
   });
@@ -319,6 +325,15 @@ objectsControl.addTo(gardenMap);
 gardenMap.on('zoomend', renderGardenObjects);
 
 // ===== Vormen tekenen: border of tuinobject =====
+function updateDrawStatus() {
+  var el = document.getElementById('mapDrawStatus');
+  if (!el) return;
+  var on = drawMode || freehandOn || circleMode;
+  var label = drawKind ? (SHAPE_TYPE_LABELS[drawKind] || drawKind) : 'vorm';
+  el.style.display = on ? '' : 'none';
+  el.textContent = on ? ('Bezig met tekenen (' + label + ') \u2014 klik hoekpunten, dubbelklik of \u201cKlaar \u2713\u201d om af te sluiten') : '';
+}
+
 function setDrawMode(on, kind) {
   drawMode = on;
   drawKind = on ? (kind || 'border') : null;
@@ -331,6 +346,7 @@ function setDrawMode(on, kind) {
   gardenMap.getContainer().style.cursor = on ? 'crosshair' : '';
   if (!on) { circleCenter = null; if (circlePreview) { gardenMap.removeLayer(circlePreview); circlePreview = null; } }
   updateCircleBtn();
+  updateDrawStatus();
 }
 
 function dedupePoints() {
@@ -488,6 +504,7 @@ function setFreehand(on) {
     if (freehandFingerCb) freehandFingerCb.style.display = disp;
     if (freehandFingerLb) freehandFingerLb.style.display = disp;
   }
+  updateDrawStatus();
   if (on) {
     if (circleMode) setCircleMode(false);
     var sel = document.getElementById('mapDrawType');
@@ -652,6 +669,7 @@ function setCircleMode(on) {
     setDrawMode(false);
   }
   updateCircleBtn();
+  updateDrawStatus();
 }
 function updateCircleBtn() {
   if (!circleBtn) return;
