@@ -1,5 +1,6 @@
 // Backup: exporteer & importeer plannerdata (localStorage) als JSON — Tuinplantplanner
 // v3: rechtstreeks in het Instellingen-tabblad (#backupDock), geen uitklapknop meer.
+// v5: EXPECT-structuur gecorrigeerd (shortlist = plant-objecten, borders = array)
 // v4: geharde import — maximale bestandsgrootte, strikte structuurcontrole per sleutel
 //     en weigering bij HTML/script/event-handler-patronen in de gegevens.
 (function () {
@@ -78,10 +79,13 @@
   }
 
   // Verwachte structuur per sleutel (exports slaan elke sleutel op als JSON-string)
+  // NB: de app zelf slaat shortlist op als array van plant-objecten en borders
+  // als array van border-objecten (zie border.js) — precies wat een eigen
+  // export bevat en wat we hier dus strikt verwachten.
   var EXPECT = {
-    shortlist: function (v) { return Array.isArray(v) && v.every(function (x) { return typeof x === 'string'; }); },
+    shortlist: function (v) { return Array.isArray(v) && v.every(function (x) { return x && typeof x === 'object' && !Array.isArray(x) && typeof x.latijnseNaam === 'string'; }); },
     gardenObjects: function (v) { return Array.isArray(v) && v.every(function (x) { return x && typeof x === 'object' && !Array.isArray(x); }); },
-    borders: function (v) { return v && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).every(function (k) { return typeof k === 'string' && v[k] && typeof v[k] === 'object'; }); },
+    borders: function (v) { return Array.isArray(v) && v.every(function (x) { return x && typeof x === 'object' && !Array.isArray(x) && typeof x.id === 'string' && typeof x.name === 'string'; }); },
     gardenAddress: function (v) { return v && typeof v === 'object' && !Array.isArray(v); },
     mapView: function (v) { return v && typeof v === 'object' && !Array.isArray(v); }
   };
