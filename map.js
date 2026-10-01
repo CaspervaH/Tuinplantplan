@@ -14,16 +14,16 @@ var selectedShape = null;     // { kind: 'border'|'object', obj, arr }
 var savedMapView = null;
 try { savedMapView = JSON.parse(localStorage.getItem('mapView')); } catch (e) {}
 
-var gardenMap = L.map('gardenMap', { maxZoom: 21 }).setView(
+var gardenMap = L.map('gardenMap', { maxZoom: 28 }).setView(
   savedMapView ? [savedMapView.lat, savedMapView.lng] : [52.1, 5.3],
   savedMapView ? savedMapView.zoom : 12
 );
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 21, maxNativeZoom: 19, attribution: '&copy; OpenStreetMap'
+var osmLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 28, maxNativeZoom: 19, attribution: '&copy; OpenStreetMap'
 }).addTo(gardenMap);
 // Kadastrale kaart als WMTS-tegels (betrouwbaar, ook op hoog zoomniveau)
 var kadasterLayer = L.tileLayer('https://service.pdok.nl/kadaster/brk-kadastralekaart/wmts/v5_0/Kadastralekaart/EPSG:3857/{z}/{x}/{y}.png', {
-  maxZoom: 21, maxNativeZoom: 19, opacity: 0.9, minZoom: 14,
+  maxZoom: 28, maxNativeZoom: 19, opacity: 0.9, minZoom: 14,
   attribution: 'Kadastrale kaart: PDOK / Kadaster'
 });
 kadasterLayer.addTo(gardenMap);
@@ -794,6 +794,7 @@ document.getElementById('mapLocateBtn').addEventListener('click', function () {
   }, function () { alert('Kon locatie niet bepalen.'); });
 });
 document.getElementById('mapKadasterToggle').addEventListener('change', function (e) {
+  if (parcelMode) { e.target.checked = false; return; }
   if (e.target.checked) { kadasterLayer.addTo(gardenMap); } else { gardenMap.removeLayer(kadasterLayer); }
 });
 
@@ -802,6 +803,125 @@ var _origSaveState = saveState;
 saveState = function () { _origSaveState(); renderMap(); };
 
 renderMap();
+
+// ===== Perceel-view: kadastrale grens + bebouwing als vector (PDOK BRK WFS) =====
+// Tikt de gebruiker op een perceel, dan verdwijnt de tegelondergrond (die is
+// op hoog zoomniveau wazig) en wordt het perceel + de bebouwing (panden, uit
+// de BGT) als echte vectoren getekend: haarscherp tot zoom 28.
+var parcelLayer = L.layerGroup().addTo(gardenMap);
+var parcelBuildLayer = L.layerGroup().addTo(gardenMap);
+var parcelMode = false;
+
+
+function parcelStyle(sel) {
+  return sel
+    ? { color: '#1565c0', weight: 4, fillOpacity: 0.06, dashArray: '8 4' }
+    : { color: '#6d4c41', weight: 2.5, fillOpacity: 0.05 };
+}
+
+function buildStyle(sel) {
+  return sel
+    ? { color: '#b71c1c', weight: 3, fillColor: '#7f0000', fillOpacity: 0.25, dashArray: '6 4' }
+    : { color: '#4e342e', weight: 2, fillColor: '#3e2723', fillOpacity: 0.18 };
+}
+
+function ringToLatLngs(ring) {
+  // GeoJSON CRS84: [lng, lat] -> Leaflet [lat, lng]
+  return ring.map(function (p) { return [p[1], p[0]]; });
+}
+
+function geomRings(geom) {
+  if (!geom) return [];
+  if (geom.type === 'Polygon') return geom.coordinates;
+  if (geom.type === 'MultiPolygon') {
+    var out = [];
+    geom.coordinates.forEach(function (poly) { out = out.concat(poly); });
+    return out;
+  }
+  return [];
+}
+
+function setParcelMode(on) {
+  parcelMode = on;
+  var btn = document.getElementById('mapParcelBtn');
+  if (btn) {
+    btn.textContent = on ? '\uD83D\uDD19 Terug naar kaart' : '\uD83D\uDCCD Perceel tonen';
+  }
+  parcelLayer.clearLayers();
+  parcelBuildLayer.clearLayers();
+  gardenMap.getContainer().style.background = on ? '#e8f5e9' : '';
+  if (on) {
+    [osmLayer, kadasterLayer].forEach(function (lyr) {
+      if (gardenMap.hasLayer(lyr)) gardenMap.removeLayer(lyr);
+    });
+    var c = gardenMap.getCenter();
+    var d = 0.004; // ~450 m rond het kaartmiddelpunt
+    fetchParcels([c.lng - d, c.lat - d, c.lng + d, c.lat + d]);
+    fetchBuildings([c.lng - d, c.lat - d, c.lng + d, c.lat + d]);
+  } else {
+    var cb = document.getElementById('mapKadasterToggle');
+    osmLayer.addTo(gardenMap);
+    if (!cb || cb.checked) kadasterLayer.addTo(gardenMap);
+    
+  }
+}
+
+function wfsUrl(typeName, bbox) {
+  return 'https://service.pdok.nl/kadaster/brk-kadastrale-kaart/wfs/v5_0?service=WFS&version=2.0.0' +
+    '&request=GetFeature&typeNames=' + typeName +
+    '&outputFormat=application/json%3B%20subtype%3Dgeojson' +
+    '&srsName=urn:ogc:def:crs:EPSG::4326' +
+    '&bbox=' + bbox.join(',') + ',urn:ogc:def:crs:EPSG::CRS84';
+}
+
+function fetchParcels(bbox) {
+  parcelFetching = true;
+  fetch(wfsUrl('kadastralekaart:Perceel', bbox)).then(function (r) { return r.json(); }).then(function (fc) {
+    (fc.features || []).forEach(function (f) {
+      var rings = geomRings(f.geometry);
+      if (!rings.length) return;
+      var props = f.properties || {};
+      var label = (props.kadastraleGemeenteWaarde || '') + ' ' + (props.sectie || '') + ' ' +
+        (props.perceelnummer || '') + (props.kadastraleGrootteWaarde ? ' — ' + props.kadastraleGrootteWaarde + ' m²' : '');
+      var poly = L.polygon(rings.map(ringToLatLngs), parcelStyle(false)).addTo(parcelLayer);
+      poly.bindTooltip('Kadastraal perceel: ' + label + ' — klik om tuin te bekijken');
+      poly.on('click', function () { selectParcel(f, poly); });
+    });
+  }).catch(function () {});
+}
+
+function fetchBuildings(bbox) {
+  fetch(wfsUrl('kadastralekaart:Bebouwing', bbox)).then(function (r) { return r.json(); }).then(function (fc) {
+    (fc.features || []).forEach(function (f) {
+      var rings = geomRings(f.geometry);
+      if (!rings.length) return;
+      L.polygon(rings.map(ringToLatLngs), buildStyle(false)).addTo(parcelBuildLayer);
+    });
+  }).catch(function () {});
+}
+
+function selectParcel(feature, poly) {
+  parcelLayer.eachLayer(function (lyr) { if (lyr.setStyle) lyr.setStyle(parcelStyle(false)); });
+  parcelBuildLayer.eachLayer(function (lyr) { if (lyr.setStyle) lyr.setStyle(buildStyle(false)); });
+  poly.setStyle(parcelStyle(true));
+  var rings = geomRings(feature.geometry).map(ringToLatLngs);
+  var bounds = L.latLngBounds(rings[0]);
+  gardenMap.fitBounds(bounds, { padding: [40, 40], maxZoom: 28 });
+  // panden binnen het perceel markeren als "niet-tuin"
+  parcelBuildLayer.eachLayer(function (lyr) {
+    if (!lyr.getBounds) return;
+    var b = lyr.getBounds();
+    if (bounds.contains(b.getSouthWest()) && bounds.contains(b.getNorthEast())) {
+      lyr.setStyle(buildStyle(true));
+    }
+  });
+}
+
+(function () {
+  var db = document.getElementById('mapParcelBtn');
+  if (!db) return;
+  db.addEventListener('click', function () { setParcelMode(!parcelMode); });
+})();
 
 // Backup-module (export/import van plannerdata als JSON) laden
 (function () {
