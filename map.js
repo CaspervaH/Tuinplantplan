@@ -156,7 +156,7 @@ gardenMap.on('moveend zoomend', saveMapView);
 
 // ===== Alle borders op de kaart tonen =====
 function openBorderEditor(borderId) {
-  try { localStorage.setItem('activeTab', 'borders'); } catch (e) {}
+  try { localStorage.setItem('activeTab', 'planten'); } catch (e) {}
   try { localStorage.setItem('openBorderId', borderId); } catch (e) {}
   window.location.href = 'index.html';
 }
