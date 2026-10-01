@@ -1,4 +1,4 @@
-// scripts/aaldering-fix.js — data-kwaliteitsfix voor plants.js (r6).
+// scripts/aaldering-fix.js — data-kwaliteitsfix voor plants.js (r7).
 // r6: volledige synchronisatie met de Aaldering-PDF (883 rijen in
 //     scripts/rows-part-01.txt .. rows-part-09.txt als compacte
 //     JSON-regels, geparsede uit de OCR van alle 31 pagina's). Voor elke PDF-rij: (a) bestaat de plant in plants.js, dan
@@ -7,6 +7,10 @@
 //     eerdere rondes of bekende OCR-variant), dan overslaan en rapporteren.
 //     Plus externe aanvulling uit betrouwbare bronnen en diagnose-overzicht.
 //     Idempotent: draait op de actuele checkout via GitHub Actions.
+// r7: naamcorrecties ('Konigin'->'Königin Charlotte', Epimedium-cultivarnaam,
+//     'Bleeding Hea'->'Bleeding Heart'), 3 als bijna-duplicaat overgeslagen
+//     catalogusitems (Aquilegia) toegevoegd, hoogtes van PDF-pagina 1
+//     ingevuld en standaardkenmerken van bekende soorten/cultivars aangevuld.
 
 var fs = require('fs');
 var vm = require('vm');
@@ -51,7 +55,7 @@ vm.runInContext(src, ctx);
 var plants = ctx.window.PLANTEN_EXTRA;
 if (!Array.isArray(plants)) throw new Error('plants.js: window.PLANTEN_EXTRA is geen array');
 
-log('# Aaldering data-fix rapport (ronde 6 — volledige PDF-synchronisatie)');
+log('# Aaldering data-fix rapport (ronde 7 — PDF-synchronisatie + aanvulling ontbrekende gegevens)');
 log('');
 log('Planten in plants.js bij start: ' + plants.length);
 
@@ -77,6 +81,20 @@ plants.forEach(function (p) {
   }
 });
 log("Naamcorrectie 'Chrystal Blue' -> 'Crystal Blue': " + naamFixes + 'x');
+
+// ---- naamcorrecties ronde 7 ----
+// 'Konigin' is OCR zonder umlaut: de cultivar heet 'Königin Charlotte'
+// (verifieerbaar bij o.a. Heijnen Planten / Appeltern). 'Sphinx Twinkler' is
+// de handelsnaam van Epimedium 'Spine Tingler' (NVK / Walters Gardens).
+// 'Bleeding Hea' is afgekapt in de oorspronkelijke parse.
+var naamFixes7 = 0;
+plants.forEach(function (p) {
+  var n = p.latijnseNaam;
+  if (n === "Anemone 'Konigin Charlotte'") { p.latijnseNaam = "Anemone 'Königin Charlotte'"; naamFixes7++; }
+  if (n === "Epimedium Sphinx Twinkler ('Spine Tingler'") { p.latijnseNaam = "Epimedium 'Sphinx Twinkler'"; naamFixes7++; }
+  if (n === "Heliopsis helianthoides var. scabra 'Bleeding Hea'") { p.latijnseNaam = "Heliopsis helianthoides var. scabra 'Bleeding Heart'"; naamFixes7++; }
+});
+log('Naamcorrecties ronde 7 (umlaut, cultivarnamen, afkapping): ' + naamFixes7 + 'x');
 
 // ---- PDF-rijen synchroniseren ----
 // De 883 PDF-rijen staan als compacte JSON-regels in 9 deelbestanden
@@ -115,7 +133,8 @@ var SKIP = [
   'geranium foundling anke',
   'aster novae angliae andenken an alma potschke aster',
   'pottentilla atrosanguinea',
-  'veronia crinita alba'
+  'veronia crinita alba',
+  'epimedium sphinx twinkler spine tingler'
 ];
 
 function lijktOpBestaande(naam) {
@@ -256,6 +275,242 @@ EXTERN.forEach(function (f) {
   });
   log('- ' + f.naam + (gewijzigd.length ? ': ' + gewijzigd.join(', ') + ' aangevuld (' + f.bron + ')' : ': al volledig'));
 });
+
+log('');
+log('## Aanvulling ronde 7');
+log('');
+log('### Catalogusitems die ronde 6 als bijna-duplicaat waren overgeslagen');
+log('');
+
+// 1. Echte catalogusitems (eigen data in de PDF) die de fuzzy-match van
+//    ronde 6 naast 'Aquilegia vulgaris' legde:
+var PDF_EXTRA = [
+  { naam: "Aquilegia vulgaris 'Alba'", nlNaam: 'Akelei', standplaats: 'Z', kleur: 'wit',
+    bloeiVan: 'mei', bloeiTot: 'juni', hoogteVan: 30, hoogteTot: 50,
+    bron: 'PDF Aaldering (catalogusitem)' },
+  { naam: 'Aquilegia vulgaris mix', nlNaam: 'Akelei', standplaats: 'Z - HS', kleur: 'diverse kleuren',
+    bloeiVan: 'mei', bloeiTot: 'juni', hoogteVan: 30, hoogteTot: 70,
+    bron: 'PDF Aaldering (catalogusitem)' },
+  { naam: "Aquilegia vulgaris 'Pink'", nlNaam: 'Akelei', standplaats: 'Z - HS', kleur: 'roze',
+    bloeiVan: 'mei', bloeiTot: 'juni', hoogteVan: 30, hoogteTot: 50,
+    bron: 'PDF Aaldering (catalogusitem)' }
+];
+
+// 2. Hoogtes van pagina 1 van de PDF (kolomuitlijning van de hoogtekolom is
+//    eerder rij-voor-rij geverifieerd tegen de OCR van de eerste pagina):
+var PAGINA1_HOOGTE = [
+  { naam: 'Adiantum venustrum', hoogteVan: 80, hoogteTot: 100, bron: 'PDF Aaldering p.1 (hoogtekolom)' },
+  { naam: "Agastache rugosum 'Alabaster'", hoogteVan: 120, hoogteTot: 120, bron: 'PDF Aaldering p.1 (hoogtekolom)' },
+  { naam: "Agastache 'Blue Fortune'", hoogteVan: 75, hoogteTot: 75, bron: 'PDF Aaldering p.1 (hoogtekolom)' },
+  { naam: "Agastache rugosa 'Little Adder'", hoogteVan: 40, hoogteTot: 50, bron: 'PDF Aaldering p.1 (hoogtekolom)' },
+  { naam: "Agastache 'Purple Haze'", hoogteVan: 90, hoogteTot: 90, bron: 'PDF Aaldering p.1 (hoogtekolom)' },
+  { naam: "Ajuga reptans 'Alba'", hoogteVan: 15, hoogteTot: 15, bron: 'PDF Aaldering p.1 (hoogtekolom)' },
+  { naam: "Ajuga reptans 'Atropurpurea'", hoogteVan: 5, hoogteTot: 15, bron: 'PDF Aaldering p.1 (hoogtekolom)' },
+  { naam: "Ajuga reptans 'Chocolate Chips'", hoogteVan: 5, hoogteTot: 10, bron: 'PDF Aaldering p.1 (hoogtekolom)' },
+  { naam: "Ajuga reptans 'Catlin's Giant'", hoogteVan: 30, hoogteTot: 30, bron: 'PDF Aaldering p.1 (hoogtekolom)' },
+  { naam: "Ajuga pyramidalis 'Metallica Crispa'", hoogteVan: 20, hoogteTot: 20, bron: 'PDF Aaldering p.1 (hoogtekolom)' },
+  { naam: 'Ajuga reptans', hoogteVan: 15, hoogteTot: 15, bron: 'PDF Aaldering p.1 (hoogtekolom)' },
+  { naam: "Ajuga reptans 'Rosea'", hoogteVan: 15, hoogteTot: 15, bron: 'PDF Aaldering p.1 (hoogtekolom)' },
+  { naam: 'Alchemilla erythropoda', hoogteVan: 15, hoogteTot: 20, bron: 'PDF Aaldering p.1 (hoogtekolom)' },
+  { naam: 'Alchemilla mollis', hoogteVan: 50, hoogteTot: 50, bron: 'PDF Aaldering p.1 (hoogtekolom)' },
+  { naam: 'Alchemilla vulgaris', hoogteVan: 20, hoogteTot: 40, bron: 'PDF Aaldering p.1 (hoogtekolom)' },
+  { naam: "Allium senescens 'Lisa Blue'", hoogteVan: 30, hoogteTot: 30, bron: 'PDF Aaldering p.1 (hoogtekolom)' }
+];
+
+// 3. Standaard botanische kenmerken van bekende soorten en cultivars.
+//    Alleen planten waarvan de kenmerken onomstreden zijn; obscure
+//    collectiecodes en zeldzame cultivars blijven bewust leeg.
+var KENNIS = [
+  { naam: 'Anemone ranunculoides', nlNaam: 'Geel anemoon', standplaats: 'HS - S', kleur: 'geel',
+    bloeiVan: 'maart', bloeiTot: 'mei', hoogteVan: 20, hoogteTot: 30,
+    bron: 'standaard botanische kenmerken' },
+  { naam: "Buddleja davidii 'Black Night'", nlNaam: 'Vlinderstruik', standplaats: 'Z', kleur: 'donkerpaars',
+    bloeiVan: 'juli', bloeiTot: 'september', hoogteVan: 200, hoogteTot: 250,
+    bron: 'standaard botanische kenmerken' },
+  { naam: "Buddleja davidii butterfly candy 'Little White'", standplaats: 'Z', kleur: 'wit',
+    bloeiVan: 'juli', bloeiTot: 'september', hoogteVan: 70, hoogteTot: 100,
+    bron: 'standaard botanische kenmerken' },
+  { naam: 'Corydalis lutea', standplaats: 'HS - S', kleur: 'geel',
+    bloeiVan: 'mei', bloeiTot: 'september', hoogteVan: 25, hoogteTot: 40,
+    bron: 'standaard botanische kenmerken' },
+  { naam: "Digitalis purpurea 'Alba'", standplaats: 'Z - HS', kleur: 'wit',
+    bloeiVan: 'juni', bloeiTot: 'augustus', hoogteVan: 100, hoogteTot: 150,
+    bron: 'standaard botanische kenmerken' },
+  { naam: "Digitalis purpurea 'Sutton's Apricot'", standplaats: 'Z - HS', kleur: 'perzikroze',
+    bloeiVan: 'juni', bloeiTot: 'augustus', hoogteVan: 100, hoogteTot: 140,
+    bron: 'standaard botanische kenmerken' },
+  { naam: "Fuchsia magellanica 'Mrs Popple'", standplaats: 'Z - HS', kleur: 'rood - violet',
+    bloeiVan: 'juni', bloeiTot: 'september', hoogteVan: 75, hoogteTot: 100,
+    bron: 'standaard botanische kenmerken' },
+  { naam: "Fuchsia 'Riccartonii'", standplaats: 'Z - HS', kleur: 'rood - violet',
+    bloeiVan: 'juni', bloeiTot: 'september', hoogteVan: 90, hoogteTot: 120,
+    bron: 'standaard botanische kenmerken' },
+  { naam: 'Geranium psilostemon', standplaats: 'Z - HS', kleur: 'magenta',
+    bloeiVan: 'juni', bloeiTot: 'juli', hoogteVan: 90, hoogteTot: 120,
+    bron: 'standaard botanische kenmerken' },
+  { naam: "Geranium pratense 'Rose Queen'", standplaats: 'Z - HS', kleur: 'roze',
+    bloeiVan: 'juni', bloeiTot: 'augustus', hoogteVan: 60, hoogteTot: 80,
+    bron: 'standaard botanische kenmerken' },
+  { naam: 'Helianthemum nummularium', nlNaam: 'Zonneroosje', standplaats: 'Z', kleur: 'geel',
+    bloeiVan: 'juni', bloeiTot: 'september', hoogteVan: 20, hoogteTot: 30,
+    bron: 'standaard botanische kenmerken' },
+  { naam: 'Hepatica nobilis', standplaats: 'HS - S', kleur: 'blauw',
+    bloeiVan: 'maart', bloeiTot: 'mei', hoogteVan: 10, hoogteTot: 15,
+    bron: 'standaard botanische kenmerken' },
+  { naam: 'Hypericum calycinum', standplaats: 'Z - HS', kleur: 'geel',
+    bloeiVan: 'juli', bloeiTot: 'september', hoogteVan: 30, hoogteTot: 50,
+    bron: 'standaard botanische kenmerken' },
+  { naam: 'Leonurus cardiaca', nlNaam: 'Hartgespan', standplaats: 'Z - HS', kleur: 'roze - lila',
+    bloeiVan: 'juni', bloeiTot: 'september', hoogteVan: 80, hoogteTot: 150,
+    bron: 'standaard botanische kenmerken' },
+  { naam: 'Linaria vulgaris', nlNaam: 'Vlasleeuwenbek', standplaats: 'Z - HS', kleur: 'geel',
+    bloeiVan: 'juni', bloeiTot: 'september', hoogteVan: 30, hoogteTot: 80,
+    bron: 'standaard botanische kenmerken' },
+  { naam: 'Luzula nivea', standplaats: 'HS - S', kleur: 'wit',
+    bloeiVan: 'juni', bloeiTot: 'juli', hoogteVan: 40, hoogteTot: 50,
+    bron: 'standaard botanische kenmerken' },
+  { naam: 'Lysimachia ephemerum', standplaats: 'Z - HS', kleur: 'wit',
+    bloeiVan: 'juli', bloeiTot: 'augustus', hoogteVan: 60, hoogteTot: 90,
+    bron: 'standaard botanische kenmerken' },
+  { naam: 'Lysimachia nemorum', standplaats: 'HS - S', kleur: 'geel',
+    bloeiVan: 'mei', bloeiTot: 'juli', hoogteVan: 20, hoogteTot: 30,
+    bron: 'standaard botanische kenmerken' },
+  { naam: 'Lysimachia vulgaris', standplaats: 'Z - HS', kleur: 'geel',
+    bloeiVan: 'juni', bloeiTot: 'augustus', hoogteVan: 80, hoogteTot: 150,
+    bron: 'standaard botanische kenmerken' },
+  { naam: "Lythrum salicaria 'Happiness'", standplaats: 'Z - HS', kleur: 'roze',
+    bloeiVan: 'juli', bloeiTot: 'september', hoogteVan: 80, hoogteTot: 120,
+    bron: 'standaard botanische kenmerken' },
+  { naam: "Lythrum virgatum 'Dropmore Purple'", standplaats: 'Z', kleur: 'paarsroze',
+    bloeiVan: 'juli', bloeiTot: 'september', hoogteVan: 60, hoogteTot: 80,
+    bron: 'standaard botanische kenmerken' },
+  { naam: "Lythrum virgatum 'Swirl'", standplaats: 'Z - HS', kleur: 'roze',
+    bloeiVan: 'juli', bloeiTot: 'september', hoogteVan: 60, hoogteTot: 90,
+    bron: 'standaard botanische kenmerken' },
+  { naam: 'Potentilla argentea', standplaats: 'Z', kleur: 'geel',
+    bloeiVan: 'juni', bloeiTot: 'augustus', hoogteVan: 30, hoogteTot: 60,
+    bron: 'standaard botanische kenmerken' },
+  { naam: 'Potentilla atrosanguinea', standplaats: 'Z', kleur: 'donkerrood',
+    bloeiVan: 'juni', bloeiTot: 'augustus', hoogteVan: 40, hoogteTot: 60,
+    bron: 'standaard botanische kenmerken' },
+  { naam: 'Primula wanda', standplaats: 'HS - S', kleur: 'donkerroze',
+    bloeiVan: 'maart', bloeiTot: 'mei', hoogteVan: 10, hoogteTot: 15,
+    bron: 'standaard botanische kenmerken' },
+  { naam: 'Pulmonaria mollis', standplaats: 'HS - S', kleur: 'blauw - violet',
+    bloeiVan: 'april', bloeiTot: 'mei', hoogteVan: 25, hoogteTot: 40,
+    bron: 'standaard botanische kenmerken' },
+  { naam: 'Saponaria officinalis', nlNaam: 'Zeepkruid', standplaats: 'Z - HS', kleur: 'roze',
+    bloeiVan: 'juli', bloeiTot: 'september', hoogteVan: 50, hoogteTot: 90,
+    bron: 'standaard botanische kenmerken' },
+  { naam: 'Scrophularia nodosa', standplaats: 'HS - S', kleur: 'roodbruin',
+    bloeiVan: 'juni', bloeiTot: 'augustus', hoogteVan: 50, hoogteTot: 100,
+    bron: 'standaard botanische kenmerken' },
+  { naam: 'Sambucus nigra', nlNaam: 'Vlier', standplaats: 'Z - HS', kleur: 'wit',
+    bloeiVan: 'juni', bloeiTot: 'juli', hoogteVan: 250, hoogteTot: 400,
+    bron: 'standaard botanische kenmerken' },
+  { naam: 'Tanacetum parthenium', nlNaam: 'Moederkruid', standplaats: 'Z - HS', kleur: 'wit',
+    bloeiVan: 'juni', bloeiTot: 'september', hoogteVan: 30, hoogteTot: 60,
+    bron: 'standaard botanische kenmerken' },
+  { naam: "Thymus serpyllum 'Minor'", standplaats: 'Z', kleur: 'roze - lila',
+    bloeiVan: 'juni', bloeiTot: 'augustus', hoogteVan: 2, hoogteTot: 5,
+    bron: 'standaard botanische kenmerken' },
+  { naam: 'Trifolium repens', nlNaam: 'Witte klaver', standplaats: 'Z', kleur: 'wit',
+    bloeiVan: 'juni', bloeiTot: 'september', hoogteVan: 10, hoogteTot: 30,
+    bron: 'standaard botanische kenmerken' },
+  { naam: 'Saxifraga stolonifera', standplaats: 'HS - S', kleur: 'wit',
+    bloeiVan: 'juni', bloeiTot: 'augustus', hoogteVan: 10, hoogteTot: 20,
+    bron: 'standaard botanische kenmerken' },
+  { naam: 'Erigeron annuus', standplaats: 'Z - HS', kleur: 'wit - roze',
+    bloeiVan: 'juni', bloeiTot: 'september', hoogteVan: 60, hoogteTot: 120,
+    bron: 'standaard botanische kenmerken' },
+  { naam: 'Euphorbia myrsinites', standplaats: 'Z', kleur: 'geel',
+    bloeiVan: 'april', bloeiTot: 'juni', hoogteVan: 10, hoogteTot: 30,
+    bron: 'standaard botanische kenmerken' },
+  { naam: 'Asclepias incarnata', nlNaam: 'Zijdeplant', standplaats: 'Z - HS', kleur: 'roze',
+    bloeiVan: 'juli', bloeiTot: 'augustus', hoogteVan: 100, hoogteTot: 150,
+    bron: 'standaard botanische kenmerken' },
+  { naam: 'Astilboides tabularis', standplaats: 'HS - S', kleur: 'wit',
+    bloeiVan: 'juni', bloeiTot: 'juli', hoogteVan: 100, hoogteTot: 120,
+    bron: 'standaard botanische kenmerken' },
+  { naam: "Baptisia australis 'Lemon Meringue'", standplaats: 'Z', kleur: 'geel',
+    bloeiVan: 'juni', bloeiTot: 'juli', hoogteVan: 75, hoogteTot: 100,
+    bron: 'standaard botanische kenmerken' },
+  { naam: 'Campanula rapunculus', standplaats: 'Z - HS', kleur: 'blauw - violet',
+    bloeiVan: 'juli', bloeiTot: 'september', hoogteVan: 40, hoogteTot: 80,
+    bron: 'standaard botanische kenmerken' },
+  { naam: 'Chrysosplenium alternifolium', nlNaam: 'Goudvechje', standplaats: 'HS - S', kleur: 'geel',
+    bloeiVan: 'maart', bloeiTot: 'mei', hoogteVan: 5, hoogteTot: 15,
+    bron: 'standaard botanische kenmerken' },
+  { naam: "Convallaria majalis 'Bridal Choice'", standplaats: 'HS - S', kleur: 'wit',
+    bloeiVan: 'mei', bloeiTot: 'juni', hoogteVan: 15, hoogteTot: 20,
+    bron: 'standaard botanische kenmerken' },
+  { naam: 'Fragaria ananassa', nlNaam: 'Aardbei', standplaats: 'Z', kleur: 'wit',
+    bloeiVan: 'mei', bloeiTot: 'juni', hoogteVan: 15, hoogteTot: 30,
+    bron: 'standaard botanische kenmerken' },
+  { naam: 'Isotoma fluviatilis', standplaats: 'Z - HS', kleur: 'blauw',
+    bloeiVan: 'juni', bloeiTot: 'september', hoogteVan: 5, hoogteTot: 10,
+    bron: 'standaard botanische kenmerken' },
+  { naam: "Aruncus 'Misty Lace'", standplaats: 'Z - HS', kleur: 'wit',
+    bloeiVan: 'juni', bloeiTot: 'juli', hoogteVan: 90, hoogteTot: 120,
+    bron: 'standaard botanische kenmerken' },
+  { naam: "Achillea filipendulina 'Cloth of Gold'", standplaats: 'Z', kleur: 'geel',
+    bloeiVan: 'juni', bloeiTot: 'augustus', hoogteVan: 90, hoogteTot: 120,
+    bron: 'standaard botanische kenmerken' },
+  { naam: "Salvia nemorosa 'Azure Snow'", standplaats: 'Z', kleur: 'blauw - wit',
+    bloeiVan: 'juni', bloeiTot: 'september', hoogteVan: 40, hoogteTot: 50,
+    bron: 'standaard botanische kenmerken' },
+  // grassen en varens: geen opvallende bloem, alleen standplaats + hoogte
+  { naam: "Molinia arundinacea 'Karl Foerster'", standplaats: 'Z - HS',
+    hoogteVan: 150, hoogteTot: 200, bron: 'standaard botanische kenmerken (gras)' },
+  { naam: 'Blechnum penna marina', standplaats: 'HS - S',
+    hoogteVan: 15, hoogteTot: 30, bron: 'standaard botanische kenmerken (varen)' },
+  { naam: "Acaena inermis 'Purpurea'", standplaats: 'Z - HS',
+    hoogteVan: 5, hoogteTot: 10, bron: 'standaard botanische kenmerken (bladplant)' },
+  { naam: 'Muehlenbeckia axillaris', standplaats: 'Z - HS',
+    hoogteVan: 5, hoogteTot: 10, bron: 'standaard botanische kenmerken (bladplant)' },
+  // online geverifieerd tegen kwekerij- en botanische bronnen:
+  { naam: "Thalictrum 'Elin'", standplaats: 'Z - HS', kleur: 'lila',
+    bloeiVan: 'juli', bloeiTot: 'augustus', hoogteVan: 200, hoogteTot: 280,
+    bron: 'plantlust / Phoenix Perennials (geverifieerd)' },
+  { naam: "Veronicastrum virginicum 'Challenger'", standplaats: 'Z - HS', kleur: 'roze',
+    bloeiVan: 'juli', bloeiTot: 'augustus', hoogteVan: 120, hoogteTot: 150,
+    bron: 'RHS / Horsford Nursery (geverifieerd)' },
+  // klimplant: hoogte is afhankelijk van geleiding, alleen standplaats
+  { naam: 'Parthenocissus quinquefolia', nlNaam: 'Wilde wingerd', standplaats: 'Z - HS',
+    bron: 'standaard botanische kenmerken (klimplant)' }
+];
+
+function verwerkAanvulling(lijst) {
+  lijst.forEach(function (f) {
+    var p = vind(f.naam);
+    if (!p) {
+      plants.push({
+        latijnseNaam: f.naam, nlNaam: f.nlNaam || '', standplaats: f.standplaats || '',
+        kleur: f.kleur || '', bloeiVan: f.bloeiVan || '', bloeiTot: f.bloeiTot || '',
+        hoogteVan: f.hoogteVan != null ? f.hoogteVan : null,
+        hoogteTot: f.hoogteTot != null ? f.hoogteTot : null
+      });
+      log('- ' + f.naam + ': toegevoegd (' + f.bron + ')');
+      return;
+    }
+    var gewijzigd = [];
+    ['nlNaam', 'standplaats', 'kleur', 'bloeiVan', 'bloeiTot', 'hoogteVan', 'hoogteTot'].forEach(function (veld) {
+      if (f[veld] === undefined) return;
+      if (leeg(p[veld])) { p[veld] = f[veld]; gewijzigd.push(veld); }
+    });
+    log('- ' + f.naam + (gewijzigd.length ? ': ' + gewijzigd.join(', ') + ' aangevuld (' + f.bron + ')' : ': al volledig'));
+  });
+}
+
+verwerkAanvulling(PDF_EXTRA);
+log('');
+log('### Hoogtes van PDF-pagina 1 (kolomuitlijning geverifieerd tegen de OCR)');
+log('');
+verwerkAanvulling(PAGINA1_HOOGTE);
+log('');
+log('### Standaardkenmerken van bekende soorten en cultivars');
+log('');
+verwerkAanvulling(KENNIS);
 
 // ---- Overzicht: planten die na deze ronde nog gegevens missen ----
 var missend = { standplaats: [], kleur: [], bloeiVan: [], bloeiTot: [], hoogte: [] };
