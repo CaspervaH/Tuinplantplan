@@ -1,7 +1,19 @@
-// scripts/aaldering-fix.js — data-kwaliteitsfix voor plants.js (r5).
-// r5: Amsonia hubrichtii toevoegen (stond met lege rij in de PDF en viel
-// daarom uit de oorspronkelijke parse), kleuren aanvullen voor planten waar
-// betrouwbare bronnen gevonden zijn, 'Bleeding Hea' naam-correctie.
+// scripts/aaldering-fix.js — data-kwaliteitsfix voor plants.js (ronde 8).
+// Ronde 8: resterende kleur-hiaten dichten met bronvermelding.
+//  - Heliopsis 'Bleeding Heart' -> 'Bleeding Hearts' (Walters Gardens /
+//    White Flower Farm) + kleur oranje-rood. De ronde-5-vulkey miste deze
+//    plant omdat de naam toen nog als 'Bleeding Heart' in plants.js stond.
+//  - Salvia microphylla 'Andus' -> 'Anduus' (Middleton Nurseries) + roze-wit.
+//  - Epimedium 'Thunderbolt' geel (E. pinnatum ssp. colchicum, Dancing Oaks).
+//  - Epimedium 'Elenwe' wit (Pepinieres Delabroye, de kweker zelf).
+//  - Acaena inermis 'Purpurea' bruin (Xera Plants: maroon orbs).
+//  - Salvia jamensis 'La Siesta' roze (Ashwood / Middleton).
+//  - Coreopsis verticillata 'Ruby Red' rood (RHS-achtige bronnen).
+//  - Nepeta nuda 'Overhagen' lila (Nepeta nuda: bleeklila, Homegrown).
+// Bewust NIET gevuld (nergens online te verifiëren, kwekerij-eigen rassen):
+// Epimedium 'Elros', 'Fantur', 'Jorien', 'Maeglin', 'Mikado', 'Mini Drone',
+// 'Nectar', 'Patricia', 'Pop-Up'; Salvia 'Manon', 'Free Magenta Lips',
+// S. microphylla 'Fantasia', S. jamensis 'Lucilla'; Phlox (Arjan Schepers).
 // Idempotent: alleen lege velden vullen.
 var fs = require('fs');
 var vm = require('vm');
@@ -28,7 +40,8 @@ var REGEX_FIXES = [
   [/Epimedium wushanense 135/g, 'Epimedium wushanense'],
   [/Pottentilla/g, 'Potentilla'],
   [/Phlox \(Arjan Schepers\) \?/g, 'Phlox (Arjan Schepers)'],
-  [/Bleeding Hea'/g, "Bleeding Hearts'"]
+  [/Heliopsis helianthoides var\. scabra 'Bleeding Heart'/g, "Heliopsis helianthoides var. scabra 'Bleeding Hearts'"],
+  [/Salvia microphylla 'Andus'/g, "Salvia microphylla 'Anduus'"]
 ];
 
 // vul-sleutels (genormaliseerde namen); alleen lege velden vullen
@@ -80,7 +93,14 @@ var FILLS = {
   'trifolium repens isabella': { kl: 'roze - paars' },
   'patrinia monandra': { kl: 'geel' },
   'saxifraga stolonifera': { kl: 'wit' },
-  'epimedium wushanense': { kl: 'wit' }
+  'epimedium wushanense': { kl: 'wit' },
+  'epimedium thunderbolt': { kl: 'geel' },
+  'epimedium elenwe': { kl: 'wit' },
+  'acaena inermis purpurea': { kl: 'bruin' },
+  'salvia jamensis la siesta': { kl: 'roze' },
+  'salvia microphylla anduus': { kl: 'roze - wit' },
+  'coreopsis verticillata ruby red': { kl: 'rood' },
+  'nepeta nuda overhagen': { kl: 'lila' }
 };
 
 // ---- verwerken ----
@@ -91,7 +111,7 @@ vm.runInContext(src, ctx);
 var plants = ctx.window.PLANTEN_EXTRA;
 if (!Array.isArray(plants)) throw new Error('plants.js: window.PLANTEN_EXTRA is geen array');
 
-log('# Aaldering data-fix rapport (ronde 5 — Amsonia + bron-gebaseerde vullingen)');
+log('# Aaldering data-fix rapport (ronde 8 — resterende kleur-hiaten met bronvermelding)');
 log('');
 log('Planten bij start: ' + plants.length);
 
