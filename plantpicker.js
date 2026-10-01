@@ -363,7 +363,8 @@ window.PlantPicker = (function () {
   function borderAreaTxt(shape) {
     var m2 = borderAreaM2(shape);
     if (!m2) return '';
-    return (m2 >= 100 ? Math.round(m2) : Math.round(m2 * 10) / 10) + ' m\u00b2';
+    var val = m2 >= 100 ? Math.round(m2) : Math.round(m2 * 10) / 10;
+    return String(val).replace('.', ',') + ' m\u00b2';
   }
 
   return {
