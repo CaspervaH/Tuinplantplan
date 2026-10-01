@@ -1,4 +1,6 @@
 // Backup: exporteer & importeer plannerdata (localStorage) als JSON — Tuinplantplanner
+// v6: import-knop op het startscherm (#addressGate), zodat een backup hersteld kan
+//     worden vóór het invoeren van een adres (nieuw apparaat / nieuwe browser).
 // v3: rechtstreeks in het Instellingen-tabblad (#backupDock), geen uitklapknop meer.
 // v5: EXPECT-structuur gecorrigeerd (shortlist = plant-objecten, borders = array)
 // v4: geharde import — maximale bestandsgrootte, strikte structuurcontrole per sleutel
@@ -90,7 +92,12 @@
     mapView: function (v) { return v && typeof v === 'object' && !Array.isArray(v); }
   };
 
-  function doImport(file) {
+  function doImport(file, statusEl) {
+    // statusEl: eigen status-regel (bv. op het startscherm); default = Instellingen-tab
+    var setStatus = function (msg) {
+      var el = statusEl || document.getElementById('backupStatus');
+      if (el) el.textContent = msg;
+    };
     if (file.size > MAX_BYTES) {
       setStatus('Import geweigerd: bestand is groter dan 2 MB — dit is geen normale backup.');
       return;
@@ -169,9 +176,50 @@
     updateLast();
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', buildUI);
-  } else {
+  // v6: import-mogelijkheid op het startscherm (vóór het adres), zodat je op een
+  // nieuw apparaat of in een andere browser direct je backup kunt terugzetten.
+  // Dynamisch gebouwd (geen index.html-wijziging); verdwijnt automatisch zodra
+  // er een adres is (CSS: body.has-address #addressGate { display:none }).
+  function buildGateImport() {
+    var gate = document.getElementById('addressGate');
+    if (!gate || gate.getAttribute('data-backup-import')) return;
+    gate.setAttribute('data-backup-import', '1');
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'margin-top:16px;';
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn';
+    btn.style.cssText = 'background:#4682b4;color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:0.95em;';
+    btn.textContent = '💾 Backup importeren';
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.style.display = 'none';
+    var status = document.createElement('div');
+    status.style.cssText = 'margin-top:8px;font-weight:600;font-size:0.9em;';
+    var tip = document.createElement('div');
+    tip.style.cssText = 'margin-top:6px;color:#777;font-size:0.85em;';
+    tip.textContent = 'Op een nieuw apparaat of in een andere browser? Importeer hier je JSON-backup — adres, shortlist, borders en tuinobjecten worden in één keer hersteld.';
+    btn.addEventListener('click', function () { input.click(); });
+    input.addEventListener('change', function () {
+      var f = input.files && input.files[0];
+      if (f) doImport(f, status);
+      input.value = '';
+    });
+    wrap.appendChild(btn);
+    wrap.appendChild(input);
+    wrap.appendChild(status);
+    wrap.appendChild(tip);
+    gate.appendChild(wrap);
+  }
+
+  function init() {
     buildUI();
+    buildGateImport();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
   }
 })();
