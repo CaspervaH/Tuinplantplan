@@ -624,7 +624,8 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
             const border = borders.find(b => b.id === activeBorderId);
             if (!border) return;
             const placed = border.placed || [];
-            activeBorderNameEl.textContent = 'Border: ' + border.name + ' (' + placed.length + ' geplaatste planten)';
+            const areaTxt = PlantPicker.borderAreaTxt(border.shape);
+            activeBorderNameEl.textContent = 'Border: ' + border.name + (areaTxt ? ' \u2014 ' + areaTxt : '') + ' (' + placed.length + ' geplaatste planten)';
             PlantPicker.renderSummary(borderSummaryEl, placed, { title: 'Geplaatst in deze border' });
             const body = document.getElementById('borderPlacedBody');
             if (body) {
@@ -822,7 +823,9 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
                 return '<div class="pv-side-row' + (pvKey === 'border:' + b.id ? ' open' : '') + '">' +
                     '<button type="button" class="pv-side-btn' + (pvKey === 'border:' + b.id ? ' active' : '') +
                     '" data-pv="border:' + esc(b.id) + '" data-border="' + esc(b.id) + '">' +
-                    '&#127807; ' + esc(b.name) + ' <span class="cnt">' + ((b.placed || []).length) + '</span></button>' +
+                    '&#127807; ' + esc(b.name) +
+                    (PlantPicker.borderAreaTxt(b.shape) ? ' <span class="cnt">' + PlantPicker.borderAreaTxt(b.shape) + '</span>' : '') +
+                    ' <span class="cnt">' + ((b.placed || []).length) + '</span></button>' +
                     '<button type="button" class="pv-side-del" data-deleteborder="' + esc(b.id) + '" title="Border verwijderen">&#10005;</button>' +
                     '</div>';
             }).join('') ||
@@ -832,7 +835,9 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
             const el = document.getElementById('pvBordersOverview');
             if (!el) return;
             el.innerHTML = borders.map(function (b) {
-                return '<div class="border-card"><div><strong>&#127804; ' + esc(b.name) + '</strong> &mdash; ' + ((b.placed || []).length) + ' geplaatste plant(en)</div>' +
+                const areaTxt = PlantPicker.borderAreaTxt(b.shape);
+                return '<div class="border-card"><div><strong>&#127804; ' + esc(b.name) + '</strong> &mdash; ' +
+                    (areaTxt ? areaTxt + ' &mdash; ' : '') + ((b.placed || []).length) + ' geplaatste plant(en)</div>' +
                     '<button type="button" class="btn btn-secondary" data-openborder="' + esc(b.id) + '">Openen</button></div>';
             }).join('') ||
                 '<p class="sl-tip">Nog geen borders &ndash; teken er een op de kaart in het Tuinontwerp-tabblad.</p>';

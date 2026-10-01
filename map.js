@@ -175,7 +175,8 @@ function renderMap() {
       };
       if (isSel) polyOpts.dashArray = '8 4';
       var poly = L.polygon(border.shape, polyOpts).addTo(mapShapeLayer);
-      poly.bindTooltip(border.name + (editVerticesMode ? ' \u2014 klik om hoekpunten te slepen' : ' \u2014 klik om te bewerken'));
+      var areaTxt = PlantPicker.borderAreaTxt(border.shape);
+      poly.bindTooltip(border.name + (areaTxt ? ' \u2014 ' + areaTxt : '') + (editVerticesMode ? ' \u2014 klik om hoekpunten te slepen' : ' \u2014 klik om te bewerken'));
       poly.on('click', function (ev) {
         if (drawMode || freehandOn || circleMode) { L.DomEvent.stopPropagation(ev); return; }
         if (editVerticesMode) { selectShape('border', border, borders); }

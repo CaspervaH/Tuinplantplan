@@ -342,8 +342,34 @@ window.PlantPicker = (function () {
       '<div class="pp-sum-months">' + maandHtml + '</div></div>';
   }
 
+  function borderAreaM2(shape) {
+    if (!shape || shape.length < 3) return 0;
+    var lat0 = 0;
+    for (var i = 0; i < shape.length; i++) lat0 += Number(shape[i][0]) || 0;
+    lat0 /= shape.length;
+    var mPerLat = 111320;
+    var mPerLng = 111320 * Math.cos(lat0 * Math.PI / 180);
+    var pts = shape.map(function (p) {
+      return [((Number(p[1]) || 0)) * mPerLng, ((Number(p[0]) || 0)) * mPerLat];
+    });
+    var twice = 0;
+    for (var j = 0; j < pts.length; j++) {
+      var a = pts[j], b = pts[(j + 1) % pts.length];
+      twice += (a[0] * b[1]) - (b[0] * a[1]);
+    }
+    return Math.abs(twice) / 2;
+  }
+
+  function borderAreaTxt(shape) {
+    var m2 = borderAreaM2(shape);
+    if (!m2) return '';
+    return (m2 >= 100 ? Math.round(m2) : Math.round(m2 * 10) / 10) + ' m\u00b2';
+  }
+
   return {
     create: create,
+    borderAreaM2: borderAreaM2,
+    borderAreaTxt: borderAreaTxt,
     renderSummary: renderSummary,
     monthIndex: monthIndex,
     bloeiMaanden: bloeiMaanden,
