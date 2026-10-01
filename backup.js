@@ -6,7 +6,7 @@
 // v4: geharde import — maximale bestandsgrootte, strikte structuurcontrole per sleutel
 //     en weigering bij HTML/script/event-handler-patronen in de gegevens.
 (function () {
-  var KEYS = ['shortlist', 'borders', 'gardenObjects', 'gardenAddress', 'mapView'];
+  var KEYS = ['shortlist', 'borders', 'plantLists', 'gardenObjects', 'gardenAddress', 'mapView'];
   var LAST = 'lastBackupAt';
 
   function readAll() {
@@ -88,6 +88,7 @@
     shortlist: function (v) { return Array.isArray(v) && v.every(function (x) { return x && typeof x === 'object' && !Array.isArray(x) && typeof x.latijnseNaam === 'string'; }); },
     gardenObjects: function (v) { return Array.isArray(v) && v.every(function (x) { return x && typeof x === 'object' && !Array.isArray(x); }); },
     borders: function (v) { return Array.isArray(v) && v.every(function (x) { return x && typeof x === 'object' && !Array.isArray(x) && typeof x.id === 'string' && typeof x.name === 'string'; }); },
+    plantLists: function (v) { return Array.isArray(v) && v.every(function (x) { return x && typeof x === 'object' && !Array.isArray(x) && typeof x.id === 'string' && typeof x.name === 'string' && Array.isArray(x.plants); }); },
     gardenAddress: function (v) { return v && typeof v === 'object' && !Array.isArray(v); },
     mapView: function (v) { return v && typeof v === 'object' && !Array.isArray(v); }
   };
@@ -135,7 +136,7 @@
         return;
       }
       var hasData = Object.keys(readAll()).length > 0;
-      if (hasData && !window.confirm('Importeren vervangt de gegevens die in dit bestand zitten (shortlist, borders, tuinobjecten, kaartgegevens en adres). Gegevens die niet in het bestand staan, blijven gewoon staan. Doorgaan?')) return;
+      if (hasData && !window.confirm('Importeren vervangt de gegevens die in dit bestand zitten (shortlist, borders, lijstjes, tuinobjecten, kaartgegevens en adres). Gegevens die niet in het bestand staan, blijven gewoon staan. Doorgaan?')) return;
       // Alleen sleutels die in het bestand zitten worden vervangen,
       // zodat je bv. alleen tuinobjecten (gardenObjects) kunt importeren
       // zonder je shortlist of borders te verliezen.
@@ -198,7 +199,7 @@
     status.style.cssText = 'margin-top:8px;font-weight:600;font-size:0.9em;';
     var tip = document.createElement('div');
     tip.style.cssText = 'margin-top:6px;color:#777;font-size:0.85em;';
-    tip.textContent = 'Op een nieuw apparaat of in een andere browser? Importeer hier je JSON-backup — adres, shortlist, borders en tuinobjecten worden in één keer hersteld.';
+    tip.textContent = 'Op een nieuw apparaat of in een andere browser? Importeer hier je JSON-backup — adres, shortlist, borders, lijstjes en tuinobjecten worden in één keer hersteld.';
     btn.addEventListener('click', function () { input.click(); });
     input.addEventListener('change', function () {
       var f = input.files && input.files[0];

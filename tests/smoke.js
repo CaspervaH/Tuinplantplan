@@ -59,10 +59,13 @@ const run = new Function('window', 'document', 'PlantPicker', 'localStorage', 'a
   `; return { slFilters, updateSlFilters, slMatches, renderShortlist, renderPlantTable, pvFilters, pvMatches,
     shortlist: () => shortlist, setShortlist: v => { shortlist = v; },
     getBorders: () => borders, setBorders: v => { borders = v; },
-    setPvView, pvView: () => pvView, activeBorderId: () => activeBorderId,
-    renderBorderPlantTable, renderPvBorderList, renderFootSummary, addPlantToBorder,
-    borderPlantTableBodyEl, shortlistEl, plantTableBodyEl, pvBorderListEl, pvFootSummaryEl, slVisibleInfoEl,
-    borderShapeBoxEl };`);
+    getPlantLists: () => plantLists, setPlantLists: v => { plantLists = v; },
+    setPvView, pvView: () => pvView, pvKey: () => pvKey, activeBorderId: () => activeBorderId,
+    renderBorderPlantTable, renderPvBorderList, renderPvListList, renderFootSummary, addPlantToBorder, addPlantToList, addPlantToShortlist,
+    renderBorderSourceList, renderBorderSourceTable, renderPlantList, createPlantList, getSourcePlants,
+    setBorderSourceKey: v => { borderSourceKey = v; },
+    shortlistEl, plantTableBodyEl, pvBorderListEl, pvListListEl, pvFootSummaryEl, slVisibleInfoEl,
+    borderShapeBoxEl, borderSummaryEl, borderSourceBodyEl, borderSourceListEl };`);
 
 const ctx = run(global.window, global.document, global.PlantPicker, global.localStorage, global.alert, global.confirm, promptMock = () => '1');
 let pass = 0, fail = 0;
@@ -112,24 +115,42 @@ const mapJs = fs.readFileSync('map.js', 'utf8');
 check('map.js opent Borders-tab bij border-klik', /localStorage\.setItem\('activeTab', 'borders'\)/.test(mapJs));
 check('map.js zet openBorderId', mapJs.includes("localStorage.setItem('openBorderId'"));
 
-// 6. border-view: tekening + tabel
+// 6. border-view: tekening + bronlijst (3 kolommen)
 ctx.setBorders([{ id: '1', name: 'Testborder', plants: [Object.assign({}, p)], shape: [[52, 5], [52, 5.001], [52.001, 5.001]] }]);
 ctx.setPvView('border', '1');
 check('border-view actief', ctx.pvView() === 'border' && ctx.activeBorderId() === '1');
-check('border-tabel gebruikt shortlist-kolommen', ctx.borderPlantTableBodyEl._html.includes('sl-hoogte-fill') && ctx.borderPlantTableBodyEl._html.includes('sl-m bloei'));
-check('border-tabel heeft verwijderknop', ctx.borderPlantTableBodyEl._html.includes('data-removefromborder'));
+check('border-samenvatting toont alleen geplaatste planten (titel)', ctx.borderSummaryEl._html.includes('Geplaatst in deze border'));
 check('vormweergave gebouwd (svg in box)', ctx.borderShapeBoxEl.children.length > 0);
 check('voettekst-samenvatting gevuld', ctx.pvFootSummaryEl._html.includes('pp-summary'));
-
-// 7. sleep een shortlist-plant naar een border (drag & drop-pad)
+check('3-kolommen borderscherm in de HTML', html.includes('border-3col') && html.includes('borderSourceList') && html.includes('borderSourceSearch'));
+check('bronlijst-dropdown gevuld (shortlist + alle planten)', ctx.borderSourceListEl._html.includes('Shortlist') && ctx.borderSourceListEl._html.includes('Alle planten'));
+check('bronlijst toont shortlist-planten', (ctx.setShortlist([p, p2]), ctx.renderBorderSourceList(), ctx.renderBorderSourceTable(), ctx.borderSourceBodyEl._html.includes('Nieuwe plant')));
+ctx.setBorderSourceKey('all');
+ctx.renderBorderSourceTable();
+check('bronlijst "alle planten" toont plant uit plantData', ctx.borderSourceBodyEl._html.includes('sl-hoogte-fill'));
+ctx.setShortlist([p, p2]);
+// 7. eigen lijstjes
+ctx.setPlantLists([{ id: 'L1', name: 'Mijn lijstje', plants: [Object.assign({}, p)] }]);
+ctx.setPvView('list', 'L1');
+check('lijstje-view actief', ctx.pvView() === 'list' && ctx.pvKey() === 'list:L1');
+check('lijstje in sidebar getoond', ctx.pvListListEl._html.includes('Mijn lijstje'));
+check('lijstje-tabel toont plant', ids.plantListBody._html.includes('sl-hoogte-fill'));
+check('plant toevoegen aan lijstje', (ctx.addPlantToList('L1', 'Nieuwe plant'), ctx.getPlantLists()[0].plants.some(x => x.latijnseNaam === 'Nieuwe plant')));
+check('plant uit lijstje toevoegen aan shortlist', (ctx.setShortlist([]), ctx.addPlantToShortlist('Nieuwe plant'), ctx.shortlist().some(x => x.latijnseNaam === 'Nieuwe plant')));
+ctx.setPvView('border', '1');
+check('bronlijst-dropdown bevat lijstje en andere border', ctx.borderSourceListEl._html.includes('Mijn lijstje') && ctx.borderSourceListEl._html.includes('Testborder') === false);
+ctx.setBorderSourceKey('list:L1');
+ctx.renderBorderSourceTable();
+check('bronlijst uit lijstje toont plant', ctx.borderSourceBodyEl._html.includes('Test x'));
+// 8. sleep een shortlist-plant naar een border (drag & drop-pad)
 ctx.setShortlist([p, p2]);
 ctx.renderShortlist();
 ctx.setPvView('border', '1');
 const added = ctx.addPlantToBorder('1', 'Nieuwe plant', null);
 check('plant via sleep toegevoegd aan border', added && ctx.getBorders()[0].plants.some(x => x.latijnseNaam === 'Nieuwe plant'));
-check('geen planten in border zonder shortlist-herkomst', !ctx.getBorders()[0].plants.some(x => x.latijnseNaam === 'Onbekend'));
+check('geen planten in border zonder herkomst', !ctx.getBorders()[0].plants.some(x => x.latijnseNaam === 'Onbekend'));
 check('borderlijst in de sidebar toont border', ctx.pvBorderListEl._html.includes('Testborder'));
-
+check('plantLists in saveState en backup', /localStorage.setItem\('plantLists'/.test(html) && require('fs').readFileSync('backup.js', 'utf8').includes("'plantLists'"));
 console.log('');
 if (fail) { console.error('\u2717 ' + fail + ' rooktest-fout(en)'); process.exit(1); }
 console.log('\u2713 Rooktest geslaagd (' + pass + ' checks)');
