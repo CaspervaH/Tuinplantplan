@@ -182,7 +182,7 @@ function renderMap() {
         else { openBorderEditor(border.id); }
       });
     }
-    (border.plants || []).forEach(function (p) {
+    (border.placed || []).forEach(function (p) {
       if (!p.pos) return;
       var marker = L.circleMarker([p.pos.lat, p.pos.lng], {
         radius: 8, color: '#333', weight: 1,

@@ -221,16 +221,15 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
         </div>
         <div class="section tab-pane" id="tab-planten" data-tabpane="planten">
             <h2 id="plantenTabTitle">Planten</h2>
-            <p class="settings-note">Kies via de tabbladen hierboven of links in de zijbalk: alle planten, je shortlist of een border. Planten zet je op de shortlist door ze aan te vinken; planten uit de shortlist sleep je naar een border in de zijbalk. Borders maak je op het Tuinontwerp-tabblad door ze op de kaart te tekenen.</p>
+            <p class="settings-note">Links in de zijbalk kies je: alle planten, je lijstjes of een border. Lijstjes maak je zelf (&quot;Nieuw lijstje&quot;) en daar sleep je planten naartoe vanuit het plantenoverzicht of een ander lijstje. Open je een border, dan zie je de vorm met de geplaatste planten en kies je rechts uit welk lijstje (of alle planten) je planten in de border plaatst. Borders maak je op het Tuinontwerp-tabblad door ze op de kaart te tekenen.</p>
             <div class="pv-layout">
                 <div class="pv-sidebar" id="plantSidebar">
                     <button type="button" class="pv-side-btn" data-pv="planten">&#127793; Planten</button>
-                    <button type="button" class="pv-side-btn" data-pv="shortlist">&#128203; Shortlist <span class="cnt" id="shortlistCount">0</span></button>
-                    <div class="pv-side-group">Borders</div>
-                    <div id="pvBorderList"></div>
-<div class="pv-side-group">Lijstjes</div>
+                    <div class="pv-side-group">Lijstjes</div>
                     <div id="pvListList"></div>
 <button type="button" class="pv-side-btn pv-add-btn" id="addListBtn">&#10133; Nieuw lijstje</button>
+                    <div class="pv-side-group">Borders</div>
+                    <div id="pvBorderList"></div>
                 </div>
                 <div class="pv-main">
                     <div class="pv-scroll" id="pvScroll">
@@ -270,45 +269,7 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
                             </div>
                             <div id="plantPickerContainer"></div>
                         </div>
-                        <div id="pvViewShortlist" class="pv-view">
-                            <div class="filter-controls" id="shortlistFilters">
-                                <input type="text" id="slFilterSearch" placeholder="Zoeken in shortlist...">
-                                <select id="slFilterKleur"><option value="">Alle kleuren</option></select>
-                                <select id="slFilterStandplaats"><option value="">Alle standplaatsen</option><option value="Z">Z &ndash; zon</option><option value="HS">HS &ndash; halfschaduw</option><option value="S">S &ndash; schaduw</option></select>
-                                <select id="slFilterMaand"><option value="">Bloeimaand: alle</option></select>
-                                <button class="btn btn-danger" id="clearShortlistBtn" style="flex:0 0 auto;">Shortlist leegmaken</button>
-                            </div>
-                            <div style="overflow-x: auto;">
-                                <table class="sl-table" id="shortlistTable">
-                                    <thead><tr>
-                                        <th class="sl-c-sel" title="Sleep deze rij naar een border">&#8963;</th>
-                                        <th class="sl-c-plant">Plant</th>
-                                        <th class="sl-c-kleur">Kleur</th>
-                                        <th class="sl-c-sp" title="Zon (Z)">Zon<br><span class="sl-h">Z</span></th>
-                                        <th class="sl-c-sp" title="Halfschaduw (HS)">Halfschaduw<br><span class="sl-h">HS</span></th>
-                                        <th class="sl-c-sp" title="Schaduw (S)">Schaduw<br><span class="sl-h">S</span></th>
-                                        <th class="sl-c-hoogte" title="De balk loopt van 0 tot 2 meter">Hoogte <span class="sl-h-sub">(0&ndash;2 m)</span></th>
-                                        <th class="sl-c-m" title="januari">jan</th>
-                                        <th class="sl-c-m" title="februari">feb</th>
-                                        <th class="sl-c-m" title="maart">mrt</th>
-                                        <th class="sl-c-m" title="april">apr</th>
-                                        <th class="sl-c-m" title="mei">mei</th>
-                                        <th class="sl-c-m" title="juni">jun</th>
-                                        <th class="sl-c-m" title="juli">jul</th>
-                                        <th class="sl-c-m" title="augustus">aug</th>
-                                        <th class="sl-c-m" title="september">sep</th>
-                                        <th class="sl-c-m" title="oktober">okt</th>
-                                        <th class="sl-c-m" title="november">nov</th>
-                                        <th class="sl-c-m" title="december">dec</th>
-                                        <th class="sl-c-del"></th>
-                                    </tr></thead>
-                                    <tbody id="shortlist"></tbody>
-                                </table>
-                            </div>
-                            <p class="sl-legend">Legenda: <span class="sw" style="background:#6d8f6d"></span>gegroeide hoogte op schaal 0&ndash;2 m &middot; groen vakje in een maandkolom = plant bloeit die maand &middot; Z = zon, HS = halfschaduw, S = schaduw. Sleep een plant naar een border in de zijbalk om haar toe te voegen.</p>
-                            <p class="sl-tip" id="slVisibleInfo"></p>
-                        </div>
-                        <div id="pvViewBorder" class="pv-view">                            <div id="borderDropZone">                                <h3 id="activeBorderName"></h3>                                <div class="border-3col">                                    <div class="border-col border-shape-col">                                        <div id="borderShapeBox"></div>                                        <p class="sl-tip" id="borderShapeHint" style="display:none;">Sleep een plant uit de bronlijst naar de tekening om hem te plaatsen; sleep een geplaatste plant (het gekleurde bolletje) om te verplaatsen (klik op een bolletje = positie wissen). Klik ook een plant in de bronlijst aan en tik daarna in de tekening om hem zonder slepen te plaatsen.</p>                                        <div id="borderSummary"></div>                                    </div>                                    <div class="border-col border-source-col">                                        <div class="filter-controls">                                            <select id="borderSourceList"></select>                                        </div>                                        <div class="filter-controls">                                            <input type="text" id="borderSourceSearch" placeholder="Zoeken in bronlijst...">                                        </div>                                        <div style="overflow-x: auto; max-height: 70vh; overflow-y: auto;">                                            <table class="sl-table" id="borderSourceTable">                                                <thead><tr>                                                    <th class="sl-c-sel" title="Sleep naar de vorm, of klik aan en tik in de vorm">&#8963;</th>                                                    <th class="sl-c-plant">Plant</th>                                                    <th class="sl-c-kleur">Kleur</th>                                                    <th class="sl-c-sp" title="Zon (Z)">Zon<br><span class="sl-h">Z</span></th>                                                    <th class="sl-c-sp" title="Halfschaduw (HS)">Halfschaduw<br><span class="sl-h">HS</span></th>                                                    <th class="sl-c-sp" title="Schaduw (S)">Schaduw<br><span class="sl-h">S</span></th>                                                    <th class="sl-c-hoogte" title="De balk loopt van 0 tot 2 meter">Hoogte <span class="sl-h-sub">(0&ndash;2 m)</span></th>                                                    <th class="sl-c-m" title="januari">jan</th>                                                    <th class="sl-c-m" title="februari">feb</th>                                                    <th class="sl-c-m" title="maart">mrt</th>                                                    <th class="sl-c-m" title="april">apr</th>                                                    <th class="sl-c-m" title="mei">mei</th>                                                    <th class="sl-c-m" title="juni">jun</th>                                                    <th class="sl-c-m" title="juli">jul</th>                                                    <th class="sl-c-m" title="augustus">aug</th>                                                    <th class="sl-c-m" title="september">sep</th>                                                    <th class="sl-c-m" title="oktober">okt</th>                                                    <th class="sl-c-m" title="november">nov</th>                                                    <th class="sl-c-m" title="december">dec</th>                                                    <th class="sl-c-del"></th>                                                </tr></thead>                                                <tbody id="borderSourceBody"></tbody>                                            </table>                                        </div>                                        <p class="sl-tip">Kies bovenin uit welke lijst je planten in de border sleept: shortlist, alle planten, een eigen lijstje of een andere border. Sleep een plant naar de vorm of in de zijbalk, of klik een rij aan en tik in de vorm.</p>                                    </div>                                </div>                                <div style="margin-top: 8px;">                                    <button class="btn btn-danger" id="clearBorderBtn">Border leegmaken</button>                                </div>                            </div>                        </div>                        <div id="pvViewBorders" class="pv-view">
+                        <div id="pvViewBorder" class="pv-view">                            <div id="borderDropZone">                                <h3 id="activeBorderName"></h3>                                <div class="border-3col">                                    <div class="border-col border-shape-col">                                        <div id="borderShapeBox"></div>                                        <p class="sl-tip" id="borderShapeHint" style="display:none;">Sleep een plant uit de bronlijst naar de tekening om hem te plaatsen; sleep een geplaatste plant (het gekleurde bolletje) om te verplaatsen (klik op een bolletje = positie wissen). Klik ook een plant in de bronlijst aan en tik daarna in de tekening om hem zonder slepen te plaatsen.</p>                                        <div id="borderSummary"></div>                                        <h4>Geplaatste planten</h4>                                        <div style="overflow-x: auto;">                                            <table class="sl-table" id="borderPlacedTable">                                                <thead><tr>                                                    <th class="sl-c-plant">Plant</th>                                                    <th class="sl-c-kleur">Kleur</th>                                                    <th class="sl-c-sp" title="Zon (Z)">Zon<br><span class="sl-h">Z</span></th>                                                    <th class="sl-c-sp" title="Halfschaduw (HS)">Halfschaduw<br><span class="sl-h">HS</span></th>                                                    <th class="sl-c-sp" title="Schaduw (S)">Schaduw<br><span class="sl-h">S</span></th>                                                    <th class="sl-c-hoogte" title="De balk loopt van 0 tot 2 meter">Hoogte <span class="sl-h-sub">(0&ndash;2 m)</span></th>                                                    <th class="sl-c-m" title="januari">jan</th>                                                    <th class="sl-c-m" title="februari">feb</th>                                                    <th class="sl-c-m" title="maart">mrt</th>                                                    <th class="sl-c-m" title="april">apr</th>                                                    <th class="sl-c-m" title="mei">mei</th>                                                    <th class="sl-c-m" title="juni">jun</th>                                                    <th class="sl-c-m" title="juli">jul</th>                                                    <th class="sl-c-m" title="augustus">aug</th>                                                    <th class="sl-c-m" title="september">sep</th>                                                    <th class="sl-c-m" title="oktober">okt</th>                                                    <th class="sl-c-m" title="november">nov</th>                                                    <th class="sl-c-m" title="december">dec</th>                                                    <th class="sl-c-del"></th>                                                </tr></thead>                                                <tbody id="borderPlacedBody"></tbody>                                            </table>                                        </div>                                    </div>                                    <div class="border-col border-source-col">                                        <div class="filter-controls">                                            <select id="borderSourceList"></select>                                        </div>                                        <div class="filter-controls">                                            <input type="text" id="borderSourceSearch" placeholder="Zoeken in bronlijst...">                                        </div>                                        <div style="overflow-x: auto; max-height: 70vh; overflow-y: auto;">                                            <table class="sl-table" id="borderSourceTable">                                                <thead><tr>                                                    <th class="sl-c-sel" title="Sleep naar de vorm, of klik aan en tik in de vorm">&#8963;</th>                                                    <th class="sl-c-plant">Plant</th>                                                    <th class="sl-c-kleur">Kleur</th>                                                    <th class="sl-c-sp" title="Zon (Z)">Zon<br><span class="sl-h">Z</span></th>                                                    <th class="sl-c-sp" title="Halfschaduw (HS)">Halfschaduw<br><span class="sl-h">HS</span></th>                                                    <th class="sl-c-sp" title="Schaduw (S)">Schaduw<br><span class="sl-h">S</span></th>                                                    <th class="sl-c-hoogte" title="De balk loopt van 0 tot 2 meter">Hoogte <span class="sl-h-sub">(0&ndash;2 m)</span></th>                                                    <th class="sl-c-m" title="januari">jan</th>                                                    <th class="sl-c-m" title="februari">feb</th>                                                    <th class="sl-c-m" title="maart">mrt</th>                                                    <th class="sl-c-m" title="april">apr</th>                                                    <th class="sl-c-m" title="mei">mei</th>                                                    <th class="sl-c-m" title="juni">jun</th>                                                    <th class="sl-c-m" title="juli">jul</th>                                                    <th class="sl-c-m" title="augustus">aug</th>                                                    <th class="sl-c-m" title="september">sep</th>                                                    <th class="sl-c-m" title="oktober">okt</th>                                                    <th class="sl-c-m" title="november">nov</th>                                                    <th class="sl-c-m" title="december">dec</th>                                                    <th class="sl-c-del"></th>                                                </tr></thead>                                                <tbody id="borderSourceBody"></tbody>                                            </table>                                        </div>                                        <p class="sl-tip">Kies bovenin uit welke lijst je planten in de border plaatst: alle planten of een van je lijstjes. Sleep een plant naar de vorm, of klik een rij aan en tik in de vorm.</p>                                    </div>                                </div>                                <div style="margin-top: 8px;">                                    <button class="btn btn-danger" id="clearBorderBtn">Border leegmaken</button>                                </div>                            </div>                        </div>                        <div id="pvViewBorders" class="pv-view">
                             <h3>Borders</h3>
                             <p class="sl-tip">Kies hieronder een border om te openen, of teken een nieuwe op de kaart in het Tuinontwerp-tabblad.</p>
                             <div id="pvBordersOverview"></div>
@@ -344,7 +305,7 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
                                     <tbody id="plantListBody"></tbody>
                                 </table>
                             </div>
-                            <p class="sl-tip">Sleep planten vanuit Planten of de shortlist naar dit lijstje, of vanuit dit lijstje naar een border of een ander lijstje in de zijbalk.</p>
+                            <p class="sl-tip">Sleep planten vanuit Planten of een ander lijstje naar dit lijstje, of vanuit dit lijstje naar een border of een ander lijstje in de zijbalk.</p>
                         </div>
                         
                     </div>
@@ -398,17 +359,11 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
             return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         }
 
-        let shortlist = [];
-        try { shortlist = JSON.parse(localStorage.getItem('shortlist')) || []; } catch (e) { shortlist = []; }
         let borders = [];
         try { borders = JSON.parse(localStorage.getItem('borders')) || []; } catch (e) { borders = []; }
-        let plantLists = [];
-        try { plantLists = JSON.parse(localStorage.getItem('plantLists')) || []; } catch (e) { plantLists = []; }
         let activeBorderId = null;
         const allPlants = [...plantData, ...(window.PLANTEN_EXTRA || []), ...((window.CustomPlants && window.CustomPlants.all()) || [])];
 
-        const shortlistEl = document.getElementById('shortlist');
-        const shortlistCountEl = document.getElementById('shortlistCount');
         const borderSummaryEl = document.getElementById('borderSummary');
         const borderShapeBoxEl = document.getElementById('borderShapeBox');
         const borderShapeHintEl = document.getElementById('borderShapeHint');
@@ -417,7 +372,6 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
         const pvBorderListEl = document.getElementById('pvBorderList');
         const pvFootSummaryEl = document.getElementById('pvFootSummary');
         const plantTableBodyEl = document.getElementById('plantTableBody');
-        const slVisibleInfoEl = document.getElementById('slVisibleInfo');
         const pvListListEl = document.getElementById('pvListList');
         const borderSourceBodyEl = document.getElementById('borderSourceBody');
         const borderSourceListEl = document.getElementById('borderSourceList');
@@ -532,30 +486,14 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
                     html += '<tr class="sl-genus"><td colspan="20">' + esc(currentGenus) +
                         ' <span class="sl-genus-count">(' + (genusCounts[currentGenus] || 0) + ')</span></td></tr>';
                 }
-                const onSl = shortlist.some(p => p.latijnseNaam === plant.latijnseNaam);
-                const sel = '<td class="sl-sel"><input type="checkbox" data-slcheck="' + name + '" title="Op de shortlist zetten"' + (onSl ? ' checked' : '') + '></td>';
-                return html + '<tr class="drag-plant" draggable="false">' + slRowCells(plant, sel) +
+                const inList = pvView === 'list' && plantLists.find(l => l.id === plListId) && plantLists.find(l => l.id === plListId).plants.some(p => p.latijnseNaam === plant.latijnseNaam);
+                const sel = '<td class="sl-sel"' + (inList ? ' title="Staat in dit lijstje" style="color:#2e7d32;font-weight:700;"' : ' title="Sleep naar een lijstje of border"') + '>' + (inList ? '\u2713' : '\u2261') + '</td>';
+                return html + '<tr class="drag-plant" draggable="true">' + slRowCells(plant, sel) +
                     '<td class="sl-del"><span style="color:#d0d0d0">\u00b7</span></td></tr>';
             }).join('');
             plantTableBodyEl.innerHTML = rows ||
                 '<tr><td colspan="20" class="sl-empty">Geen planten voldoen aan de filters.</td></tr>';
         }
-
-        plantTableBodyEl.addEventListener('change', function (e) {
-            if (e.target && e.target.hasAttribute && e.target.hasAttribute('data-slcheck')) {
-                const name = e.target.getAttribute('data-slcheck');
-                const plant = allPlants.find(p => p.latijnseNaam === name);
-                if (!plant) return;
-                if (e.target.checked) {
-                    if (!shortlist.some(p => p.latijnseNaam === name)) shortlist.push(JSON.parse(JSON.stringify(plant)));
-                } else {
-                    shortlist = shortlist.filter(p => p.latijnseNaam !== name);
-                }
-                saveState();
-                renderShortlist();
-                renderPlantTable();
-            }
-        });
 
         pvSearchEl.addEventListener('input', function () { pvFilters.q = this.value.trim(); renderPlantTable(); });
         pvKleurEl.addEventListener('change', function () { pvFilters.kleur = this.value; renderPlantTable(); });
@@ -563,201 +501,81 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
         pvMaandEl.addEventListener('change', function () { pvFilters.maand = this.value; renderPlantTable(); });
 
         // ==== View "Shortlist" ====
-        const slFilters = { q: '', kleur: '', standplaats: '', maand: '' };
-        const slFilterSearchEl = document.getElementById('slFilterSearch');
-        const slFilterKleurEl = document.getElementById('slFilterKleur');
-        const slFilterStandplaatsEl = document.getElementById('slFilterStandplaats');
-        const slFilterMaandEl = document.getElementById('slFilterMaand');
-
-        function slMatches(p) {
-            if (slFilters.q) {
+        // ==== Lijstjes: migratie van shortlist + border-planten naar gewone lijstjes ====
+        let plantLists = [];
+        try { plantLists = JSON.parse(localStorage.getItem('plantLists')) || []; } catch (e) { plantLists = []; }
+        const oldShortlist = (function () { try { return JSON.parse(localStorage.getItem('shortlist')) || []; } catch (e) { return []; } })();
+        let migrated = false;
+        try { migrated = localStorage.getItem('plantListsMigrated') === '1'; } catch (e) { }
+        if (!migrated) {
+            if (oldShortlist.length && !plantLists.some(l => l.name === 'Shortlist')) plantLists.push({ id: 'Lshort', name: 'Shortlist', plants: oldShortlist.slice() });
+            borders.forEach(function (b) {
+                const inBorder = (b.plants || []).filter(function (p) { return p && p.latijnseNaam; });
+                if (inBorder.length) plantLists.push({ id: 'Lb' + b.id, name: b.name, plants: inBorder.map(function (p) { const c = JSON.parse(JSON.stringify(p)); c.pos = null; return c; }) });
+            });
+            borders.forEach(function (b) {
+                b.placed = (b.plants || []).filter(function (p) { return p && p.latijnseNaam && p.pos; })
+                    .map(function (p) { return { latijnseNaam: p.latijnseNaam, nlNaam: p.nlNaam, kleur: p.kleur, standplaats: p.standplaats, hoogteVan: p.hoogteVan, hoogteTot: p.hoogteTot, bloeiVan: p.bloeiVan, bloeiTot: p.bloeiTot, pos: p.pos }; });
+                delete b.plants;
+            });
+            try {
+                localStorage.setItem('plantLists', JSON.stringify(plantLists));
+                localStorage.setItem('borders', JSON.stringify(borders));
+                localStorage.setItem('shortlist', JSON.stringify([]));
+                localStorage.setItem('plantListsMigrated', '1');
+            } catch (e) { }
+        }
+        // ==== View "Lijstje": planten van een zelfgemaakt lijstje ====
+        const plFilters = { q: '', kleur: '', standplaats: '', maand: '' };
+        const plFilterSearchEl = document.getElementById('plantListSearch');
+        function plMatches(p) {
+            if (plFilters.q) {
                 const hay = ((p.latijnseNaam || '') + ' ' + (p.nlNaam || '') + ' ' + (p.kleur || '')).toLowerCase();
-                if (hay.indexOf(slFilters.q.toLowerCase()) === -1) return false;
+                if (hay.indexOf(plFilters.q.toLowerCase()) === -1) return false;
             }
-            if (slFilters.kleur && (p.kleur || '') !== slFilters.kleur) return false;
-            if (slFilters.standplaats && slTokens(p).indexOf(slFilters.standplaats) === -1) return false;
-            if (slFilters.maand !== '') {
-                if (PlantPicker.bloeiMaanden(p).indexOf(Number(slFilters.maand)) === -1) return false;
+            if (plFilters.kleur && (p.kleur || '') !== plFilters.kleur) return false;
+            if (plFilters.standplaats && slTokens(p).indexOf(plFilters.standplaats) === -1) return false;
+            if (plFilters.maand !== '') {
+                if (PlantPicker.bloeiMaanden(p).indexOf(Number(plFilters.maand)) === -1) return false;
             }
             return true;
         }
-
-        function updateSlFilters() {
-            const kleuren = [];
-            shortlist.forEach(function (p) { if (p.kleur && kleuren.indexOf(p.kleur) === -1) kleuren.push(p.kleur); });
-            kleuren.sort(function (a, b) { return a.localeCompare(b, 'nl'); });
-            const sig = kleuren.join('\u0001');
-            if (slFilterKleurEl.getAttribute('data-sig') !== sig) {
-                slFilterKleurEl.innerHTML = '<option value="">Alle kleuren</option>' +
-                    kleuren.map(function (k) { return '<option value="' + esc(k) + '">' + esc(k) + '</option>'; }).join('');
-                slFilterKleurEl.setAttribute('data-sig', sig);
-                if (kleuren.indexOf(slFilters.kleur) === -1) slFilters.kleur = '';
-                slFilterKleurEl.value = slFilters.kleur;
-            }
-            if (!slFilterMaandEl.getAttribute('data-filled')) {
-                slFilterMaandEl.innerHTML = '<option value="">Bloeimaand: alle</option>' +
-                    PlantPicker.MONTHS.map(function (m, i) { return '<option value="' + i + '">' + m + '</option>'; }).join('');
-                slFilterMaandEl.setAttribute('data-filled', '1');
-            }
-        }
-
-        slFilterSearchEl.addEventListener('input', function () { slFilters.q = this.value.trim(); renderShortlist(); });
-        slFilterKleurEl.addEventListener('change', function () { slFilters.kleur = this.value; renderShortlist(); });
-        slFilterStandplaatsEl.addEventListener('change', function () { slFilters.standplaats = this.value; renderShortlist(); });
-        slFilterMaandEl.addEventListener('change', function () { slFilters.maand = this.value; renderShortlist(); });
-
-        function renderShortlist() {
-            shortlistCountEl.textContent = shortlist.length;
-            updateSlFilters();
-            const genusOf = function (p) { return (p.latijnseNaam || '').split(/\s+/)[0] || '?'; };
-            const sorted = shortlist.slice().sort(function (a, b) {
-                const g = genusOf(a).localeCompare(genusOf(b), 'nl');
-                return g !== 0 ? g : (a.latijnseNaam || '').localeCompare(b.latijnseNaam || '', 'nl');
+        plFilterSearchEl.addEventListener('input', function () { plFilters.q = this.value.trim(); if (plListId) renderPlantList(plListId); });
+        let plListId = null;
+        function renderPlantList(listId) {
+            const list = plantLists.find(l => l.id === listId);
+            const body = document.getElementById('plantListBody');
+            if (!list || !body) return;
+            plListId = list.id;
+            const titleEl = document.getElementById('plantListTitle');
+            if (titleEl) titleEl.textContent = 'Lijstje: ' + list.name + ' (' + list.plants.length + ' planten)';
+            const sorted = list.plants.slice().sort(function (a, b) {
+                return (a.latijnseNaam || '').localeCompare(b.latijnseNaam || '', 'nl');
             });
-            const visible = sorted.filter(slMatches);
-            slVisibleInfoEl.textContent = visible.length === sorted.length ? '' :
-                (visible.length + ' van ' + sorted.length + ' plant(en) getoond');
-            const genusCounts = {};
-            visible.forEach(function (p) { const g = genusOf(p); genusCounts[g] = (genusCounts[g] || 0) + 1; });
-            let currentGenus = null;
+            const visible = sorted.filter(plMatches);
             const rows = visible.map(function (plant) {
                 const name = esc(plant.latijnseNaam);
-                const genus = genusOf(plant);
-                let html = '';
-                if (genus !== currentGenus) {
-                    currentGenus = genus;
-                    html += '<tr class="sl-genus"><td colspan="20">' + esc(genus) +
-                        ' <span class="sl-genus-count">(' + (genusCounts[genus] || 0) + ')</span></td></tr>';
-                }
-                const drag = '<td class="sl-sel" title="Sleep deze rij naar een border">&#8963;</td>';
-                return html + '<tr class="drag-plant" draggable="true" data-plant="' + name + '">' +
-                    slRowCells(plant, drag) +
-                    '<td class="sl-del"><button data-remove="' + name + '">\u2715</button></td>' +
-                    '</tr>';
+                const drag = '<td class="sl-sel" title="Sleep deze rij naar een border of lijstje">&#8963;</td>';
+                return '<tr class="drag-plant" draggable="true" data-plant="' + name + '">' + slRowCells(plant, drag) +
+                    '<td class="sl-del"><button data-removefromlist="' + name + '">\u2715</button></td></tr>';
             }).join('');
-            shortlistEl.innerHTML = rows ||
+            body.innerHTML = rows ||
                 '<tr><td colspan="20" class="sl-empty">' +
-                (shortlist.length
-                    ? 'Geen planten voldoen aan de filters.'
-                    : 'Nog geen planten op de shortlist &ndash; vink planten aan bij Planten in de zijbalk.') +
+                (list.plants.length ? 'Geen planten voldoen aan het filter.' : 'Nog geen planten in dit lijstje &ndash; sleep ze hierheen vanuit Planten of een ander lijstje.') +
                 '</td></tr>';
         }
-
-        shortlistEl.addEventListener('click', function (e) {
-            if (e.target && e.target.tagName === 'BUTTON' && e.target.hasAttribute('data-remove')) {
-                removeFromShortlist(e.target.getAttribute('data-remove'));
+        document.getElementById('plantListBody').addEventListener('click', function (e) {
+            if (e.target && e.target.tagName === 'BUTTON' && e.target.hasAttribute('data-removefromlist')) {
+                const name = e.target.getAttribute('data-removefromlist');
+                const list = plantLists.find(l => l.id === plListId);
+                if (!list) return;
+                list.plants = list.plants.filter(p => p.latijnseNaam !== name);
+                saveState();
+                renderPlantList(plListId);
+                renderPvListList();
+                if (pvView === 'border') renderBorderSourceTable();
             }
         });
-
-        function removeFromShortlist(latijnseNaam) {
-            shortlist = shortlist.filter(p => p.latijnseNaam !== latijnseNaam);
-            saveState();
-            renderShortlist();
-            renderPlantTable();
-        }
-
-        function clearShortlist() {
-            if (confirm('Shortlist leegmaken?')) {
-                shortlist = [];
-                saveState();
-                renderShortlist();
-                renderPlantTable();
-            }
-        }
-
-        // ==== Border-view: vorm + samenvatting (alleen geplaatste planten) ====
-        function renderBorderPlantTable() {
-            const border = borders.find(b => b.id === activeBorderId);
-            if (!border) return;
-            const placed = border.plants.filter(p => p.pos);
-            activeBorderNameEl.textContent = 'Border: ' + border.name + ' (' + placed.length + ' geplaatst van ' + border.plants.length + ' in de lijst)';
-            PlantPicker.renderSummary(borderSummaryEl, placed, { title: 'Geplaatst in deze border' });
-            if (borderShape) borderShape.refresh();
-        }
-        function clearBorder() {
-            const border = borders.find(b => b.id === activeBorderId);
-            if (!border) return;
-            if (confirm('Border leegmaken?')) {
-                border.plants = [];
-                saveState();
-                renderBorderPlantTable();
-                renderPvBorderList();
-                renderBorderSourceList();
-                renderBorderSourceTable();
-                renderFootSummary();
-            }
-        }
-        function deleteBorder(borderId) {
-            if (confirm('Border verwijderen?')) {
-                borders = borders.filter(b => b.id !== borderId);
-                if (activeBorderId === borderId) {
-                    activeBorderId = null;
-                    setPvView('planten');
-                }
-                saveState();
-                renderPvBorderList();
-            }
-        }
-        function findPlantAnywhere(name) {
-            let f = shortlist.find(p => p.latijnseNaam === name);
-            if (f) return f;
-            for (let i = 0; i < plantLists.length && !f; i++) f = plantLists[i].plants.find(p => p.latijnseNaam === name);
-            if (f) return f;
-            for (let i = 0; i < borders.length && !f; i++) f = borders[i].plants.find(p => p.latijnseNaam === name);
-            return f || allPlants.find(p => p.latijnseNaam === name) || null;
-        }
-        function addPlantToBorder(borderId, name, pos) {
-            const border = borders.find(b => b.id === borderId);
-            if (!border) return false;
-            let plant = border.plants.find(p => p.latijnseNaam === name);
-            if (!plant) {
-                const src = findPlantAnywhere(name);
-                if (!src) return false;
-                plant = JSON.parse(JSON.stringify(src));
-                plant.pos = null;
-                border.plants.push(plant);
-            }
-            if (pos && borderShape) {
-                const wp = borderShape.screenToWorld(pos.x, pos.y);
-                const ll = borderShape.toLatLng(wp.x, wp.y);
-                plant.pos = ll;
-            }
-            saveState();
-            renderBorderPlantTable();
-            renderPvBorderList();
-            renderBorderSourceList();
-            renderBorderSourceTable();
-            renderFootSummary();
-            return true;
-        }
-        function addPlantToShortlist(name) {
-            if (shortlist.some(p => p.latijnseNaam === name)) return true;
-            const src = findPlantAnywhere(name);
-            if (!src) return false;
-            const c = JSON.parse(JSON.stringify(src));
-            c.pos = null;
-            shortlist.push(c);
-            saveState();
-            renderShortlist();
-            renderPlantTable();
-            return true;
-        }
-        function addPlantToList(listId, name) {
-            const list = plantLists.find(l => l.id === listId);
-            if (!list) return false;
-            if (list.plants.some(p => p.latijnseNaam === name)) return true;
-            const src = findPlantAnywhere(name);
-            if (!src) return false;
-            const c = JSON.parse(JSON.stringify(src));
-            c.pos = null;
-            list.plants.push(c);
-            saveState();
-            renderPvListList();
-            if (pvView === 'list' && plListId === listId) renderPlantList(listId);
-            if (pvView === 'border') renderBorderSourceTable();
-            return true;
-        }
-        // ==== Eigen lijstjes met planten ====
         function createPlantList() {
             const name = prompt('Naam van het nieuwe lijstje:');
             if (!name || !name.trim()) return;
@@ -776,78 +594,133 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
             }
         }
         function renderPvListList() {
-            if (!pvListListEl) return;
             pvListListEl.innerHTML = plantLists.map(function (l) {
                 return '<div class="pv-side-row' + (pvKey === 'list:' + l.id ? ' open' : '') + '">' +
                     '<button type="button" class="pv-side-btn' + (pvKey === 'list:' + l.id ? ' active' : '') +
                     '" data-pv="list:' + esc(l.id) + '" data-list="' + esc(l.id) + '">' +
-                    '&#128220; ' + esc(l.name) + ' <span class="cnt">' + l.plants.length + '</span></button>' +
+                    esc(l.name) + ' <span class="cnt">' + l.plants.length + '</span></button>' +
                     '<button type="button" class="pv-side-del" data-deletelist="' + esc(l.id) + '" title="Lijstje verwijderen">&#10005;</button>' +
                     '</div>';
             }).join('') ||
                 '<p class="sl-tip">Nog geen lijstjes &ndash; maak er een aan met de knop hieronder.</p>';
         }
-        let plListId = null;
-        const plFilters = { q: '' };
-        function renderPlantList(listId) {
+        function addPlantToList(listId, name) {
             const list = plantLists.find(l => l.id === listId);
-            const body = document.getElementById('plantListBody');
-            if (!list || !body) return;
-            plListId = list.id;
-            const titleEl = document.getElementById('plantListTitle');
-            if (titleEl) titleEl.textContent = 'Lijstje: ' + list.name + ' (' + list.plants.length + ' planten)';
-            const sorted = list.plants.slice().sort(function (a, b) {
-                return (a.latijnseNaam || '').localeCompare(b.latijnseNaam || '', 'nl');
-            });
-            const visible = sorted.filter(function (p) {
-                if (!plFilters.q) return true;
-                const hay = ((p.latijnseNaam || '') + ' ' + (p.nlNaam || '') + ' ' + (p.kleur || '')).toLowerCase();
-                return hay.indexOf(plFilters.q.toLowerCase()) !== -1;
-            });
-            const rows = visible.map(function (plant) {
-                const name = esc(plant.latijnseNaam);
-                const drag = '<td class="sl-sel" title="Sleep deze rij naar een border of lijstje">&#8963;</td>';
-                return '<tr class="drag-plant" draggable="true" data-plant="' + name + '">' + slRowCells(plant, drag) +
-                    '<td class="sl-del"><button data-removefromlist="' + name + '">\u2715</button></td></tr>';
-            }).join('');
-            body.innerHTML = rows ||
-                '<tr><td colspan="20" class="sl-empty">' +
-                (list.plants.length ? 'Geen planten voldoen aan het filter.' : 'Nog geen planten in dit lijstje &ndash; sleep ze hierheen vanuit Planten of de shortlist.') +
-                '</td></tr>';
+            if (!list) return false;
+            if (list.plants.some(p => p.latijnseNaam === name)) return true;
+            const src = findPlantAnywhere(name);
+            if (!src) return false;
+            const c = JSON.parse(JSON.stringify(src));
+            c.pos = null;
+            list.plants.push(c);
+            saveState();
+            renderPvListList();
+            if (pvView === 'list' && plListId === listId) renderPlantList(listId);
+            if (pvView === 'border') renderBorderSourceTable();
+            return true;
+        }
+        // ==== Border-view: vorm + geplaatste planten ====
+        function renderBorderPlantTable() {
+            const border = borders.find(b => b.id === activeBorderId);
+            if (!border) return;
+            const placed = border.placed || [];
+            activeBorderNameEl.textContent = 'Border: ' + border.name + ' (' + placed.length + ' geplaatste planten)';
+            PlantPicker.renderSummary(borderSummaryEl, placed, { title: 'Geplaatst in deze border' });
+            const body = document.getElementById('borderPlacedBody');
+            if (body) {
+                const rows = placed.map(function (plant) {
+                    const name = esc(plant.latijnseNaam);
+                    return '<tr class="drag-plant" draggable="true" data-plant="' + name + '">' +
+                        slRowCells(plant, '') +
+                        '<td class="sl-del"><button data-unplace="' + name + '" title="Uit de border halen">\u2715</button></td></tr>';
+                }).join('');
+                body.innerHTML = rows ||
+                    '<tr><td colspan="18" class="sl-empty">Nog geen geplaatste planten &ndash; kies rechts een lijstje en sleep of tik een plant in de vorm.</td></tr>';
+            }
+            if (borderShape) borderShape.refresh();
+        }
+        function removePlantFromBorder(latijnseNaam) {
+            const border = borders.find(b => b.id === activeBorderId);
+            if (!border) return;
+            border.placed = (border.placed || []).filter(p => p.latijnseNaam !== latijnseNaam);
+            saveState();
+            renderBorderPlantTable();
+        }
+        document.getElementById('borderPlacedBody').addEventListener('click', function (e) {
+            if (e.target && e.target.tagName === 'BUTTON' && e.target.hasAttribute('data-unplace')) {
+                removePlantFromBorder(e.target.getAttribute('data-unplace'));
+            }
+        });
+        function clearBorder() {
+            const border = borders.find(b => b.id === activeBorderId);
+            if (!border) return;
+            if (confirm('Border leegmaken?')) {
+                border.placed = [];
+                saveState();
+                renderBorderPlantTable();
+            }
+        }
+        function deleteBorder(borderId) {
+            if (confirm('Border verwijderen?')) {
+                borders = borders.filter(b => b.id !== borderId);
+                if (activeBorderId === borderId) {
+                    activeBorderId = null;
+                    setPvView('planten');
+                }
+                saveState();
+                renderPvBorderList();
+            }
+        }
+        function findPlantAnywhere(name) {
+            let f = allPlants.find(p => p.latijnseNaam === name);
+            if (f) return f;
+            for (let i = 0; i < plantLists.length && !f; i++) f = plantLists[i].plants.find(p => p.latijnseNaam === name);
+            for (let i = 0; i < borders.length && !f; i++) f = (borders[i].placed || []).find(p => p.latijnseNaam === name);
+            return f || null;
+        }
+        function addPlantToBorder(borderId, name, pos) {
+            const border = borders.find(b => b.id === borderId);
+            if (!border || !borderShape) return false;
+            const src = findPlantAnywhere(name);
+            if (!src) return false;
+            let plant = (border.placed || []).find(p => p.latijnseNaam === name);
+            if (!plant) {
+                plant = JSON.parse(JSON.stringify(src));
+                plant.pos = null;
+                if (!border.placed) border.placed = [];
+                border.placed.push(plant);
+            }
+            if (pos) {
+                const wp = borderShape.screenToWorld(pos.x, pos.y);
+                const ll = borderShape.toLatLng(wp.x, wp.y);
+                plant.pos = ll;
+            }
+            saveState();
+            renderBorderPlantTable();
+            return true;
         }
         // ==== Bronlijst in de border-view (dropdown + tekstfilter) ====
-        let borderSourceKey = 'shortlist';
+        let borderSourceKey = 'all';
         let borderSourceQ = '';
         let pickedPlantName = null;
         function getSourcePlants(key) {
             if (key === 'all') return allPlants;
-            if (key === 'shortlist') return shortlist;
             if (key && key.indexOf('list:') === 0) {
                 const l = plantLists.find(x => x.id === key.slice(5));
                 return l ? l.plants : [];
-            }
-            if (key && key.indexOf('border:') === 0) {
-                const b = borders.find(x => x.id === key.slice(7));
-                return b ? b.plants : [];
             }
             return [];
         }
         function renderBorderSourceList() {
             const opts = [];
-            opts.push('<option value="shortlist">&#128203; Shortlist (' + shortlist.length + ')</option>');
-            opts.push('<option value="all">&#127793; Alle planten (' + allPlants.length + ')</option>');
+            opts.push('<option value="all">Alle planten (' + allPlants.length + ')</option>');
             plantLists.forEach(function (l) {
-                opts.push('<option value="list:' + esc(l.id) + '">&#128220; ' + esc(l.name) + ' (' + l.plants.length + ')</option>');
-            });
-            borders.forEach(function (b) {
-                if (b.id === activeBorderId) return;
-                opts.push('<option value="border:' + esc(b.id) + '">&#127807; ' + esc(b.name) + ' (' + b.plants.length + ')</option>');
+                opts.push('<option value="list:' + esc(l.id) + '">' + esc(l.name) + ' (' + l.plants.length + ')</option>');
             });
             borderSourceListEl.innerHTML = opts.join('');
-            const valid = borderSourceKey === 'shortlist' || borderSourceKey === 'all' ||
-                (borderSourceKey.indexOf('list:') === 0 && plantLists.some(l => l.id === borderSourceKey.slice(5))) ||
-                (borderSourceKey.indexOf('border:') === 0 && borderSourceKey.slice(7) !== activeBorderId && borders.some(b => b.id === borderSourceKey.slice(7)));
-            if (!valid) borderSourceKey = 'shortlist';
+            const valid = borderSourceKey === 'all' ||
+                (borderSourceKey.indexOf('list:') === 0 && plantLists.some(l => l.id === borderSourceKey.slice(5)));
+            if (!valid) borderSourceKey = 'all';
             borderSourceListEl.value = borderSourceKey;
         }
         function renderBorderSourceTable() {
@@ -883,13 +756,12 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
             pickedPlantName = pickedPlantName === name ? null : name;
             renderBorderSourceTable();
         });
-        // ==== Zijbalk: keuze Planten / Shortlist / borders / lijstjes ====
+        // ==== Zijbalk: keuze Planten / lijstjes / borders ====
         let pvView = 'planten';
         let pvKey = 'planten';
         let lastBorderId = null;
         function pvViewElId(view) {
             if (view === 'border') return 'pvViewBorder';
-            if (view === 'shortlist') return 'pvViewShortlist';
             if (view === 'borders') return 'pvViewBorders';
             if (view === 'list') return 'pvViewList';
             return 'pvViewPlanten';
@@ -933,18 +805,16 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
             let list = [];
             if (pvView === 'border') {
                 const b = borders.find(x => x.id === activeBorderId);
-                list = b ? b.plants.filter(p => p.pos) : [];
+                list = b ? (b.placed || []) : [];
             } else if (pvView === 'list') {
                 const l = plantLists.find(x => x.id === plListId);
                 list = l ? l.plants : [];
-            } else if (pvView === 'borders') {
-                list = [];
             } else {
-                list = shortlist;
+                list = [];
             }
             PlantPicker.renderSummary(pvFootSummaryEl, list, {
-                title: pvView === 'border' ? 'Samenvatting van deze border' : (pvView === 'list' ? 'Samenvatting van dit lijstje' : (pvView === 'borders' ? 'Kies een border' : 'Shortlist-samenvatting')),
-                emptyText: 'Vink planten aan (of sleep ze naar een border of lijstje) om hier de samenvatting te zien.'
+                title: pvView === 'border' ? 'Samenvatting van deze border' : (pvView === 'list' ? 'Samenvatting van dit lijstje' : (pvView === 'borders' ? 'Kies een border' : 'Planten')),
+                emptyText: 'Sleep planten naar een border of lijstje om hier de samenvatting te zien.'
             });
         }
         function renderPvBorderList() {
@@ -952,7 +822,7 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
                 return '<div class="pv-side-row' + (pvKey === 'border:' + b.id ? ' open' : '') + '">' +
                     '<button type="button" class="pv-side-btn' + (pvKey === 'border:' + b.id ? ' active' : '') +
                     '" data-pv="border:' + esc(b.id) + '" data-border="' + esc(b.id) + '">' +
-                    '&#127807; ' + esc(b.name) + ' <span class="cnt">' + b.plants.length + '</span></button>' +
+                    '&#127807; ' + esc(b.name) + ' <span class="cnt">' + ((b.placed || []).length) + '</span></button>' +
                     '<button type="button" class="pv-side-del" data-deleteborder="' + esc(b.id) + '" title="Border verwijderen">&#10005;</button>' +
                     '</div>';
             }).join('') ||
@@ -962,7 +832,7 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
             const el = document.getElementById('pvBordersOverview');
             if (!el) return;
             el.innerHTML = borders.map(function (b) {
-                return '<div class="border-card"><div><strong>&#127804; ' + esc(b.name) + '</strong> &mdash; ' + b.plants.length + ' plant(en)</div>' +
+                return '<div class="border-card"><div><strong>&#127804; ' + esc(b.name) + '</strong> &mdash; ' + ((b.placed || []).length) + ' geplaatste plant(en)</div>' +
                     '<button type="button" class="btn btn-secondary" data-openborder="' + esc(b.id) + '">Openen</button></div>';
             }).join('') ||
                 '<p class="sl-tip">Nog geen borders &ndash; teken er een op de kaart in het Tuinontwerp-tabblad.</p>';
@@ -975,7 +845,7 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
             const btn = e.target.closest ? e.target.closest('.pv-side-btn[data-pv]') : null;
             if (!btn) return;
             const v = btn.getAttribute('data-pv');
-            if (v === 'planten' || v === 'shortlist' || v === 'borders') setPvView(v);
+            if (v === 'planten' || v === 'borders') setPvView(v);
             else if (v.indexOf('border:') === 0) setPvView('border', v.slice(7));
             else if (v.indexOf('list:') === 0) setPvView('list', v.slice(5));
         });
@@ -997,7 +867,7 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
             renderBorderSourceTable();
             renderFootSummary();
         }
-        // ==== Slepen: planten tussen alle lijsten (shortlist, lijstjes, borders) ====
+        // ==== Slepen: planten tussen lijstjes en naar de border-vorm ====
         let dragPlantName = null;
         document.addEventListener('dragstart', function (e) {
             const tr = e.target.closest ? e.target.closest('tr.drag-plant[draggable="true"]') : null;
@@ -1017,7 +887,7 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
         });
         function sideDropTarget(target) {
             if (!target || !target.closest) return null;
-            return target.closest('.pv-side-btn[data-border], .pv-side-btn[data-list], .pv-side-btn[data-pv="shortlist"]');
+            return target.closest('.pv-side-btn[data-border], .pv-side-btn[data-list]');
         }
         document.addEventListener('dragover', function (e) {
             const sideBtn = sideDropTarget(e.target);
@@ -1026,24 +896,18 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
                 sideBtn.classList.add('pv-drop-target');
                 return;
             }
-            if (dragPlantName && pvView === 'border' && borderDropZoneEl.contains(e.target)) {
-                e.preventDefault();
-                borderDropZoneEl.classList.add('drop-hover');
-                return;
-            }
-            if (dragPlantName && pvView === 'border' && borderShapeBoxEl.contains(e.target)) {
+            if (dragPlantName && pvView === 'border' && (borderDropZoneEl.contains(e.target) || borderShapeBoxEl.contains(e.target))) {
                 e.preventDefault();
                 borderDropZoneEl.classList.add('drop-hover');
                 return;
             }
             if (dragPlantName && pvView === 'list' && document.getElementById('pvViewList').contains(e.target)) {
                 e.preventDefault();
-                borderDropZoneEl.classList.remove('drop-hover');
                 document.getElementById('plantListTable').classList.add('drop-hover');
                 return;
             }
-            if (dragPlantName && pvView === 'border' && document.getElementById('borderSourceTable').contains(e.target) &&
-                (borderSourceKey === 'shortlist' || borderSourceKey.indexOf('list:') === 0)) {
+            if (dragPlantName && pvView === 'border' && borderSourceKey.indexOf('list:') === 0 &&
+                document.getElementById('borderSourceTable').contains(e.target)) {
                 e.preventDefault();
                 document.getElementById('borderSourceTable').classList.add('drop-hover');
             }
@@ -1051,9 +915,7 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
         document.addEventListener('dragleave', function (e) {
             const sideBtn = sideDropTarget(e.target);
             if (sideBtn) sideBtn.classList.remove('pv-drop-target');
-            if (e.target && e.target.classList && e.target.classList.contains) {
-                if (e.target.classList.contains('drop-hover')) e.target.classList.remove('drop-hover');
-            }
+            if (e.target && e.target.classList && e.target.classList.contains && e.target.classList.contains('drop-hover')) e.target.classList.remove('drop-hover');
             if (e.target === borderDropZoneEl) borderDropZoneEl.classList.remove('drop-hover');
         });
         document.addEventListener('drop', function (e) {
@@ -1063,9 +925,11 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
             const sideBtn = sideDropTarget(e.target);
             if (sideBtn) {
                 e.preventDefault();
-                if (sideBtn.hasAttribute('data-border')) addPlantToBorder(sideBtn.getAttribute('data-border'), name, null);
-                else if (sideBtn.hasAttribute('data-list')) addPlantToList(sideBtn.getAttribute('data-list'), name);
-                else if (sideBtn.getAttribute('data-pv') === 'shortlist') addPlantToShortlist(name);
+                if (sideBtn.hasAttribute('data-list')) addPlantToList(sideBtn.getAttribute('data-list'), name);
+                else if (sideBtn.hasAttribute('data-border')) {
+                    const b = borders.find(x => x.id === sideBtn.getAttribute('data-border'));
+                    if (b) { setPvView('border', b.id); addPlantToBorder(b.id, name, null); }
+                }
                 dragPlantName = null;
                 return;
             }
@@ -1082,15 +946,14 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
                 dragPlantName = null;
                 return;
             }
-            if (pvView === 'border' && document.getElementById('borderSourceTable').contains(e.target)) {
+            if (pvView === 'border' && borderSourceKey.indexOf('list:') === 0 &&
+                document.getElementById('borderSourceTable').contains(e.target)) {
                 e.preventDefault();
-                if (borderSourceKey === 'shortlist') addPlantToShortlist(name);
-                else if (borderSourceKey.indexOf('list:') === 0) addPlantToList(borderSourceKey.slice(5), name);
+                addPlantToList(borderSourceKey.slice(5), name);
                 dragPlantName = null;
             }
         });
         function saveState() {
-            localStorage.setItem('shortlist', JSON.stringify(shortlist));
             localStorage.setItem('borders', JSON.stringify(borders));
             localStorage.setItem('plantLists', JSON.stringify(plantLists));
         }
@@ -1133,7 +996,7 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
             function markerR() { return 10 / (base() * view.scale); }
             function drawAll() {
                 plantLayer.innerHTML = '';
-                border.plants.forEach(function (plant) {
+                border.placed.forEach(function (plant) {
                     if (!plant.pos) return;
                     const p = toLocal(plant.pos.lat, plant.pos.lng);
                     const m = el('circle', { cx: p.x, cy: p.y, r: markerR(), fill: getColorHex(plant.kleur), stroke: '#333', 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke' });
@@ -1164,7 +1027,7 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
                 if (pickedPlantName && !movedOnPan) {
                     const wp = screenToWorld(e.clientX, e.clientY), ll = toLatLng(wp.x, wp.y);
                     addPlantToBorder(border.id, pickedPlantName, null);
-                    const pl = border.plants.find(p => p.latijnseNaam === pickedPlantName);
+                    const pl = border.placed.find(p => p.latijnseNaam === pickedPlantName);
                     if (pl) { pl.pos = { lat: ll.lat, lng: ll.lng }; saveState(); renderBorderPlantTable(); renderFootSummary(); }
                     pickedPlantName = null;
                     renderBorderSourceTable();
@@ -1177,7 +1040,7 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
             return {
                 refresh: function () { applyView(); },
                 placePlant: function (name) {
-                    const plant = border.plants.find(function (p) { return p.latijnseNaam === name; });
+                    const plant = border.placed.find(function (p) { return p.latijnseNaam === name; });
                     if (plant) { plant.pos = null; onChange(); }
                 },
                 screenToWorld: screenToWorld,
@@ -1264,12 +1127,11 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
         } catch (e) { }
 
         // Event listeners
-        document.getElementById('clearShortlistBtn').addEventListener('click', clearShortlist);
         document.getElementById('clearBorderBtn').addEventListener('click', clearBorder);
+        document.getElementById('addListBtn').addEventListener('click', createPlantList);
 
         // Init: render alles bij het laden van de pagina
         renderPlantTable();
-        renderShortlist();
         renderPvBorderList();
         renderPvListList();
         renderBordersOverview();
