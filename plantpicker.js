@@ -360,6 +360,13 @@ window.PlantPicker = (function () {
     return Math.abs(twice) / 2;
   }
 
+  function plantInitials(latijnseNaam) {
+    var parts = String(latijnseNaam || '').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return '';
+    var initials = parts.map(function (p) { return p.charAt(0).toUpperCase(); }).join('');
+    return initials.length > 3 ? initials.slice(0, 3) : initials;
+  }
+
   function borderAreaTxt(shape) {
     var m2 = borderAreaM2(shape);
     if (!m2) return '';
@@ -371,6 +378,7 @@ window.PlantPicker = (function () {
     create: create,
     borderAreaM2: borderAreaM2,
     borderAreaTxt: borderAreaTxt,
+    plantInitials: plantInitials,
     renderSummary: renderSummary,
     monthIndex: monthIndex,
     bloeiMaanden: bloeiMaanden,

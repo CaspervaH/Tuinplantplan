@@ -155,6 +155,9 @@ function saveMapView() {
 gardenMap.on('moveend zoomend', saveMapView);
 
 // ===== Alle borders op de kaart tonen =====
+function esc(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
 function openBorderEditor(borderId) {
   if (drawMode || freehandOn || circleMode) return;
   try { localStorage.setItem('activeTab', 'borders'); } catch (e) {}
@@ -185,11 +188,16 @@ function renderMap() {
     }
     (border.placed || []).forEach(function (p) {
       if (!p.pos) return;
-      var marker = L.circleMarker([p.pos.lat, p.pos.lng], {
-        radius: 8, color: '#333', weight: 1,
-        fillColor: getColorHex(p.kleur) || '#8bc34a', fillOpacity: 0.95
-      }).addTo(mapMarkerLayer);
-      marker.bindTooltip((p.nlNaam || p.latijnseNaam) + ' (' + border.name + ')');
+      var init = PlantPicker.plantInitials(p.latijnseNaam);
+      var hex = getColorHex(p.kleur) || '#8bc34a';
+      var icon = L.divIcon({
+        className: 'plant-dot',
+        html: '<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:' + hex + ';border:1px solid #333;color:#111;font-size:9px;font-weight:700;line-height:1;white-space:nowrap;text-shadow:0 0 2px #fff;">' + init + '</span>',
+        iconSize: [22, 22],
+        iconAnchor: [11, 11]
+      });
+      var marker = L.marker([p.pos.lat, p.pos.lng], { icon: icon }).addTo(mapMarkerLayer);
+      marker.bindTooltip('<strong>' + esc(p.nlNaam || p.latijnseNaam) + '</strong><br><em>' + esc(p.latijnseNaam) + '</em> (' + esc(border.name) + ')');
       marker.on('click', function (ev) {
         if (drawMode || freehandOn || circleMode) { L.DomEvent.stopPropagation(ev); return; }
         openBorderEditor(border.id);

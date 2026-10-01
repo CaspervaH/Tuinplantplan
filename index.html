@@ -95,6 +95,7 @@ body.has-address #addressGate { display: none; }
 .map-help { font-size: 12px; color: #666; margin-top: 6px; }
 .leaflet-container { font: inherit; }
 /* === Shortlist-tabel (per geslacht, kolommen) === */
+.plant-svg-tip { position: fixed; background: #fff; border: 1px solid #dee2e6; border-radius: 4px; padding: 4px 8px; font-size: 12px; color: #212529; box-shadow: 0 1px 4px rgba(0,0,0,.2); pointer-events: none; z-index: 9999; max-width: 220px; }
 .sl-table { width: 100%; border-collapse: collapse; font-size: 12px; background: white; }
 .sl-table th { background: var(--primary); color: white; font-size: 11px; padding: 4px 5px; text-align: center; border: 1px solid #3a5340; white-space: nowrap; }
 .sl-table th.sl-c-plant, .sl-table th.sl-c-kleur { text-align: left; }
@@ -1004,23 +1005,38 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
                 border.placed.forEach(function (plant) {
                     if (!plant.pos) return;
                     const p = toLocal(plant.pos.lat, plant.pos.lng);
+                    const grp = el('g', {});
                     const m = el('circle', { cx: p.x, cy: p.y, r: markerR(), fill: getColorHex(plant.kleur), stroke: '#333', 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke' });
                     m.style.cursor = 'move';
+                    const init = (plant.latijnseNaam || '').trim().split(/\s+/).map(function (w) { return w.charAt(0).toUpperCase(); }).join('').slice(0, 3);
+                    const r0 = markerR();
+                    const txt = el('text', { x: p.x, y: p.y + r0 * 0.35, 'text-anchor': 'middle', 'font-size': r0 * 0.9, 'font-weight': '700', fill: '#111', 'pointer-events': 'none' });
+                    txt.textContent = init;
+                    const lbl = el('text', { x: p.x + r0 * 1.4, y: p.y - r0 * 1.4, 'font-size': r0 * 0.75, fill: '#1b5e20', 'pointer-events': 'none', 'paint-order': 'stroke', stroke: '#ffffff', 'stroke-width': Math.max(2, r0 * 0.25), 'stroke-linejoin': 'round' });
+                    lbl.textContent = plant.nlNaam || plant.latijnseNaam || '';
+                    grp.appendChild(m); grp.appendChild(txt); grp.appendChild(lbl);
+                    const tip = (plant.nlNaam || plant.latijnseNaam) + ' — ' + (plant.latijnseNaam || '');
+                    grp.setAttribute('pointer-events', 'all');
+                    m.addEventListener('pointerenter', function () { const t = document.createElement('div'); t.className = 'plant-svg-tip'; t.textContent = tip; document.body.appendChild(t); grp._tip = t; });
+                    m.addEventListener('pointerleave', function () { if (grp._tip) { grp._tip.remove(); grp._tip = null; } });
                     let dragging = false, moved = false;
                     m.addEventListener('pointerdown', function (e) { e.preventDefault(); e.stopPropagation(); dragging = true; moved = false; m.setPointerCapture(e.pointerId); });
                     m.addEventListener('pointermove', function (e) {
-                        if (!dragging) return; moved = true;
+                        if (!dragging) { if (grp._tip) { grp._tip.style.left = (e.clientX + 10) + 'px'; grp._tip.style.top = (e.clientY + 10) + 'px'; } return; }
+                        moved = true;
                         const wp = screenToWorld(e.clientX, e.clientY), ll = toLatLng(wp.x, wp.y);
                         plant.pos = { lat: ll.lat, lng: ll.lng };
                         const loc = toLocal(ll.lat, ll.lng);
                         m.setAttribute('cx', loc.x); m.setAttribute('cy', loc.y);
+                        txt.setAttribute('x', loc.x); txt.setAttribute('y', loc.y + r0 * 0.35);
+                        lbl.setAttribute('x', loc.x + r0 * 1.4); lbl.setAttribute('y', loc.y - r0 * 1.4);
                     });
                     m.addEventListener('pointerup', function (e) {
                         dragging = false;
                         if (moved) onChange();
                         else if (confirm('Positie van ' + (plant.nlNaam || plant.latijnseNaam) + ' wissen?')) { plant.pos = null; onChange(); }
                     });
-                    plantLayer.appendChild(m);
+                    plantLayer.appendChild(grp);
                 });
             }
             svg.addEventListener('wheel', function (e) { e.preventDefault(); const r = svg.getBoundingClientRect(); const px = e.clientX - r.left - size().w / 2, py = e.clientY - r.top - size().h / 2; const f = e.deltaY < 0 ? 1.15 : 1 / 1.15; view.tx = px - (px - view.tx) * f; view.ty = py - (py - view.ty) * f; view.scale = Math.min(Math.max(view.scale * f, 0.2), 60); applyView(); }, { passive: false });
