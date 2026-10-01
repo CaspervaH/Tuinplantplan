@@ -82,7 +82,7 @@ ctx.slFilters.maand = '';
 const navIdx = html.indexOf('<nav id="mainTabs"');
 const nav = html.slice(navIdx, html.indexOf('</nav>', navIdx));
 check('tab 1 = Tuinontwerp', nav.indexOf('data-tab="ontwerp"') < nav.indexOf('data-tab="planten"'));
-check('Shortlist-tabblad aanwezig', /data-tab="shortlist"/.test(nav));
+check('geen apart Shortlist-tabblad (wel in sidebar)', !/data-tab="shortlist"/.test(nav));
 check('Borders-tabblad aanwezig', /data-tab="borders"/.test(nav));
 check('geen "Nieuwe border aanmaken"-knop (alleen tekenen)', !html.includes('id="addBorderBtn"'));
 
@@ -95,6 +95,7 @@ check('hoogtebalk + vaste tekstbreedte (uitgelijnd)', html.includes('.sl-hoogte-
 check('vaste tellers onderaan (pv-foot + summary)', html.includes('id="pvFoot"') && html.includes('id="pvFootSummary"'));
 check('sidebar in de HTML', html.includes('id="plantSidebar"') && html.includes('data-pv="shortlist"'));
 check('teken-statusbalk in de toolbar', html.includes('id="mapDrawStatus"'));
+check('plantpicker.js en customplants.js worden geladen', html.includes('src="plantpicker.js"') && html.includes('src="customplants.js"'));
 check('borders-overzicht view in de HTML', html.includes('id="pvViewBorders"') && html.includes('id="pvBordersOverview"'));
 check('teken-guard: klikken op shapes genegeerd tijdens tekenen', (fs.readFileSync('map.js', 'utf8')).includes("if (drawMode || freehandOn || circleMode) { L.DomEvent.stopPropagation(ev); return; }"));
 

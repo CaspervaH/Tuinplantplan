@@ -187,7 +187,6 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
 <nav id="mainTabs" class="tabs">
     <button data-tab="ontwerp">&#127795; Tuinontwerp</button>
     <button data-tab="planten">&#127793; Planten</button>
-    <button data-tab="shortlist">&#128203; Shortlist</button>
     <button data-tab="borders">&#127804; Borders</button>
     <button data-tab="instellingen" class="settings-tab" title="Instellingen">&#9881;</button>
 </nav>
@@ -354,6 +353,8 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
 
     </div>
     <script src="plants.js"></script>
+    <script src="customplants.js"></script>
+    <script src="plantpicker.js"></script>
     <script>
         const plantData = [
             { latijnseNaam: "Acaena inermis Purpurea", nlNaam: "Stekelnootje", standplaats: "Z", kleur: "bruinrood", bloeiVan: "juni", bloeiTot: "juli", hoogteVan: 10, hoogteTot: 10, isBeschikbaarBijAaldering: true },
@@ -1013,8 +1014,8 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
         // ==== Tabs: Tuinontwerp - Planten - Instellingen ====
         const tabsEl = document.getElementById('mainTabs');
         function showTab(name) {
-            if (name !== 'ontwerp' && name !== 'planten' && name !== 'shortlist' && name !== 'borders' && name !== 'instellingen') name = 'planten';
-            const pane = (name === 'shortlist' || name === 'borders') ? 'planten' : name;
+            if (name !== 'ontwerp' && name !== 'planten' && name !== 'borders' && name !== 'instellingen') name = 'planten';
+            const pane = name === 'borders' ? 'planten' : name;
             tabsEl.querySelectorAll('button').forEach(function (b) {
                 b.classList.toggle('active', b.getAttribute('data-tab') === name);
             });
@@ -1023,7 +1024,6 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
             });
             try { localStorage.setItem('activeTab', name); } catch (e) { }
             if (name === 'planten') setPvView('planten');
-            else if (name === 'shortlist') setPvView('shortlist');
             else if (name === 'borders') {
                 if (lastBorderId && borders.some(b => b.id === lastBorderId)) setPvView('border', lastBorderId);
                 else setPvView('borders');
@@ -1039,6 +1039,7 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
         });
         let activeTab = 'planten';
         try { activeTab = localStorage.getItem('activeTab') || 'planten'; } catch (e) { }
+        if (activeTab === 'shortlist') activeTab = 'planten';
         showTab(activeTab);
         try {
             const openId = localStorage.getItem('openBorderId');
