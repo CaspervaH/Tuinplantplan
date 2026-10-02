@@ -680,6 +680,7 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
                 placed.forEach(function (plant) { counts[plant.latijnseNaam] = (counts[plant.latijnseNaam] || 0) + 1; });
                 const names = [];
                 placed.forEach(function (plant) { if (names.indexOf(plant.latijnseNaam) === -1) names.push(plant.latijnseNaam); });
+                names.sort(function (a, b) { return String(a).localeCompare(String(b), 'nl'); });
                 const rows = names.map(function (name) {
                     const plant = placed.find(function (pl) { return pl.latijnseNaam === name; });
                     const aantal = counts[name] || 1;
@@ -777,7 +778,9 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
             (border && border.placed || []).forEach(function (p) {
                 counts[p.latijnseNaam] = (counts[p.latijnseNaam] || 0) + 1;
             });
-            const plants = getSourcePlants(borderSourceKey);
+            const plants = getSourcePlants(borderSourceKey).slice().sort(function (a, b) {
+                return String(a.latijnseNaam || '').localeCompare(String(b.latijnseNaam || ''), 'nl');
+            });
             const visible = plants.filter(function (p) {
                 if (!borderSourceQ) return true;
                 const hay = ((p.latijnseNaam || '') + ' ' + (p.nlNaam || '') + ' ' + (p.kleur || '')).toLowerCase();
