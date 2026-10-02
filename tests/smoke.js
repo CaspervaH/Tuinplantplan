@@ -130,6 +130,8 @@ check('geplaatste plant verwijderbaar', ctx.getBorders()[0].placed.length === pl
 const mapJs = fs.readFileSync('map.js', 'utf8');
 check('map.js opent Planten-tab bij border-klik', /localStorage\.setItem\('activeTab', 'planten'\)/.test(mapJs));
 check('map.js zet openBorderId', mapJs.includes("localStorage.setItem('openBorderId'"));
+check('knop border-naar-lijstje aanwezig', html.includes('id="borderToListBtn"'));
+check('border-naar-lijstje logica aanwezig', html.includes('function openBorderToListDialog'));
 check('plantLists in saveState en backup', /localStorage.setItem\('plantLists'/.test(html) && require('fs').readFileSync('backup.js', 'utf8').includes("'plantLists'"));
 console.log('');
 if (fail) { console.error('\u2717 ' + fail + ' rooktest-fout(en)'); process.exit(1); }
