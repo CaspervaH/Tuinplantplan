@@ -175,6 +175,7 @@ plants.forEach(function (p) {
 });
 plants = deduped;
 log('Duplicaten verwijderd: ' + removed.length + (removed.length ? ' (' + removed.join('; ') + ')' : ''));
+plants.sort(function (a, b) { return String(a.latijnseNaam || '').localeCompare(String(b.latijnseNaam || ''), 'nl'); });
 log('Planten na fix: ' + plants.length);
 
 var noKleur = plants.filter(function (p) { return !p.kleur; });
