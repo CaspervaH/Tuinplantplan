@@ -100,29 +100,32 @@ body.has-address #addressGate { display: none; }
 .sl-table th { background: var(--primary); color: white; font-size: 11px; padding: 4px 5px; text-align: center; border: 1px solid #3a5340; white-space: nowrap; }
 .sl-table th.sl-c-plant, .sl-table th.sl-c-kleur { text-align: left; }
 .sl-table th.sl-c-plant { min-width: 150px; }
-.sl-table th.sl-c-kleur { min-width: 90px; }
-.sl-table th.sl-c-sp { min-width: 42px; font-size: 9px; line-height: 1.25; }
-.sl-table th.sl-c-sp .sl-h { display: block; font-size: 12px; font-weight: 700; }
-.sl-table th.sl-c-hoogte { min-width: 120px; }
+.sl-table th.sl-c-kleur { min-width: 46px; max-width: 46px; width: 46px; text-align: center; }
+.sl-table th.sl-c-sp { min-width: 0; width: 24px; padding: 4px 2px; font-size: 11px; }
+.sl-table th.sl-c-sp .sl-h { display: none; }
+.sl-table th.sl-c-hoogte { min-width: 110px; }
 .sl-table th.sl-c-hoogte .sl-h-sub { font-weight: 400; font-size: 9px; }
 .sl-table th.sl-c-m { min-width: 15px; padding: 4px 1px; font-size: 9px; }
 .sl-table td { border: 1px solid var(--border); padding: 3px 4px; text-align: center; vertical-align: middle; }
 .sl-table td.sl-plant { text-align: left; min-width: 150px; }
 .sl-table td.sl-plant strong { color: var(--primary); font-size: 12px; }
 .sl-table td.sl-plant em { color: var(--light-text); font-size: 11px; }
-.sl-table td.sl-kleur { text-align: left; white-space: nowrap; }
+.sl-table td.sl-kleur { text-align: center; max-width: 46px; padding: 3px 2px; }
+.sl-kleur-wrap { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.sl-kleur-wrap .color-indicator { margin-right: 0; }
+.sl-kleur-txt { display: block; max-width: 44px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 9px; color: var(--light-text); cursor: default; }
 .sl-table tr.sl-genus td { background: #e8f5e8; text-align: left; font-weight: 700; color: var(--primary); border-top: 2px solid var(--accent); font-size: 12px; padding: 4px 6px; }
 .sl-genus-count { font-weight: 400; color: var(--light-text); font-size: 11px; }
-.sl-table td.sl-sp { min-width: 42px; color: #c9cfc9; font-size: 11px; }
+.sl-table td.sl-sp { width: 24px; min-width: 0; padding: 3px 2px; color: #c9cfc9; font-size: 11px; }
 .sl-table td.sl-sp.ja { color: var(--primary); font-weight: 700; background: #f0ffe0; }
-.sl-table td.sl-hoogte { min-width: 160px; white-space: nowrap; }
-.sl-hoogte-bar { display: inline-block; vertical-align: middle; width: 120px; height: 12px; background: #f0f0f0; border: 1px solid #b8c0b8; border-radius: 2px; overflow: hidden; position: relative; background-image: repeating-linear-gradient(to right, transparent 0, transparent 29px, #d0d0d0 29px, #d0d0d0 30px); }
+.sl-table td.sl-hoogte { min-width: 110px; white-space: normal; text-align: center; }
+.sl-hoogte-bar { display: block; margin: 0 auto; width: 110px; max-width: 100%; height: 12px; background: #f0f0f0; border: 1px solid #b8c0b8; border-radius: 2px; overflow: hidden; position: relative; background-image: repeating-linear-gradient(to right, transparent 0, transparent 29px, #d0d0d0 29px, #d0d0d0 30px); }
 .sl-hoogte-fill { height: 100%; background: #6d8f6d; }
 .sl-table td.sl-sel { width: 26px; }
 .sl-table td.sl-sel input { cursor: pointer; }
 .sl-legend { font-size: 11px; color: var(--light-text); margin: 4px 0 8px; }
 .sl-legend .sw { display: inline-block; width: 11px; height: 11px; border: 1px solid #b8c0b8; border-radius: 2px; vertical-align: middle; margin: 0 3px 0 10px; }
-.sl-hoogte-txt { display: inline-block; vertical-align: middle; margin-left: 6px; width: 84px; font-size: 10px; color: var(--light-text); }
+.sl-hoogte-txt { display: block; margin-top: 2px; font-size: 10px; color: var(--light-text); text-align: center; }
 .sl-table td.sl-m { min-width: 15px; font-size: 10px; padding: 4px 1px; color: #d8ddd8; }
 .sl-table td.sl-m.bloei { color: var(--primary); font-weight: 700; background: #e8f5e8; }
 .sl-table td.sl-del { width: 30px; }
@@ -249,9 +252,9 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
                                         <th class="sl-c-sel"></th>
                                         <th class="sl-c-plant">Plant</th>
                                         <th class="sl-c-kleur">Kleur</th>
-                                        <th class="sl-c-sp" title="Zon (Z)">Zon<br><span class="sl-h">Z</span></th>
-                                        <th class="sl-c-sp" title="Halfschaduw (HS)">Halfschaduw<br><span class="sl-h">HS</span></th>
-                                        <th class="sl-c-sp" title="Schaduw (S)">Schaduw<br><span class="sl-h">S</span></th>
+                                        <th class="sl-c-sp" title="Zon">Z</th>
+                                        <th class="sl-c-sp" title="Halfschaduw">HS</th>
+                                        <th class="sl-c-sp" title="Schaduw">S</th>
                                         <th class="sl-c-hoogte" title="De balk loopt van 0 tot 2 meter">Hoogte <span class="sl-h-sub">(0&ndash;2 m)</span></th>
                                         <th class="sl-c-m" title="januari">jan</th>
                                         <th class="sl-c-m" title="februari">feb</th>
@@ -272,8 +275,8 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
                             </div>
                             <div id="plantPickerContainer"></div>
                         </div>
-                        <div id="pvViewBorder" class="pv-view">                            <div id="borderDropZone">                                <h3 id="activeBorderName"></h3>                                <div class="border-3col">                                    <div class="border-col border-shape-col">                                        <div id="borderShapeBox"></div>                                        <p class="sl-tip" id="borderShapeHint" style="display:none;">Sleep een plant uit de bronlijst naar de tekening om hem te plaatsen; sleep een geplaatste plant (het gekleurde bolletje) om te verplaatsen (klik op een bolletje = positie wissen). Klik ook een plant in de bronlijst aan en tik daarna in de tekening om hem zonder slepen te plaatsen.</p>                                        <div id="borderSummary"></div>                                        <h4>Geplaatste planten</h4>                                        <div style="overflow-x: auto;">                                            <table class="sl-table" id="borderPlacedTable">                                                <thead><tr>                                                    <th class="sl-c-plant">Plant</th>                                                    <th class="sl-c-kleur">Kleur</th>                                                    <th class="sl-c-sp" title="Zon (Z)">Zon<br><span class="sl-h">Z</span></th>                                                    <th class="sl-c-sp" title="Halfschaduw (HS)">Halfschaduw<br><span class="sl-h">HS</span></th>                                                    <th class="sl-c-sp" title="Schaduw (S)">Schaduw<br><span class="sl-h">S</span></th>                                                    <th class="sl-c-hoogte" title="De balk loopt van 0 tot 2 meter">Hoogte <span class="sl-h-sub">(0&ndash;2 m)</span></th>                                                    <th class="sl-c-m" title="januari">jan</th>                                                    <th class="sl-c-m" title="februari">feb</th>                                                    <th class="sl-c-m" title="maart">mrt</th>                                                    <th class="sl-c-m" title="april">apr</th>                                                    <th class="sl-c-m" title="mei">mei</th>                                                    <th class="sl-c-m" title="juni">jun</th>                                                    <th class="sl-c-m" title="juli">jul</th>                                                    <th class="sl-c-m" title="augustus">aug</th>                                                    <th class="sl-c-m" title="september">sep</th>                                                    <th class="sl-c-m" title="oktober">okt</th>                                                    <th class="sl-c-m" title="november">nov</th>                                                    <th class="sl-c-m" title="december">dec</th>                                                    <th class="sl-c-cnt" title="Aantal exemplaren in deze border">&#215;</th>
-                                                    <th class="sl-c-del"></th>                                                </tr></thead>                                                <tbody id="borderPlacedBody"></tbody>                                            </table>                                        </div>                                    </div>                                    <div class="border-col border-source-col">                                        <div class="filter-controls">                                            <select id="borderSourceList"></select>                                        </div>                                        <div class="filter-controls">                                            <input type="text" id="borderSourceSearch" placeholder="Zoeken in bronlijst...">                                        </div>                                        <div style="overflow-x: auto; max-height: 70vh; overflow-y: auto;">                                            <table class="sl-table" id="borderSourceTable">                                                <thead><tr>                                                    <th class="sl-c-sel" title="Sleep naar de vorm, of klik aan en tik in de vorm">&#8963;</th>                                                    <th class="sl-c-plant">Plant</th>                                                    <th class="sl-c-kleur">Kleur</th>                                                    <th class="sl-c-sp" title="Zon (Z)">Zon<br><span class="sl-h">Z</span></th>                                                    <th class="sl-c-sp" title="Halfschaduw (HS)">Halfschaduw<br><span class="sl-h">HS</span></th>                                                    <th class="sl-c-sp" title="Schaduw (S)">Schaduw<br><span class="sl-h">S</span></th>                                                    <th class="sl-c-hoogte" title="De balk loopt van 0 tot 2 meter">Hoogte <span class="sl-h-sub">(0&ndash;2 m)</span></th>                                                    <th class="sl-c-m" title="januari">jan</th>                                                    <th class="sl-c-m" title="februari">feb</th>                                                    <th class="sl-c-m" title="maart">mrt</th>                                                    <th class="sl-c-m" title="april">apr</th>                                                    <th class="sl-c-m" title="mei">mei</th>                                                    <th class="sl-c-m" title="juni">jun</th>                                                    <th class="sl-c-m" title="juli">jul</th>                                                    <th class="sl-c-m" title="augustus">aug</th>                                                    <th class="sl-c-m" title="september">sep</th>                                                    <th class="sl-c-m" title="oktober">okt</th>                                                    <th class="sl-c-m" title="november">nov</th>                                                    <th class="sl-c-m" title="december">dec</th>                                                    <th class="sl-c-cnt" title="Aantal exemplaren in deze border">&#215;</th>
+                        <div id="pvViewBorder" class="pv-view">                            <div id="borderDropZone">                                <h3 id="activeBorderName"></h3>                                <div class="border-3col">                                    <div class="border-col border-shape-col">                                        <div id="borderShapeBox"></div>                                        <p class="sl-tip" id="borderShapeHint" style="display:none;">Sleep een plant uit de bronlijst naar de tekening om hem te plaatsen; sleep een geplaatste plant (het gekleurde bolletje) om te verplaatsen (klik op een bolletje = positie wissen). Klik ook een plant in de bronlijst aan en tik daarna in de tekening om hem zonder slepen te plaatsen.</p>                                        <div id="borderSummary"></div>                                        <h4>Geplaatste planten</h4>                                        <div style="overflow-x: auto;">                                            <table class="sl-table" id="borderPlacedTable">                                                <thead><tr>                                                    <th class="sl-c-plant">Plant</th>                                                    <th class="sl-c-kleur">Kleur</th>                                                    <th class="sl-c-sp" title="Zon">Z</th>                                                    <th class="sl-c-sp" title="Halfschaduw">HS</th>                                                    <th class="sl-c-sp" title="Schaduw">S</th>                                                    <th class="sl-c-hoogte" title="De balk loopt van 0 tot 2 meter">Hoogte <span class="sl-h-sub">(0&ndash;2 m)</span></th>                                                    <th class="sl-c-m" title="januari">jan</th>                                                    <th class="sl-c-m" title="februari">feb</th>                                                    <th class="sl-c-m" title="maart">mrt</th>                                                    <th class="sl-c-m" title="april">apr</th>                                                    <th class="sl-c-m" title="mei">mei</th>                                                    <th class="sl-c-m" title="juni">jun</th>                                                    <th class="sl-c-m" title="juli">jul</th>                                                    <th class="sl-c-m" title="augustus">aug</th>                                                    <th class="sl-c-m" title="september">sep</th>                                                    <th class="sl-c-m" title="oktober">okt</th>                                                    <th class="sl-c-m" title="november">nov</th>                                                    <th class="sl-c-m" title="december">dec</th>                                                    <th class="sl-c-cnt" title="Aantal exemplaren in deze border">&#215;</th>
+                                                    <th class="sl-c-del"></th>                                                </tr></thead>                                                <tbody id="borderPlacedBody"></tbody>                                            </table>                                        </div>                                    </div>                                    <div class="border-col border-source-col">                                        <div class="filter-controls">                                            <select id="borderSourceList"></select>                                        </div>                                        <div class="filter-controls">                                            <input type="text" id="borderSourceSearch" placeholder="Zoeken in bronlijst...">                                        </div>                                        <div style="overflow-x: auto; max-height: 70vh; overflow-y: auto;">                                            <table class="sl-table" id="borderSourceTable">                                                <thead><tr>                                                    <th class="sl-c-sel" title="Sleep naar de vorm, of klik aan en tik in de vorm">&#8963;</th>                                                    <th class="sl-c-plant">Plant</th>                                                    <th class="sl-c-kleur">Kleur</th>                                                    <th class="sl-c-sp" title="Zon">Z</th>                                                    <th class="sl-c-sp" title="Halfschaduw">HS</th>                                                    <th class="sl-c-sp" title="Schaduw">S</th>                                                    <th class="sl-c-hoogte" title="De balk loopt van 0 tot 2 meter">Hoogte <span class="sl-h-sub">(0&ndash;2 m)</span></th>                                                    <th class="sl-c-m" title="januari">jan</th>                                                    <th class="sl-c-m" title="februari">feb</th>                                                    <th class="sl-c-m" title="maart">mrt</th>                                                    <th class="sl-c-m" title="april">apr</th>                                                    <th class="sl-c-m" title="mei">mei</th>                                                    <th class="sl-c-m" title="juni">jun</th>                                                    <th class="sl-c-m" title="juli">jul</th>                                                    <th class="sl-c-m" title="augustus">aug</th>                                                    <th class="sl-c-m" title="september">sep</th>                                                    <th class="sl-c-m" title="oktober">okt</th>                                                    <th class="sl-c-m" title="november">nov</th>                                                    <th class="sl-c-m" title="december">dec</th>                                                    <th class="sl-c-cnt" title="Aantal exemplaren in deze border">&#215;</th>
                                                     <th class="sl-c-del"></th>                                                </tr></thead>                                                <tbody id="borderSourceBody"></tbody>                                            </table>                                        </div>                                        <p class="sl-tip">Kies bovenin uit welke lijst je planten in de border plaatst: alle planten of een van je lijstjes. Sleep een plant naar de vorm, of klik een rij aan en tik in de vorm.</p>                                    </div>                                </div>                                <div style="margin-top: 8px;">                                    <button class="btn btn-danger" id="clearBorderBtn">Border leegmaken</button>                                </div>                            </div>                        </div>                        <div id="pvViewBorders" class="pv-view">
                             <h3>Borders</h3>
                             <p class="sl-tip">Kies hieronder een border om te openen, of teken een nieuwe op de kaart in het Tuinontwerp-tabblad.</p>
@@ -289,9 +292,9 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
                                         <th class="sl-c-sel" title="Sleep deze rij naar een border of lijstje">&#8963;</th>
                                         <th class="sl-c-plant">Plant</th>
                                         <th class="sl-c-kleur">Kleur</th>
-                                        <th class="sl-c-sp" title="Zon (Z)">Zon<br><span class="sl-h">Z</span></th>
-                                        <th class="sl-c-sp" title="Halfschaduw (HS)">Halfschaduw<br><span class="sl-h">HS</span></th>
-                                        <th class="sl-c-sp" title="Schaduw (S)">Schaduw<br><span class="sl-h">S</span></th>
+                                        <th class="sl-c-sp" title="Zon">Z</th>
+                                        <th class="sl-c-sp" title="Halfschaduw">HS</th>
+                                        <th class="sl-c-sp" title="Schaduw">S</th>
                                         <th class="sl-c-hoogte" title="De balk loopt van 0 tot 2 meter">Hoogte <span class="sl-h-sub">(0&ndash;2 m)</span></th>
                                         <th class="sl-c-m" title="januari">jan</th>
                                         <th class="sl-c-m" title="februari">feb</th>
@@ -416,7 +419,7 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
             }).join('');
             return (extraFirst || '') +
                 '<td class="sl-plant"><strong>' + name + '</strong><br><em>' + esc(plant.nlNaam || '') + '</em></td>' +
-                '<td class="sl-kleur"><span class="color-indicator" style="background-color: ' + getColorHex(plant.kleur) + '"></span> ' + esc(plant.kleur || '-') + '</td>' +
+                '<td class="sl-kleur"><span class="sl-kleur-wrap" title="' + esc(plant.kleur || '-') + '"><span class="color-indicator" style="background-color: ' + getColorHex(plant.kleur) + '"></span><span class="sl-kleur-txt">' + esc(plant.kleur || '-') + '</span></span></td>' +
                 spCols +
                 '<td class="sl-hoogte" title="' + esc(h.hTxt) + '">' +
                 '<div class="sl-hoogte-bar"><div class="sl-hoogte-fill" style="width: ' + h.pct + '%"></div></div>' +
@@ -819,8 +822,7 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
         function renderFootSummary() {
             let list = [];
             if (pvView === 'border') {
-                const b = borders.find(x => x.id === activeBorderId);
-                list = b ? (b.placed || []) : [];
+                // borders hebben hun eigen samenvatting in de view zelf
             } else if (pvView === 'list') {
                 const l = plantLists.find(x => x.id === plListId);
                 list = l ? l.plants : [];
@@ -828,7 +830,7 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
                 list = [];
             }
             PlantPicker.renderSummary(pvFootSummaryEl, list, {
-                title: pvView === 'border' ? 'Samenvatting van deze border' : (pvView === 'list' ? 'Samenvatting van dit lijstje' : (pvView === 'borders' ? 'Kies een border' : 'Planten')),
+                title: pvView === 'list' ? 'Samenvatting van dit lijstje' : (pvView === 'borders' ? 'Kies een border' : 'Planten'),
                 emptyText: 'Sleep planten naar een border of lijstje om hier de samenvatting te zien.'
             });
         }
@@ -1012,22 +1014,20 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
             g.appendChild(el('path', { d: shapePath, fill: '#a5d6a7', 'fill-opacity': '0.5', stroke: '#2e7d32', 'stroke-width': 2, 'vector-effect': 'non-scaling-stroke' }));
             const plantLayer = el('g', {});
             g.appendChild(plantLayer);
-            function markerR() { return 10 / (base() * view.scale); }
+            function markerR(plant) { var cm = PlantPicker.plantSpacingCm ? PlantPicker.plantSpacingCm(plant.hoogteTot, plant.hoogteVan) : 30; return (cm / 2) / 100; }
             function drawAll() {
                 plantLayer.innerHTML = '';
                 border.placed.forEach(function (plant) {
                     if (!plant.pos) return;
                     const p = toLocal(plant.pos.lat, plant.pos.lng);
                     const grp = el('g', {});
-                    const m = el('circle', { cx: p.x, cy: p.y, r: markerR(), fill: getColorHex(plant.kleur), stroke: '#333', 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke' });
+                    const r0 = markerR(plant);
+                    const m = el('circle', { cx: p.x, cy: p.y, r: r0, fill: getColorHex(plant.kleur), stroke: '#333', 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke' });
                     m.style.cursor = 'move';
-                    const init = (plant.latijnseNaam || '').trim().split(/\s+/).map(function (w) { return w.charAt(0).toUpperCase(); }).join('').slice(0, 3);
-                    const r0 = markerR();
-                    const txt = el('text', { x: p.x, y: p.y + r0 * 0.35, 'text-anchor': 'middle', 'font-size': r0 * 0.9, 'font-weight': '700', fill: '#111', 'pointer-events': 'none' });
+                    const init = PlantPicker.plantInitials(plant.latijnseNaam);
+                    const txt = el('text', { x: p.x, y: p.y, 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-size': 0.1, 'font-weight': '700', fill: '#111', 'pointer-events': 'none', 'paint-order': 'stroke', stroke: '#ffffff', 'stroke-width': 0.025, 'stroke-linejoin': 'round' });
                     txt.textContent = init;
-                    const lbl = el('text', { x: p.x + r0 * 1.4, y: p.y - r0 * 1.4, 'font-size': r0 * 0.75, fill: '#1b5e20', 'pointer-events': 'none', 'paint-order': 'stroke', stroke: '#ffffff', 'stroke-width': Math.max(2, r0 * 0.25), 'stroke-linejoin': 'round' });
-                    lbl.textContent = plant.nlNaam || plant.latijnseNaam || '';
-                    grp.appendChild(m); grp.appendChild(txt); grp.appendChild(lbl);
+                    grp.appendChild(m); grp.appendChild(txt);
                     const tip = (plant.nlNaam || plant.latijnseNaam) + ' — ' + (plant.latijnseNaam || '');
                     grp.setAttribute('pointer-events', 'all');
                     m.addEventListener('pointerenter', function () { const t = document.createElement('div'); t.className = 'plant-svg-tip'; t.textContent = tip; document.body.appendChild(t); grp._tip = t; });
@@ -1041,8 +1041,7 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
                         plant.pos = { lat: ll.lat, lng: ll.lng };
                         const loc = toLocal(ll.lat, ll.lng);
                         m.setAttribute('cx', loc.x); m.setAttribute('cy', loc.y);
-                        txt.setAttribute('x', loc.x); txt.setAttribute('y', loc.y + r0 * 0.35);
-                        lbl.setAttribute('x', loc.x + r0 * 1.4); lbl.setAttribute('y', loc.y - r0 * 1.4);
+                        txt.setAttribute('x', loc.x); txt.setAttribute('y', loc.y);
                     });
                     m.addEventListener('pointerup', function (e) {
                         dragging = false;

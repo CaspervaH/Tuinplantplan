@@ -364,7 +364,17 @@ window.PlantPicker = (function () {
     var parts = String(latijnseNaam || '').trim().split(/\s+/).filter(Boolean);
     if (!parts.length) return '';
     var initials = parts.map(function (p) { return p.charAt(0).toUpperCase(); }).join('');
-    return initials.length > 3 ? initials.slice(0, 3) : initials;
+    return initials.length > 2 ? initials.slice(0, 2) : initials;
+  }
+
+  // Advies plantdichtheid (m2-advies tuinbronnen: lage planten 16-25/m2,
+  // middelgrote 6-10/m2, grote 3-4/m2) -> plantafstand in cm
+  function plantSpacingCm(hoogteTot, hoogteVan) {
+    var h = Number(hoogteTot) || Number(hoogteVan) || 0;
+    if (!h || h <= 25) return 22;
+    if (h <= 50) return 30;
+    if (h <= 80) return 38;
+    return 55;
   }
 
   function borderAreaTxt(shape) {
@@ -379,6 +389,7 @@ window.PlantPicker = (function () {
     borderAreaM2: borderAreaM2,
     borderAreaTxt: borderAreaTxt,
     plantInitials: plantInitials,
+    plantSpacingCm: plantSpacingCm,
     renderSummary: renderSummary,
     monthIndex: monthIndex,
     bloeiMaanden: bloeiMaanden,
