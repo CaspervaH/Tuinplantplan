@@ -45,7 +45,7 @@ td.aan { text-align:center; white-space:nowrap; }
   <p class="legend" id="legend"></p>
   <h2>Plantenlijst (alfabetisch)</h2>
   <table id="plantTable">
-    <thead><tr><th>Nr.</th><th>Nederlandse naam</th><th>Latijnse naam</th><th>Kleur</th><th>Standplaats</th><th>Hoogte</th><th>Bloeiperiode</th><th>Aantal</th></tr></thead>
+    <thead><tr><th>Nr.</th><th>Nederlandse naam</th><th>Latijnse naam</th><th>Afkorting</th><th>Kleur</th><th>Standplaats</th><th>Hoogte</th><th>Bloeiperiode</th><th>Aantal</th></tr></thead>
     <tbody id="plantBody"></tbody>
   </table>
   <p class="legend" id="foot"></p>
@@ -132,10 +132,10 @@ td.aan { text-align:center; white-space:nowrap; }
     placed.forEach(function (plant) {
       var p = toLocal(plant.pos.lat, plant.pos.lng);
       var cx = p.x * scale + ox, cy = p.y * scale + oy;
-      var r = Math.max(Math.min((VIEW_W / 100) * (plantSpacingCm(plant) / 100) * scale, 22), 9);
+      var r = Math.max((plantSpacingCm(plant) / 2) / 100 * scale, 1);
       var g = el('g', {});
       g.appendChild(el('circle', { cx: cx, cy: cy, r: r, fill: colorHex(plant.kleur), stroke: '#333', 'stroke-width': 1 }));
-      var txt = el('text', { x: cx, y: cy, 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-size': Math.max(Math.min(r * 0.9, 12), 8), 'font-weight': 600, fill: '#111', 'paint-order': 'stroke', stroke: '#fff', 'stroke-width': 1.2 });
+      var txt = el('text', { x: cx, y: cy, 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-size': Math.max(r * 0.9, 7), 'font-weight': 600, fill: '#111', 'paint-order': 'stroke', stroke: '#fff', 'stroke-width': 1.2 });
       txt.textContent = shortName[plant.latijnseNaam];
       g.appendChild(txt);
       svg.appendChild(g);
@@ -161,13 +161,14 @@ td.aan { text-align:center; white-space:nowrap; }
       '<td class="nr"><span class="sw" style="background:' + colorHex(p.kleur) + '"></span> ' + number[name] + '</td>' +
       '<td>' + esc(p.nlNaam || '') + '</td>' +
       '<td><em>' + esc(name) + '</em></td>' +
+      '<td>' + esc(shortName[name] || '') + '</td>' +
       '<td>' + esc(p.kleur || '') + '</td>' +
       '<td>' + esc(p.standplaats || '') + '</td>' +
       '<td>' + fmtH(p) + '</td>' +
       '<td>' + fmtBloeiperiode(p) + '</td>' +
       '<td class="aan">\u00d7' + (counts[name] || 1) + '</td>' +
       '</tr>';
-  }).join('') || '<tr><td colspan="8">Nog geen geplaatste planten in deze border.</td></tr>';
+  }).join('') || '<tr><td colspan="9">Nog geen geplaatste planten in deze border.</td></tr>';
 
   document.getElementById('printBtn').addEventListener('click', function () { window.print(); });
   document.getElementById('closeBtn').addEventListener('click', function () { window.close(); });
