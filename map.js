@@ -193,7 +193,7 @@ function renderMap() {
       var w = Math.min(14 + init.length * 6, 44);
       var icon = L.divIcon({
         className: 'plant-dot',
-        html: '<span style="display:inline-flex;align-items:center;justify-content:center;width:' + w + 'px;height:22px;border-radius:11px;background:' + hex + ';border:1px solid #333;color:#111;font-size:9px;font-weight:700;line-height:1;white-space:nowrap;text-shadow:0 0 2px #fff;padding:0 4px;">' + init + '</span>',
+        html: '<span style="display:inline-flex;align-items:center;justify-content:center;width:' + w + 'px;height:22px;border-radius:11px;background:' + hex + ';border:1px solid #333;color:#111;font-size:9px;font-weight:500;line-height:1;white-space:nowrap;text-shadow:0 0 2px #fff;padding:0 4px;">' + init + '</span>',
         iconSize: [w, 22],
         iconAnchor: [Math.round(w / 2), 11]
       });
