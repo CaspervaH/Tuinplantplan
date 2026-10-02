@@ -85,7 +85,7 @@ const navIdx = html.indexOf('<nav id="mainTabs"');
 const nav = html.slice(navIdx, html.indexOf('</nav>', navIdx));
 check('tab 1 = Tuinontwerp', nav.indexOf('data-tab="ontwerp"') < nav.indexOf('data-tab="planten"'));
 check('geen apart Shortlist-tabblad', !/data-tab="shortlist"/.test(nav));
-check('Borders-tabblad aanwezig', /data-tab="borders"/.test(nav));
+check('Borders-tabblad verwijderd (borders in Planten-zijbalk)', !/data-tab="borders"/.test(nav));
 check('geen "Nieuwe border aanmaken"-knop (alleen tekenen)', !html.includes('id="addBorderBtn"'));
 
 // 3. planten-view: alle planten, rijen sleepbaar (geen checkbox meer)
@@ -128,7 +128,7 @@ check('geplaatste plant verwijderbaar', ctx.getBorders()[0].placed.length === pl
 
 // 6. map.js opent Borders-tab bij border-klik
 const mapJs = fs.readFileSync('map.js', 'utf8');
-check('map.js opent Borders-tab bij border-klik', /localStorage\.setItem\('activeTab', 'borders'\)/.test(mapJs));
+check('map.js opent Planten-tab bij border-klik', /localStorage\.setItem\('activeTab', 'planten'\)/.test(mapJs));
 check('map.js zet openBorderId', mapJs.includes("localStorage.setItem('openBorderId'"));
 check('plantLists in saveState en backup', /localStorage.setItem\('plantLists'/.test(html) && require('fs').readFileSync('backup.js', 'utf8').includes("'plantLists'"));
 console.log('');
