@@ -188,13 +188,14 @@ function renderMap() {
     }
     (border.placed || []).forEach(function (p) {
       if (!p.pos) return;
-      var init = PlantPicker.plantInitials(p.latijnseNaam);
+      var init = PlantPicker.plantShortName(p.latijnseNaam, 6);
       var hex = getColorHex(p.kleur) || '#8bc34a';
+      var w = Math.min(14 + init.length * 6, 44);
       var icon = L.divIcon({
         className: 'plant-dot',
-        html: '<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:' + hex + ';border:1px solid #333;color:#111;font-size:9px;font-weight:700;line-height:1;white-space:nowrap;text-shadow:0 0 2px #fff;">' + init + '</span>',
-        iconSize: [22, 22],
-        iconAnchor: [11, 11]
+        html: '<span style="display:inline-flex;align-items:center;justify-content:center;width:' + w + 'px;height:22px;border-radius:11px;background:' + hex + ';border:1px solid #333;color:#111;font-size:9px;font-weight:700;line-height:1;white-space:nowrap;text-shadow:0 0 2px #fff;padding:0 4px;">' + init + '</span>',
+        iconSize: [w, 22],
+        iconAnchor: [Math.round(w / 2), 11]
       });
       var marker = L.marker([p.pos.lat, p.pos.lng], { icon: icon }).addTo(mapMarkerLayer);
       marker.bindTooltip('<strong>' + esc(p.nlNaam || p.latijnseNaam) + '</strong><br><em>' + esc(p.latijnseNaam) + '</em> (' + esc(border.name) + ')');

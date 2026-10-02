@@ -684,7 +684,7 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
                     const plant = placed.find(function (pl) { return pl.latijnseNaam === name; });
                     const aantal = counts[name] || 1;
                     return '<tr>' +
-                        slRowCells(plant, '') +
+                        slRowCells(plant, '<td class="sl-sel" title="Sleep naar de vorm, of klik aan en tik in de vorm">&equiv;</td>') +
                         '<td class="sl-cnt heeft" title="' + aantal + ' exemplaren in deze border">\u00d7' + aantal + '</td></tr>';
                 }).join('');
                 body.innerHTML = rows ||
@@ -1045,9 +1045,21 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
                     const m = el('circle', { cx: p.x, cy: p.y, r: r0, fill: getColorHex(plant.kleur), stroke: '#333', 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke' });
                     m.style.cursor = 'move';
                     const cm = PlantPicker.plantSpacingCm ? PlantPicker.plantSpacingCm(plant.hoogteTot, plant.hoogteVan) : 30;
-                    const init = PlantPicker.plantInitials(plant.latijnseNaam, cm >= 55 ? 3 : (cm >= 30 ? 2 : 1));
-                    const txt = el('text', { x: p.x, y: p.y, 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-size': r0 * 0.9, 'font-weight': '700', fill: '#111', 'pointer-events': 'none', 'paint-order': 'stroke', stroke: '#ffffff', 'stroke-width': r0 * 0.15, 'stroke-linejoin': 'round' });
-                    txt.textContent = init;
+                    const maxChars = Math.max(Math.floor(r0 * 2.2), 2);
+                    const init = PlantPicker.plantShortName(plant.latijnseNaam, maxChars);
+                    const lines = init.length > maxChars && init.length >= 4
+                        ? [init.slice(0, Math.ceil(init.length / 2)), init.slice(Math.ceil(init.length / 2))]
+                        : [init];
+                    const fs = lines.length === 1
+                        ? Math.min(r0 * 0.9, (r0 * 1.7) / Math.max(init.length, 1))
+                        : Math.min(r0 * 0.62, (r0 * 1.6) / Math.max(lines[0].length, lines[1].length, 1));
+                    const txt = el('text', { x: p.x, y: p.y, 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-weight': '700', fill: '#111', 'pointer-events': 'none', 'paint-order': 'stroke', stroke: '#ffffff', 'stroke-width': r0 * 0.15, 'stroke-linejoin': 'round' });
+                    txt.setAttribute('font-size', fs);
+                    lines.forEach(function (ln, li) {
+                        const ts = el('tspan', { x: p.x, dy: li === 0 ? (lines.length === 1 ? 0 : -fs * 0.55) : fs * 1.1 });
+                        ts.textContent = ln;
+                        txt.appendChild(ts);
+                    });
                     grp.appendChild(m); grp.appendChild(txt);
                     const tip = (plant.nlNaam || plant.latijnseNaam) + ' — ' + (plant.latijnseNaam || '');
                     grp.setAttribute('pointer-events', 'all');
