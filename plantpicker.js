@@ -360,11 +360,15 @@ window.PlantPicker = (function () {
     return Math.abs(twice) / 2;
   }
 
-  function plantInitials(latijnseNaam) {
+  function plantInitials(latijnseNaam, lettersPerWord) {
+    var per = lettersPerWord || 1;
     var parts = String(latijnseNaam || '').trim().split(/\s+/).filter(Boolean);
     if (!parts.length) return '';
-    var initials = parts.map(function (p) { return p.charAt(0).toUpperCase(); }).join('');
-    return initials.length > 2 ? initials.slice(0, 2) : initials;
+    var initials = parts.map(function (w) {
+      var letters = w.replace(/[^A-Za-z]/g, '').slice(0, per).toUpperCase();
+      return letters;
+    }).join('');
+    return initials;
   }
 
   // Advies plantdichtheid (m2-advies tuinbronnen: lage planten 16-25/m2,
