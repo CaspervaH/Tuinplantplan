@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plantenlijst border — Tuinplantplan</title>
+<script src="plants.js"></script>
+<script src="plantpicker.js"></script>
+<style>
+:root { --primary:#2e7d32; --accent:#7cb342; --border:#dee2e6; --text:#212529; }
+* { box-sizing:border-box; margin:0; padding:0; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; }
+body { background:#f4f6f4; color:var(--text); padding:20px; }
+.noprint { text-align:right; margin-bottom:10px; }
+.btn { background:var(--primary); color:#fff; border:none; border-radius:4px; padding:8px 14px; cursor:pointer; font-size:14px; margin-left:6px; }
+.page { background:#fff; border-radius:6px; box-shadow:0 1px 5px rgba(0,0,0,.1); padding:24px; max-width:900px; margin:0 auto; }
+h1 { color:var(--primary); font-size:1.4rem; margin-bottom:2px; }
+.sub { color:#666; font-size:.9rem; margin-bottom:16px; }
+h2 { color:var(--primary); font-size:1.1rem; margin:18px 0 8px; border-bottom:2px solid var(--accent); padding-bottom:4px; }
+#shapeWrap { border:1px solid var(--border); border-radius:6px; padding:8px; }
+#shapeWrap svg { width:100%; height:auto; display:block; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th, td { border:1px solid var(--border); padding:5px 8px; text-align:left; vertical-align:top; }
+th { background:var(--primary); color:#fff; }
+td.nr { text-align:center; font-weight:700; white-space:nowrap; }
+td.aan { text-align:center; white-space:nowrap; }
+.legend { font-size:.8rem; color:#555; margin-top:6px; }
+.sw { display:inline-block; width:11px; height:11px; border:1px solid #999; border-radius:2px; vertical-align:middle; margin-right:3px; }
+@media print {
+  body { background:#fff; padding:0; }
+  .noprint { display:none; }
+  .page { box-shadow:none; border:none; max-width:none; padding:0; }
+}
+</style>
+</head>
+<body>
+<div class="noprint">
+  <button class="btn" id="printBtn">&#128424; Printen / Opslaan als PDF</button>
+  <button class="btn" style="background:#6c757d" id="closeBtn">Sluiten</button>
+</div>
+<div class="page">
+  <h1 id="bTitle">Border</h1>
+  <p class="sub" id="bSub"></p>
+  <h2>Vorm met geplaatste planten</h2>
+  <div id="shapeWrap"></div>
+  <p class="legend" id="legend"></p>
+  <h2>Plantenlijst (alfabetisch)</h2>
+  <table id="plantTable">
+    <thead><tr><th>Nr.</th><th>Nederlandse naam</th><th>Latijnse naam</th><th>Kleur</th><th>Standplaats</th><th>Hoogte</th><th>Bloeiperiode</th><th>Aantal</th></tr></thead>
+    <tbody id="plantBody"></tbody>
+  </table>
+  <p class="legend" id="foot"></p>
+</div>
+<script>
+(function () {
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+  function fmtH(p) {
+    var van = Number(p.hoogteVan), tot = Number(p.hoogteTot);
+    if (!van && !tot) return '';
+    if (van && tot && van !== tot) return van + '\u2013' + tot + ' cm';
+    return (tot || van) + ' cm';
+  }
+  function fmtBloeiperiode(p) {
+    var m = window.PlantPicker && PlantPicker.bloeiMaanden ? PlantPicker.bloeiMaanden(p) : [];
+    if (!m.length) return '';
+    var MN = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+    var first = m[0], last = m[m.length - 1];
+    return first === last ? MN[first] : MN[first] + ' \u2013 ' + MN[last];
+  }
+  function colorHex(kleur) {
+    return (window.PlantPicker && PlantPicker.colorHex) ? PlantPicker.colorHex(kleur) : '#8bc34a';
+  }
+
+  var borders = [];
+  try { borders = JSON.parse(localStorage.getItem('borders')) || []; } catch (e) {}
+  var id = null;
+  try { id = decodeURIComponent(window.location.hash.replace(/^#/, '')) || localStorage.getItem('openPdfBorderId'); } catch (e) {}
+  try { localStorage.removeItem('openPdfBorderId'); } catch (e) {}
+  var border = borders.find(function (b) { return b.id === id; }) || borders[0];
+  if (!border) {
+    document.getElementById('bTitle').textContent = 'Geen border gevonden';
+    document.getElementById('bSub').textContent = 'Open eerst een border in de planner en klik daarna op \u201cPlantenlijst (PDF)\u201d.';
+    return;
+  }
+
+  var placed = (border.placed || []).filter(function (p) { return p && p.latijnseNaam && p.pos; });
+  var areaTxt = (window.PlantPicker && PlantPicker.borderAreaTxt) ? PlantPicker.borderAreaTxt(border.shape) : '';
+  document.getElementById('bTitle').textContent = 'Border: ' + border.name;
+  document.getElementById('bSub').textContent =
+    new Date().toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' }) +
+    (areaTxt ? ' \u00b7 ' + areaTxt : '') + ' \u00b7 ' + placed.length + ' geplaatste planten';
+
+  // ==== Nummering: planten met dezelfde afkorting (CamelCase, 4 tekens) krijgen oplopende nummers ====
+  var NAMES = [];
+  placed.forEach(function (p) { if (NAMES.indexOf(p.latijnseNaam) === -1) NAMES.push(p.latijnseNaam); });
+  var shortName = {};
+  var byShort = {};
+  NAMES.forEach(function (n) {
+    var s = (window.PlantPicker && PlantPicker.plantShortName) ? PlantPicker.plantShortName(n, 4) : n.slice(0, 4);
+    if (!s) s = '?';
+    (byShort[s] = byShort[s] || []).push(n);
+  });
+  Object.keys(byShort).forEach(function (s) {
+    byShort[s].sort(function (a, b) { return a.localeCompare(b, 'nl'); });
+    byShort[s].forEach(function (n, i) {
+      shortName[n] = (byShort[s].length > 1) ? s + (i + 1) : s;
+    });
+  });
+  var number = {};
+  NAMES.slice().sort(function (a, b) { return a.localeCompare(b, 'nl'); }).forEach(function (n, i) { number[n] = i + 1; });
+
+  // ==== SVG van de vorm met genummerde bolletjes ====
+  (function drawShape() {
+    var wrap = document.getElementById('shapeWrap');
+    if (!border.shape || border.shape.length < 3) { wrap.textContent = 'Deze border heeft nog geen vorm op de kaart.'; return; }
+    var NS = 'http://www.w3.org/2000/svg';
+    function el(tag, attrs) { var n = document.createElementNS(NS, tag); for (var k in attrs) n.setAttribute(k, attrs[k]); return n; }
+    var lat0 = border.shape[0][0], lng0 = border.shape[0][1];
+    var M_LAT = 110540, M_LNG = 111320 * Math.cos(lat0 * Math.PI / 180);
+    function toLocal(lat, lng) { return { x: (lng - lng0) * M_LNG, y: -(lat - lat0) * M_LAT }; }
+    var minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    border.shape.forEach(function (pt) { var p = toLocal(pt[0], pt[1]); minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y); });
+    var w = Math.max(maxX - minX, 1), h = Math.max(maxY - minY, 1);
+    var PAD = 24, VIEW_W = 840;
+    var scale = (VIEW_W - 2 * PAD) / w;
+    var viewH = Math.max(Math.round(h * scale + 2 * PAD), 120);
+    var ox = PAD - minX * scale + (VIEW_W - 2 * PAD - w * scale) / 2;
+    var oy = PAD - minY * scale + (viewH - 2 * PAD - h * scale) / 2;
+    var svg = el('svg', { xmlns: NS, viewBox: '0 0 ' + VIEW_W + ' ' + viewH });
+    svg.setAttribute('width', VIEW_W); svg.setAttribute('height', viewH);
+    var d = border.shape.map(function (pt, i) { var p = toLocal(pt[0], pt[1]); return (i === 0 ? 'M' : 'L') + (p.x * scale + ox) + ' ' + (p.y * scale + oy); }).join(' ') + ' Z';
+    svg.appendChild(el('path', { d: d, fill: '#c8e6c9', stroke: '#2e7d32', 'stroke-width': 2 }));
+    placed.forEach(function (plant) {
+      var p = toLocal(plant.pos.lat, plant.pos.lng);
+      var cx = p.x * scale + ox, cy = p.y * scale + oy;
+      var r = Math.max(Math.min((VIEW_W / 100) * (plantSpacingCm(plant) / 100) * scale, 22), 9);
+      var g = el('g', {});
+      g.appendChild(el('circle', { cx: cx, cy: cy, r: r, fill: colorHex(plant.kleur), stroke: '#333', 'stroke-width': 1 }));
+      var txt = el('text', { x: cx, y: cy, 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-size': Math.max(Math.min(r * 0.9, 12), 8), 'font-weight': 600, fill: '#111', 'paint-order': 'stroke', stroke: '#fff', 'stroke-width': 1.2 });
+      txt.textContent = shortName[plant.latijnseNaam];
+      g.appendChild(txt);
+      svg.appendChild(g);
+    });
+    wrap.appendChild(svg);
+  })();
+  function plantSpacingCm(plant) {
+    var hgt = Number(plant.hoogteTot) || Number(plant.hoogteVan) || 0;
+    if (!hgt || hgt <= 25) return 22;
+    if (hgt <= 50) return 30;
+    if (hgt <= 80) return 38;
+    return 55;
+  }
+
+  // ==== Alfabetische tabel ====
+  var counts = {};
+  placed.forEach(function (p) { counts[p.latijnseNaam] = (counts[p.latijnseNaam] || 0) + 1; });
+  var sorted = NAMES.slice().sort(function (a, b) { return a.localeCompare(b, 'nl'); });
+  var body = document.getElementById('plantBody');
+  body.innerHTML = sorted.map(function (name) {
+    var p = placed.find(function (q) { return q.latijnseNaam === name; });
+    return '<tr>' +
+      '<td class="nr"><span class="sw" style="background:' + colorHex(p.kleur) + '"></span> ' + number[name] + '</td>' +
+      '<td>' + esc(p.nlNaam || '') + '</td>' +
+      '<td><em>' + esc(name) + '</em></td>' +
+      '<td>' + esc(p.kleur || '') + '</td>' +
+      '<td>' + esc(p.standplaats || '') + '</td>' +
+      '<td>' + fmtH(p) + '</td>' +
+      '<td>' + fmtBloeiperiode(p) + '</td>' +
+      '<td class="aan">\u00d7' + (counts[name] || 1) + '</td>' +
+      '</tr>';
+  }).join('') || '<tr><td colspan="8">Nog geen geplaatste planten in deze border.</td></tr>';
+
+  document.getElementById('printBtn').addEventListener('click', function () { window.print(); });
+  document.getElementById('closeBtn').addEventListener('click', function () { window.close(); });
+  document.getElementById('legend').innerHTML = 'Elke plant heeft een afkorting in de tekening. Komen afkortingen vaker voor, dan krijgt elke plant een oplopend nummer achter de afkorting (bv. \u201cAsAg1\u201d, \u201cAsAg2\u201d); het nummer in de lijst (kolom \u201cNr.\u201d) verwijst naar de alfabetische volgorde. ' +
+    sorted.length + ' soorten, ' + placed.length + ' planten totaal.';
+  document.getElementById('foot').textContent = 'Tuinplantplan \u2014 gegenereerd op ' + new Date().toLocaleString('nl-NL');
+})();
+</script>
+</body>
+</html>
