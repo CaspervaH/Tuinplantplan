@@ -360,6 +360,27 @@ window.PlantPicker = (function () {
     return Math.abs(twice) / 2;
   }
 
+  // CamelCase-afkorting met letterbudget: "Aster ageratoides 'Ashvi'"
+  // -> 6 tekens "AstAge", 4 tekens "AsAg", 2 tekens "AS".
+  // Alleen letters, geen quotes/apostroffen of andere tekens.
+  function plantShortName(latijnseNaam, maxChars) {
+    var max = Math.max(Number(maxChars) || 2, 2);
+    var words = String(latijnseNaam || '').trim().split(/\s+/).map(function (w) {
+      return w.replace(/[^A-Za-z]/g, '');
+    }).filter(function (w) { return w.length; });
+    if (!words.length) return '';
+    if (words.length === 1) {
+      var one = words[0].slice(0, max);
+      return one.charAt(0).toUpperCase() + one.slice(1).toLowerCase();
+    }
+    var firstLen = Math.ceil(max / 2);
+    var restLen = Math.max(max - firstLen, 1);
+    var a = words[0].slice(0, firstLen);
+    var b = words[1].slice(0, restLen);
+    return a.charAt(0).toUpperCase() + a.slice(1).toLowerCase() +
+      b.charAt(0).toUpperCase() + b.slice(1).toLowerCase();
+  }
+
   function plantInitials(latijnseNaam, lettersPerWord) {
     var per = lettersPerWord || 1;
     var parts = String(latijnseNaam || '').trim().split(/\s+/).filter(Boolean);
@@ -393,6 +414,7 @@ window.PlantPicker = (function () {
     borderAreaM2: borderAreaM2,
     borderAreaTxt: borderAreaTxt,
     plantInitials: plantInitials,
+    plantShortName: plantShortName,
     plantSpacingCm: plantSpacingCm,
     renderSummary: renderSummary,
     monthIndex: monthIndex,
