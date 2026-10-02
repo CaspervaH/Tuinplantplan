@@ -119,11 +119,19 @@
       '<a href="' + it.pagina + '" target="_blank" rel="noopener">Wikimedia Commons</a></div></div>';
   }
 
+  function ecosiaUrl(naam) {
+    var q = String(naam || '').replace(/['\u2019]/g, '');
+    q = q.replace(/\s+/g, ' ').trim();
+    return 'https://www.ecosia.org/images?q=' + encodeURIComponent(q);
+  }
+
   function toonFotos(naam, nlNaam) {
     var m = ensureModal();
     m.innerHTML = '<div style="background:#fff;max-width:960px;margin:20px auto;border-radius:10px;padding:18px;">' +
       '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;">' +
-      '<h3 style="margin:0;">' + naam + (nlNaam ? ' <span style="font-weight:400;font-size:14px;">(' + nlNaam + ')</span>' : '') + '</h3>' +
+      '<h3 style="margin:0;">' + naam + (nlNaam ? ' <span style="font-weight:400;font-size:14px;">(' + nlNaam + ')</span>' : '') +
+      ' <a href="' + ecosiaUrl(naam) + '" target="_blank" rel="noopener" title="Plaatjes zoeken op Ecosia" ' +
+      'style="font-size:13px;font-weight:400;color:#1a6b4a;text-decoration:underline;">&#128269; Plaatjes zoeken op Ecosia</a></h3>' +
       '<button id="plantfotoSluit" style="border:none;background:#eee;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:16px;">&#10005;</button></div>' +
       '<div id="plantfotoInhoud" style="margin-top:12px;color:#666;">Foto\'s zoeken op Wikimedia Commons...</div></div>';
     m.style.display = 'block';

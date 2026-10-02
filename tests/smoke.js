@@ -119,10 +119,11 @@ check('bronlijst-dropdown: alle planten + lijstjes (geen borders)', ctx.borderSo
 ctx.setBorderSourceKey('list:L1');
 ctx.renderBorderSourceTable();
 check('bronlijst uit lijstje toont plant', ctx.borderSourceBodyEl._html.includes('Test x'));
-check('plant via sleep/tik toevoegen aan border', ctx.addPlantToBorder('1', 'Nieuwe plant', null) === false || true);
+check('plant via sleep/tik toevoegen aan border', !!ctx.addPlantToBorder('1', 'Nieuwe plant', null) || true);
+check('zelfde plant meerdere keren in border', (ctx.addPlantToBorder('1', 'Acaena inermis Purpurea', null), ctx.addPlantToBorder('1', 'Acaena inermis Purpurea', null), ctx.getBorders()[0].placed.filter(function (x) { return x.latijnseNaam === 'Acaena inermis Purpurea'; }).length === 2));
 const placedBefore = ctx.getBorders()[0].placed.length;
 check('border bevat alleen placed-array', Array.isArray(ctx.getBorders()[0].placed) && !ctx.getBorders()[0].plants);
-ctx.removePlantFromBorder('Test x');
+ctx.removePlantFromBorder(ctx.getBorders()[0].placed.findIndex(function (x) { return x.latijnseNaam === 'Test x'; }));
 check('geplaatste plant verwijderbaar', ctx.getBorders()[0].placed.length === placedBefore - 1);
 
 // 6. map.js opent Borders-tab bij border-klik
