@@ -160,7 +160,7 @@ function esc(s) {
 }
 function openBorderEditor(borderId) {
   if (drawMode || freehandOn || circleMode) return;
-  try { localStorage.setItem('activeTab', 'borders'); } catch (e) {}
+  try { localStorage.setItem('activeTab', 'planten'); } catch (e) {}
   try { localStorage.setItem('openBorderId', borderId); } catch (e) {}
   window.location.href = 'index.html';
 }
