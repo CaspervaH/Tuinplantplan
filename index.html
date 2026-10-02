@@ -1045,15 +1045,17 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
                     const m = el('circle', { cx: p.x, cy: p.y, r: r0, fill: getColorHex(plant.kleur), stroke: '#333', 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke' });
                     m.style.cursor = 'move';
                     const cm = PlantPicker.plantSpacingCm ? PlantPicker.plantSpacingCm(plant.hoogteTot, plant.hoogteVan) : 30;
-                    const maxChars = Math.max(Math.floor(r0 * 2.2), 2);
+                    const scr = base() * view.scale;
+                    const rScr = r0 * scr;
+                    const maxChars = Math.max(Math.min(Math.floor(rScr / 3.4), 10), 2);
                     const init = PlantPicker.plantShortName(plant.latijnseNaam, maxChars);
                     const lines = init.length > maxChars && init.length >= 4
                         ? [init.slice(0, Math.ceil(init.length / 2)), init.slice(Math.ceil(init.length / 2))]
                         : [init];
-                    const fs = lines.length === 1
-                        ? Math.min(r0 * 0.9, (r0 * 1.7) / Math.max(init.length, 1))
-                        : Math.min(r0 * 0.62, (r0 * 1.6) / Math.max(lines[0].length, lines[1].length, 1));
-                    const txt = el('text', { x: p.x, y: p.y, 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-weight': '700', fill: '#111', 'pointer-events': 'none', 'paint-order': 'stroke', stroke: '#ffffff', 'stroke-width': r0 * 0.15, 'stroke-linejoin': 'round' });
+                    const fs = (lines.length === 1
+                        ? Math.min(rScr * 0.85, (rScr * 1.6) / Math.max(init.length, 1))
+                        : Math.min(rScr * 0.58, (rScr * 1.5) / Math.max(lines[0].length, lines[1].length, 1))) / scr;
+                    const txt = el('text', { x: p.x, y: p.y, 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-weight': '500', fill: '#111', 'pointer-events': 'none', 'paint-order': 'stroke', stroke: '#ffffff', 'stroke-width': fs * 0.12, 'stroke-linejoin': 'round' });
                     txt.setAttribute('font-size', fs);
                     lines.forEach(function (ln, li) {
                         const ts = el('tspan', { x: p.x, dy: li === 0 ? (lines.length === 1 ? 0 : -fs * 0.55) : fs * 1.1 });
