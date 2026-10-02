@@ -276,7 +276,7 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
                             <div id="plantPickerContainer"></div>
                         </div>
                         <div id="pvViewBorder" class="pv-view">                            <div id="borderDropZone">                                <h3 id="activeBorderName"></h3>                                <div class="border-3col">                                    <div class="border-col border-shape-col">                                        <div id="borderShapeBox"></div>                                        <p class="sl-tip" id="borderShapeHint" style="display:none;">Sleep een plant uit de bronlijst naar de tekening om hem te plaatsen; sleep een geplaatste plant (het gekleurde bolletje) om te verplaatsen (klik op een bolletje = positie wissen). Klik ook een plant in de bronlijst aan en tik daarna in de tekening om hem zonder slepen te plaatsen.</p>                                        <div id="borderSummary"></div>                                        <h4>Geplaatste planten</h4>                                        <div style="overflow-x: auto;">                                            <table class="sl-table" id="borderPlacedTable">                                                <thead><tr>                                                    <th class="sl-c-sel"></th>                                                    <th class="sl-c-plant">Plant</th>                                                    <th class="sl-c-kleur">Kleur</th>                                                    <th class="sl-c-sp" title="Zon">Z</th>                                                    <th class="sl-c-sp" title="Halfschaduw">HS</th>                                                    <th class="sl-c-sp" title="Schaduw">S</th>                                                    <th class="sl-c-hoogte" title="De balk loopt van 0 tot 2 meter">Hoogte <span class="sl-h-sub">(0&ndash;2 m)</span></th>                                                    <th class="sl-c-m" title="januari">jan</th>                                                    <th class="sl-c-m" title="februari">feb</th>                                                    <th class="sl-c-m" title="maart">mrt</th>                                                    <th class="sl-c-m" title="april">apr</th>                                                    <th class="sl-c-m" title="mei">mei</th>                                                    <th class="sl-c-m" title="juni">jun</th>                                                    <th class="sl-c-m" title="juli">jul</th>                                                    <th class="sl-c-m" title="augustus">aug</th>                                                    <th class="sl-c-m" title="september">sep</th>                                                    <th class="sl-c-m" title="oktober">okt</th>                                                    <th class="sl-c-m" title="november">nov</th>                                                    <th class="sl-c-m" title="december">dec</th>                                                    <th class="sl-c-cnt" title="Aantal exemplaren in deze border">&#215;</th>                                                </tr></thead>                                                <tbody id="borderPlacedBody"></tbody>                                            </table>                                        </div>                                    </div>                                    <div class="border-col border-source-col">                                        <div class="filter-controls">                                            <select id="borderSourceList"></select>                                        </div>                                        <div class="filter-controls">                                            <input type="text" id="borderSourceSearch" placeholder="Zoeken in bronlijst...">                                        </div>                                        <div style="overflow-x: auto; max-height: 70vh; overflow-y: auto;">                                            <table class="sl-table" id="borderSourceTable">                                                <thead><tr>                                                    <th class="sl-c-sel" title="Sleep naar de vorm, of klik aan en tik in de vorm">&#8963;</th>                                                    <th class="sl-c-plant">Plant</th>                                                    <th class="sl-c-kleur">Kleur</th>                                                    <th class="sl-c-sp" title="Zon">Z</th>                                                    <th class="sl-c-sp" title="Halfschaduw">HS</th>                                                    <th class="sl-c-sp" title="Schaduw">S</th>                                                    <th class="sl-c-hoogte" title="De balk loopt van 0 tot 2 meter">Hoogte <span class="sl-h-sub">(0&ndash;2 m)</span></th>                                                    <th class="sl-c-m" title="januari">jan</th>                                                    <th class="sl-c-m" title="februari">feb</th>                                                    <th class="sl-c-m" title="maart">mrt</th>                                                    <th class="sl-c-m" title="april">apr</th>                                                    <th class="sl-c-m" title="mei">mei</th>                                                    <th class="sl-c-m" title="juni">jun</th>                                                    <th class="sl-c-m" title="juli">jul</th>                                                    <th class="sl-c-m" title="augustus">aug</th>                                                    <th class="sl-c-m" title="september">sep</th>                                                    <th class="sl-c-m" title="oktober">okt</th>                                                    <th class="sl-c-m" title="november">nov</th>                                                    <th class="sl-c-m" title="december">dec</th>                                                    <th class="sl-c-cnt" title="Aantal exemplaren in deze border">&#215;</th>
-                                                    <th class="sl-c-del"></th>                                                </tr></thead>                                                <tbody id="borderSourceBody"></tbody>                                            </table>                                        </div>                                        <p class="sl-tip">Kies bovenin uit welke lijst je planten in de border plaatst: alle planten of een van je lijstjes. Sleep een plant naar de vorm, of klik een rij aan en tik in de vorm.</p>                                    </div>                                </div>                                <div style="margin-top: 8px;">                                    <button class="btn btn-danger" id="clearBorderBtn">Border leegmaken</button>                                </div>                            </div>                        </div>                        <div id="pvViewList" class="pv-view">
+                                                    <th class="sl-c-del"></th>                                                </tr></thead>                                                <tbody id="borderSourceBody"></tbody>                                            </table>                                        </div>                                        <p class="sl-tip">Kies bovenin uit welke lijst je planten in de border plaatst: alle planten of een van je lijstjes. Sleep een plant naar de vorm, of klik een rij aan en tik in de vorm.</p>                                    </div>                                </div>                                <div style="margin-top: 8px;">                                    <button class="btn btn-primary" id="borderToListBtn" title="Alle geplaatste planten van deze border in &#233;&#233;n keer toevoegen aan een bestaand of nieuw lijstje">&#10133; Naar lijstje</button><button class="btn btn-danger" id="clearBorderBtn">Border leegmaken</button>                                </div>                            </div>                        </div>                        <div id="pvViewList" class="pv-view">
                             <h3 id="plantListTitle">Lijstje</h3>
                             <div class="filter-controls">
                                 <input type="text" id="plantListSearch" placeholder="Zoeken in dit lijstje...">
@@ -1192,6 +1192,79 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
 
         // Event listeners
         document.getElementById('clearBorderBtn').addEventListener('click', clearBorder);
+        document.getElementById('borderToListBtn').addEventListener('click', function () { openBorderToListDialog(); });
+
+        // ==== Alle geplaatste planten van een border in &#233;&#233;n keer naar een lijstje ====
+        function openBorderToListDialog() {
+            const border = borders.find(b => b.id === activeBorderId);
+            if (!border) return;
+            const placed = border.placed || [];
+            if (!placed.length) { alert('Er staan nog geen planten in deze border.'); return; }
+            let html = '<p style="margin:0 0 10px;font-size:13px;">Kies een lijstje of maak een nieuw lijstje voor de ' + placed.length + ' geplaatste plant(en) van border <strong>' + esc(border.name) + '</strong>:</p>';
+            html += '<select id="borderToListSelect" style="width:100%;padding:6px 8px;border:1px solid #dee2e6;border-radius:4px;font-size:13px;margin-bottom:8px;">';
+            html += '<option value="">– Nieuw lijstje maken –</option>';
+            plantLists.forEach(function (l) {
+                html += '<option value="' + esc(l.id) + '">' + esc(l.name) + ' (' + l.plants.length + ' planten)</option>';
+            });
+            html += '</select>';
+            html += '<input type="text" id="borderToListName" placeholder="Naam nieuw lijstje" style="width:100%;padding:6px 8px;border:1px solid #dee2e6;border-radius:4px;font-size:13px;">';
+            showCustomDialog('Geplaatste planten naar lijstje', html, function () {
+                const sel = document.getElementById('borderToListSelect');
+                const nameInput = document.getElementById('borderToListName');
+                const newName = nameInput ? nameInput.value.trim() : '';
+                let listId = sel ? sel.value : '';
+                if (!listId) {
+                    const naam = newName || ('Border ' + border.name);
+                    listId = 'L' + Date.now().toString(36);
+                    plantLists.push({ id: listId, name: naam, plants: [] });
+                }
+                let toegevoegd = 0, alAanwezig = 0;
+                const list = plantLists.find(l => l.id === listId);
+                if (!list) return true;
+                placed.forEach(function (p) {
+                    if (!p || !p.latijnseNaam) return;
+                    if (list.plants.some(q => q.latijnseNaam === p.latijnseNaam)) { alAanwezig++; return; }
+                    const c = JSON.parse(JSON.stringify(p));
+                    c.pos = null;
+                    list.plants.push(c);
+                    toegevoegd++;
+                });
+                saveState();
+                renderPvListList();
+                if (pvView === 'list' && plListId === listId) renderPlantList(listId);
+                if (pvView === 'border') renderBorderSourceTable();
+                alert(toegevoegd + ' plant(en) toegevoegd aan \u201c' + list.name + '\u201d' + (alAanwezig ? ' \u2014 ' + alAanwezig + ' stond(en) er al in.' : '.'));
+                return true;
+            });
+            const sel = document.getElementById('borderToListSelect');
+            if (sel) sel.addEventListener('change', function () {
+                const nameInput = document.getElementById('borderToListName');
+                if (nameInput) nameInput.style.display = sel.value ? 'none' : 'block';
+            });
+            if (sel) sel.focus();
+        }
+
+        // Klein herbruikbaar dialoogvenster (titel + body + OK/Annuleren)
+        function showCustomDialog(title, bodyHtml, onOk) {
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+            const box = document.createElement('div');
+            box.style.cssText = 'background:white;border-radius:8px;max-width:420px;width:100%;padding:16px;box-shadow:0 4px 20px rgba(0,0,0,0.3);';
+            box.innerHTML = '<h3 style="margin:0 0 8px;font-size:15px;color:var(--primary,#2e7d32);">' + title + '</h3>' +
+                '<div>' + bodyHtml + '</div>' +
+                '<div style="margin-top:12px;text-align:right;">' +
+                '<button class="btn btn-secondary" data-dlg-cancel>Annuleren</button>' +
+                '<button class="btn btn-primary" data-dlg-ok>Toevoegen</button></div>';
+            overlay.appendChild(box);
+            document.body.appendChild(overlay);
+            const close = function () { document.body.removeChild(overlay); };
+            box.querySelector('[data-dlg-cancel]').addEventListener('click', close);
+            overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
+            box.querySelector('[data-dlg-ok]').addEventListener('click', function () {
+                if (!onOk || onOk() !== false) close();
+            });
+            return { close: close, box: box };
+        }
         document.getElementById('addListBtn').addEventListener('click', createPlantList);
 
         // Init: render alles bij het laden van de pagina
