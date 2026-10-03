@@ -834,12 +834,6 @@ gardenMap.on('zoomend', function () {
     selectShape(selectedShape.kind, selectedShape.obj, selectedShape.arr);
   }
 });
-document.getElementById('mapLocateBtn').addEventListener('click', function () {
-  if (!navigator.geolocation) { alert('Geolocatie wordt niet ondersteund.'); return; }
-  navigator.geolocation.getCurrentPosition(function (pos) {
-    gardenMap.setView([pos.coords.latitude, pos.coords.longitude], 19);
-  }, function () { alert('Kon locatie niet bepalen.'); });
-});
 document.getElementById('mapKadasterToggle').addEventListener('change', function (e) {
   if (parcelMode) { e.target.checked = false; return; }
   if (e.target.checked) { kadasterLayer.addTo(gardenMap); } else { gardenMap.removeLayer(kadasterLayer); }
@@ -968,11 +962,4 @@ function selectParcel(feature, poly) {
   var db = document.getElementById('mapParcelBtn');
   if (!db) return;
   db.addEventListener('click', function () { setParcelMode(!parcelMode); });
-})();
-
-// Backup-module (export/import van plannerdata als JSON) laden
-(function () {
-  var s = document.createElement('script');
-  s.src = 'backup.js';
-  document.head.appendChild(s);
 })();
