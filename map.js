@@ -70,7 +70,13 @@ function showDistances(points, closed) {
     var a = points[i], b = points[(i + 1) % points.length];
     var d = distanceMeters(a, b);
     total += d;
-    L.marker([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], {
+    var pa = gardenMap.latLngToLayerPoint(a), pb = gardenMap.latLngToLayerPoint(b);
+    var mx = (pa.x + pb.x) / 2, my = (pa.y + pb.y) / 2;
+    var dx = pb.x - pa.x, dy = pb.y - pa.y;
+    var len = Math.sqrt(dx * dx + dy * dy) || 1;
+    var off = 15;
+    var lp = gardenMap.layerPointToLatLng([mx - (dy / len) * off, my + (dx / len) * off]);
+    L.marker([lp.lat, lp.lng], {
       interactive: false,
       icon: L.divIcon({ className: 'dist-label', iconSize: [0, 0], html: fmtDist(d) })
     }).addTo(distLayer);
@@ -179,29 +185,34 @@ function renderMap() {
       if (isSel) polyOpts.dashArray = '8 4';
       var poly = L.polygon(border.shape, polyOpts).addTo(mapShapeLayer);
       var areaTxt = PlantPicker.borderAreaTxt(border.shape);
-      poly.bindTooltip(border.name + (areaTxt ? ' \u2014 ' + areaTxt : '') + (editVerticesMode ? ' \u2014 klik om hoekpunten te slepen' : ' \u2014 klik om te bewerken'));
+      poly.bindTooltip(border.name + (areaTxt ? ' \u2014 ' + areaTxt : '') + (editVerticesMode ? ' \u2014 klik om hoekpunten te slepen' : ''));
       poly.on('click', function (ev) {
         if (drawMode || freehandOn || circleMode) { L.DomEvent.stopPropagation(ev); return; }
         if (editVerticesMode) { selectShape('border', border, borders); }
-        else { openBorderEditor(border.id); }
       });
     }
     (border.placed || []).forEach(function (p) {
       if (!p.pos) return;
       var init = PlantPicker.plantShortName(p.latijnseNaam, 6);
       var hex = getColorHex(p.kleur) || '#8bc34a';
-      var w = Math.min(14 + init.length * 6, 44);
-      var icon = L.divIcon({
-        className: 'plant-dot',
-        html: '<span style="display:inline-flex;align-items:center;justify-content:center;width:' + w + 'px;height:22px;border-radius:11px;background:' + hex + ';border:1px solid #333;color:#111;font-size:9px;font-weight:500;line-height:1;white-space:nowrap;text-shadow:0 0 2px #fff;padding:0 4px;">' + init + '</span>',
-        iconSize: [w, 22],
-        iconAnchor: [Math.round(w / 2), 11]
-      });
-      var marker = L.marker([p.pos.lat, p.pos.lng], { icon: icon }).addTo(mapMarkerLayer);
-      marker.bindTooltip('<strong>' + esc(p.nlNaam || p.latijnseNaam) + '</strong><br><em>' + esc(p.latijnseNaam) + '</em> (' + esc(border.name) + ')');
+      var rM = ((PlantPicker.plantSpacingCm ? PlantPicker.plantSpacingCm(p.hoogteTot, p.hoogteVan) : 30) / 2) / 100;
+      var circle = L.circle([p.pos.lat, p.pos.lng], {
+        radius: Math.max(rM, 0.1),
+        color: '#333', weight: 1, fillColor: hex, fillOpacity: 0.9
+      }).addTo(mapMarkerLayer);
+      circle.bindTooltip('<strong>' + esc(p.nlNaam || p.latijnseNaam) + '</strong><br><em>' + esc(p.latijnseNaam) + '</em> (' + esc(border.name) + ')');
+      var w = Math.min(12 + init.length * 6, 40);
+      var label = L.marker([p.pos.lat, p.pos.lng], {
+        interactive: false,
+        icon: L.divIcon({
+          className: 'plant-dot',
+          html: '<span style="display:inline-flex;align-items:center;justify-content:center;width:' + w + 'px;height:16px;border-radius:8px;background:rgba(255,255,255,.85);border:1px solid rgba(51,51,51,.4);color:#111;font-size:9px;font-weight:600;line-height:1;white-space:nowrap;pointer-events:none;">' + init + '</span>',
+          iconSize: [w, 16],
+          iconAnchor: [Math.round(w / 2), 8]
+        })
+      }).addTo(mapMarkerLayer);
       marker.on('click', function (ev) {
-        if (drawMode || freehandOn || circleMode) { L.DomEvent.stopPropagation(ev); return; }
-        openBorderEditor(border.id);
+        if (drawMode || freehandOn || circleMode) { L.DomEvent.stopPropagation(ev); }
       });
     });
   });
@@ -780,6 +791,9 @@ function selectShape(kind, obj, arr) {
       (function (segIdx) {
         var a = ring.pts[segIdx], b = ring.pts[(segIdx + 1) % ring.pts.length];
         var mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+        var pa2 = gardenMap.latLngToLayerPoint(a), pb2 = gardenMap.latLngToLayerPoint(b);
+        var segPx = Math.sqrt(Math.pow(pb2.x - pa2.x, 2) + Math.pow(pb2.y - pa2.y, 2));
+        if (segPx < 56) return;
         var am = L.marker(mid, {
           icon: L.divIcon({ className: ring.hole < 0 ? 'vertex-add' : 'vertex-add vertex-hole-add', iconSize: [18, 18], html: '+' })
         }).addTo(vertexLayer);
@@ -814,6 +828,11 @@ document.getElementById('mapDrawBtn').addEventListener('click', function () {
 document.getElementById('mapFinishDrawBtn').addEventListener('click', finishDraw);
 document.getElementById('mapEditShapeBtn').addEventListener('click', function () {
   setEditVertices(!editVerticesMode);
+});
+gardenMap.on('zoomend', function () {
+  if (editVerticesMode && selectedShape) {
+    selectShape(selectedShape.kind, selectedShape.obj, selectedShape.arr);
+  }
 });
 document.getElementById('mapLocateBtn').addEventListener('click', function () {
   if (!navigator.geolocation) { alert('Geolocatie wordt niet ondersteund.'); return; }
