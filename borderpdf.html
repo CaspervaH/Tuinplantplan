@@ -45,7 +45,7 @@ td.aan { text-align:center; white-space:nowrap; }
   <p class="legend" id="legend"></p>
   <h2>Plantenlijst (alfabetisch)</h2>
   <table id="plantTable">
-    <thead><tr><th>Nr.</th><th>Nederlandse naam</th><th>Latijnse naam</th><th>Afkorting</th><th>Kleur</th><th>Standplaats</th><th>Hoogte</th><th>Bloeiperiode</th><th>Aantal</th></tr></thead>
+    <thead><tr><th>Nr.</th><th>Afkorting</th><th>Latijnse naam</th><th>Nederlandse naam</th><th>Kleur</th><th>Standplaats</th><th>Hoogte</th><th>Bloeiperiode</th><th>Aantal</th></tr></thead>
     <tbody id="plantBody"></tbody>
   </table>
   <p class="legend" id="foot"></p>
@@ -135,8 +135,25 @@ td.aan { text-align:center; white-space:nowrap; }
       var r = Math.max((plantSpacingCm(plant) / 2) / 100 * scale, 1);
       var g = el('g', {});
       g.appendChild(el('circle', { cx: cx, cy: cy, r: r, fill: colorHex(plant.kleur), stroke: '#333', 'stroke-width': 1 }));
-      var txt = el('text', { x: cx, y: cy, 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-size': Math.max(r * 0.9, 7), 'font-weight': 600, fill: '#111', 'paint-order': 'stroke', stroke: '#fff', 'stroke-width': 1.2 });
-      txt.textContent = shortName[plant.latijnseNaam];
+      var label = shortName[plant.latijnseNaam] || '?';
+      var m = label.match(/^([A-Za-z]+)(\d+)$/);
+      var lines = [label];
+      var CH = 0.62;
+      var fit = function (txt, maxW, maxH) { return Math.max(Math.min(maxW / (CH * txt.length), maxH), 4); };
+      var fs;
+      if (label.length * CH * Math.max(r * 0.9, 7) > r * 1.8 && m) {
+        lines = [m[1], m[2]];
+        fs = Math.min(fit(m[1], r * 1.7, r * 0.75), fit(m[2], r * 1.7, r * 0.75));
+      } else {
+        fs = fit(label, r * 1.8, r * 0.9);
+      }
+      var txt = el('text', { x: cx, y: cy, 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-size': fs, 'font-weight': 600, fill: '#111', 'paint-order': 'stroke', stroke: '#fff', 'stroke-width': Math.max(fs * 0.14, 0.6) });
+      lines.forEach(function (ln, li) {
+        var t = el('tspan', { x: cx });
+        if (lines.length === 2) t.setAttribute('y', cy + (li === 0 ? -fs * 0.55 : fs * 0.55));
+        t.textContent = ln;
+        txt.appendChild(t);
+      });
       g.appendChild(txt);
       svg.appendChild(g);
     });
@@ -159,9 +176,9 @@ td.aan { text-align:center; white-space:nowrap; }
     var p = placed.find(function (q) { return q.latijnseNaam === name; });
     return '<tr>' +
       '<td class="nr"><span class="sw" style="background:' + colorHex(p.kleur) + '"></span> ' + number[name] + '</td>' +
-      '<td>' + esc(p.nlNaam || '') + '</td>' +
+      '<td class="nr">' + esc(shortName[name] || '') + '</td>' +
       '<td><em>' + esc(name) + '</em></td>' +
-      '<td>' + esc(shortName[name] || '') + '</td>' +
+      '<td>' + esc(p.nlNaam || '') + '</td>' +
       '<td>' + esc(p.kleur || '') + '</td>' +
       '<td>' + esc(p.standplaats || '') + '</td>' +
       '<td>' + fmtH(p) + '</td>' +
@@ -172,7 +189,7 @@ td.aan { text-align:center; white-space:nowrap; }
 
   document.getElementById('printBtn').addEventListener('click', function () { window.print(); });
   document.getElementById('closeBtn').addEventListener('click', function () { window.close(); });
-  document.getElementById('legend').innerHTML = 'Elke plant heeft een afkorting in de tekening. Komen afkortingen vaker voor, dan krijgt elke plant een oplopend nummer achter de afkorting (bv. \u201cAsAg1\u201d, \u201cAsAg2\u201d); het nummer in de lijst (kolom \u201cNr.\u201d) verwijst naar de alfabetische volgorde. ' +
+  document.getElementById('legend').innerHTML = 'Elke plant heeft een afkorting in de tekening (kolom \u201cAfkorting\u201d). Komen afkortingen vaker voor, dan krijgt elke plant een oplopend nummer achter of onder de afkorting (bv. \u201cAsAg1\u201d, \u201cAsAg2\u201d). Het nummer in kolom \u201cNr.\u201d verwijst naar de alfabetische volgorde. ' +
     sorted.length + ' soorten, ' + placed.length + ' planten totaal.';
   document.getElementById('foot').textContent = 'Tuinplantplan \u2014 gegenereerd op ' + new Date().toLocaleString('nl-NL');
 })();
