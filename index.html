@@ -91,8 +91,30 @@ body.has-address #addressGate { display: none; }
 .map-section { background: #f0f8ff; border-left: 3px solid #4682b4; }
 .map-controls { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; align-items: center; }
 .map-controls select { padding: 6px; border-radius: 4px; border: 1px solid var(--border); min-width: 160px; }
-#gardenMap { height: calc(100vh - 260px); min-height: 420px; max-height: 900px; border-radius: 6px; border: 1px solid var(--border); }
-.map-help { font-size: 12px; color: #666; margin-top: 6px; }
+#gardenMap { flex: 1; min-height: 0; border-radius: 6px; border: 1px solid var(--border); }
+#tab-ontwerp { display: flex; flex-direction: column; flex: 1; min-height: 0; padding-bottom: 0; }
+#tab-ontwerp.active { display: flex; }
+#tab-ontwerp > h2 { display: none; }
+.tab-pane#tab-ontwerp.active { display: flex; }
+#tab-ontwerp .map-section { flex: 1; min-height: 0; display: flex; flex-direction: column; margin-bottom: 0; }
+#tab-ontwerp .map-section > h3 { display: none; }
+.map-wrap { flex: 1; min-height: 0; display: flex; gap: 8px; }
+#mapShapeSidebar { flex: 0 0 200px; max-width: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; background: #fff; border: 1px solid var(--border); border-radius: 6px; padding: 8px; }
+#mapShapeSidebarList { display: flex; flex-direction: column; gap: 6px; }
+#mapShapeSidebar .pv-side-btn { text-align: left; background: #fff; border: 1px solid var(--border); border-radius: 5px; padding: 7px 8px; font-size: 13px; cursor: pointer; color: var(--text); }
+#mapShapeSidebar .pv-side-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.map-mapcol { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.map-help { display: none; }
+body.ontwerp-full { overflow: hidden; }
+body.ontwerp-full .container { height: calc(100vh - 20px); display: flex; flex-direction: column; }
+body.ontwerp-full .container > h1 { font-size: 1.05rem; margin-bottom: 4px; }
+body.ontwerp-full .address-title { margin-bottom: 4px; font-size: .85rem; }
+body.ontwerp-full #mainTabs { margin-bottom: 8px; }
+body.ontwerp-full #mainTabs .tabs { margin-bottom: 8px; }
+body.ontwerp-full #gardenObjectList { display: none; }
+.shape-row { display: flex; align-items: stretch; gap: 4px; }
+.shape-row .pv-side-btn { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.shape-del { flex: 0 0 auto; border: 1px solid #e0e0e0; background: #fff; color: #b71c1c; border-radius: 5px; cursor: pointer; font-size: 13px; padding: 0 7px; }
 .leaflet-container { font: inherit; }
 /* === Shortlist-tabel (per geslacht, kolommen) === */
 .plant-svg-tip { position: fixed; background: #fff; border: 1px solid #dee2e6; border-radius: 4px; padding: 4px 8px; font-size: 12px; color: #212529; box-shadow: 0 1px 4px rgba(0,0,0,.2); pointer-events: none; z-index: 9999; max-width: 220px; }
@@ -215,13 +237,21 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
     <button class="btn btn-primary" id="mapDrawBtn">Vorm intekenen</button>
     <button class="btn btn-primary" id="mapFinishDrawBtn" style="display:none;">Klaar &#10003;</button>
     <span id="mapDrawStatus" class="map-draw-status" style="display:none;"></span>
-    <button class="btn btn-secondary" id="mapEditShapeBtn">&#128070; Hoekpunten slepen</button>
+    
     <button class="btn btn-secondary" id="mapParcelBtn">&#128205; Perceel tonen</button>    <label style="font-size:13px; display:flex; align-items:center; gap:4px;"><input type="checkbox" id="mapKadasterToggle" checked> Kadastrale kaart</label>
   </div>
-  <div id="gardenMap"></div>
+  <div class="map-wrap">
+    <div id="mapShapeSidebar">
+      <div class="pv-side-group">Vormen</div>
+      <div id="mapShapeSidebarList"></div>
+    </div>
+    <div class="map-mapcol">
+      <div id="gardenMap"></div>
+    </div>
+  </div>
   <p class="map-help">Kies een vorm, klik de hoekpunten op de kaart (dubbelklik of &quot;Klaar&quot; sluit af). Met &quot;Hoekpunten slepen&quot; versleep je hoekpunten (rechtsklik = verwijderen); de afstanden tussen hoekpunten verschijnen vanzelf. Met &quot;Perceel tonen&quot; zie je alleen je kadastrale perceelgrenzen en bebouwing als scherpe vectoren — onbeperkt inzoombaar.</p>
 </div>
-            <p class="settings-note">Teken hier je borders en tuinobjecten (terras, pad, haag, gazon, ...). Onder de kaart staat de lijst met getekende tuinobjecten; via Instellingen kun je een ontwerp-JSON importeren.</p>
+            
             <div id="gardenObjectList"></div>
         </div>
         <div class="section tab-pane" id="tab-planten" data-tabpane="planten">
@@ -1179,6 +1209,7 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
             });
             try { localStorage.setItem('activeTab', name); } catch (e) { }
             if (name === 'planten' && pvView !== 'border' && pvView !== 'list') setPvView('planten');
+            document.body.classList.toggle('ontwerp-full', name === 'ontwerp');
             if (name === 'ontwerp' && window.gardenMap) {
                 setTimeout(function () { gardenMap.invalidateSize(); }, 50);
                 setTimeout(function () { gardenMap.invalidateSize(); }, 400);
