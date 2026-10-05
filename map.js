@@ -18,19 +18,16 @@ var gardenMap = L.map('gardenMap', { maxZoom: 28 }).setView(
   savedMapView ? [savedMapView.lat, savedMapView.lng] : [52.1, 5.3],
   savedMapView ? savedMapView.zoom : 12
 );
-var shapesOnlySaved = false;
-try { shapesOnlySaved = localStorage.getItem('mapShapesOnly') === '1'; } catch (e) {}
-
 var osmLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 28, maxNativeZoom: 19, attribution: '&copy; OpenStreetMap'
 });
-if (!shapesOnlySaved) osmLayer.addTo(gardenMap);
+osmLayer.addTo(gardenMap);
 // Kadastrale kaart als WMTS-tegels (betrouwbaar, ook op hoog zoomniveau)
 var kadasterLayer = L.tileLayer('https://service.pdok.nl/kadaster/brk-kadastralekaart/wmts/v5_0/Kadastralekaart/EPSG:3857/{z}/{x}/{y}.png', {
   maxZoom: 28, maxNativeZoom: 19, opacity: 0.9, minZoom: 14,
   attribution: 'Kadastrale kaart: PDOK / Kadaster'
 });
-if (!shapesOnlySaved) kadasterLayer.addTo(gardenMap);
+kadasterLayer.addTo(gardenMap);
 
 var mapShapeLayer = L.layerGroup().addTo(gardenMap);
 var mapObjectLayer = L.layerGroup().addTo(gardenMap);
@@ -164,6 +161,29 @@ function saveMapView() {
 }
 gardenMap.on('moveend zoomend', saveMapView);
 
+// Plantenmarkering op de kaart: zelfde stijl als in het borderontwerp —
+// gevulde bol ter grootte van de plantafstand met de afkorting erin
+function plantMarkerIcon(p, rM) {
+  var maxChars = 10;
+  var init = PlantPicker.plantShortName(p.latijnseNaam, maxChars);
+  var rPx = Math.max((rM / metersPerPixel()), 4);
+  var fit = Math.max(Math.min(Math.floor(rPx / 3.4), 10), 2);
+  var txt = init.length > fit ? PlantPicker.plantShortName(p.latijnseNaam, fit) : init;
+  var lines = txt.length > fit && txt.length >= 4
+    ? [txt.slice(0, Math.ceil(txt.length / 2)), txt.slice(Math.ceil(txt.length / 2))]
+    : [txt];
+  var fs = lines.length === 1
+    ? Math.min(rPx * 0.85, (rPx * 1.6) / Math.max(txt.length, 1))
+    : Math.min(rPx * 0.58, (rPx * 1.5) / Math.max(lines[0].length, lines[1].length, 1));
+  var html = '<svg width="' + (rPx * 2 + 8) + '" height="' + (rPx * 2 + 8) + '" viewBox="' + (-(rPx + 4)) + ' ' + (-(rPx + 4)) + ' ' + (rPx * 2 + 8) + ' ' + (rPx * 2 + 8) + '" style="overflow:visible;display:block;">' +
+    '<circle r="' + rPx + '" fill="' + (getColorHex(p.kleur) || '#8bc34a') + '" stroke="#333" stroke-width="1"/>' +
+    '<text text-anchor="middle" y="' + (lines.length === 1 ? 0 : -fs * 0.55) + '" dy="0.35em" font-size="' + fs + '" font-weight="500" fill="#111" stroke="#fff" stroke-width="' + (fs * 0.12) + '" stroke-linejoin="round" paint-order="stroke">' +
+    lines.map(function (ln, li) { return '<tspan x="0"' + (li ? ' dy="' + (fs * 1.1) + '"' : '') + '>' + esc(ln) + '</tspan>'; }).join('') +
+    '</text></svg>';
+  var s = Math.round(rPx * 2 + 8);
+  return L.divIcon({ className: 'plant-dot', html: html, iconSize: [s, s], iconAnchor: [Math.round(s / 2), Math.round(s / 2)] });
+}
+
 // ===== Alle borders op de kaart tonen =====
 function esc(s) {
   return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -197,24 +217,9 @@ function renderMap() {
     }
     (border.placed || []).forEach(function (p) {
       if (!p.pos) return;
-      var init = PlantPicker.plantShortName(p.latijnseNaam, 6);
-      var hex = getColorHex(p.kleur) || '#8bc34a';
       var rM = ((PlantPicker.plantSpacingCm ? PlantPicker.plantSpacingCm(p.hoogteTot, p.hoogteVan) : 30) / 2) / 100;
-      var circle = L.circle([p.pos.lat, p.pos.lng], {
-        radius: Math.max(rM, 0.1),
-        color: '#333', weight: 1, fillColor: hex, fillOpacity: 0.9
-      }).addTo(mapMarkerLayer);
-      circle.bindTooltip('<strong>' + esc(p.nlNaam || p.latijnseNaam) + '</strong><br><em>' + esc(p.latijnseNaam) + '</em> (' + esc(border.name) + ')');
-      var w = Math.min(12 + init.length * 6, 40);
-      var label = L.marker([p.pos.lat, p.pos.lng], {
-        interactive: false,
-        icon: L.divIcon({
-          className: 'plant-dot',
-          html: '<span style="display:inline-flex;align-items:center;justify-content:center;width:' + w + 'px;height:16px;border-radius:8px;background:rgba(255,255,255,.85);border:1px solid rgba(51,51,51,.4);color:#111;font-size:9px;font-weight:600;line-height:1;white-space:nowrap;pointer-events:none;">' + init + '</span>',
-          iconSize: [w, 16],
-          iconAnchor: [Math.round(w / 2), 8]
-        })
-      }).addTo(mapMarkerLayer);
+      var mk = L.marker([p.pos.lat, p.pos.lng], { icon: plantMarkerIcon(p, rM) }).addTo(mapMarkerLayer);
+      mk.bindTooltip('<strong>' + esc(p.nlNaam || p.latijnseNaam) + '</strong><br><em>' + esc(p.latijnseNaam) + '</em> (' + esc(border.name) + ')');
     });
   });
   renderGardenObjects();
@@ -252,18 +257,6 @@ var SHAPE_TYPE_LABELS = {
   plantebak: 'Plantebak', techniek: 'Techniekpunt', misc: 'Anders'
 };
 var LINE_TYPES = { pad: true, haag: true }; // lijnvormige typen (open, geen vlak)
-
-// Keuzelijst vullen
-(function () {
-  var sel = document.getElementById('mapDrawType');
-  if (!sel) return;
-  Object.keys(SHAPE_TYPE_LABELS).forEach(function (key) {
-    var opt = document.createElement('option');
-    opt.value = key;
-    opt.textContent = SHAPE_TYPE_LABELS[key];
-    sel.appendChild(opt);
-  });
-})();
 
 function metersPerPixel() {
   // Web Mercator: equator-omtrek / 2^(zoom+8), gecorrigeerd voor breedtegraad
@@ -311,97 +304,60 @@ function renderGardenObjects() {
   });
 }
 
-// Toggle rechtsboven op de kaart om het ontwerp aan/uit te zetten
-var objectsControl = L.control({ position: 'topright' });
-objectsControl.onAdd = function () {
-  var div = L.DomUtil.create('div');
-  div.style.background = '#fff';
-  div.style.padding = '4px 8px';
-  div.style.borderRadius = '4px';
-  div.style.boxShadow = '0 1px 4px rgba(0,0,0,.3)';
-  div.style.fontSize = '13px';
-  div.style.display = 'flex';
-  div.style.alignItems = 'center';
-  div.style.gap = '4px';
-  var cb = document.createElement('input');
-  cb.type = 'checkbox';
-  cb.checked = true;
-  cb.id = 'mapObjectsToggle';
-  cb.style.cursor = 'pointer';
-  var lb = document.createElement('label');
-  lb.htmlFor = 'mapObjectsToggle';
-  lb.style.cursor = 'pointer';
-  lb.textContent = '\uD83D\uDCD0 Ontwerp';
-  cb.addEventListener('change', function (e) {
-    if (e.target.checked) { mapObjectLayer.addTo(gardenMap); }
-    else { gardenMap.removeLayer(mapObjectLayer); }
-  });
-  div.appendChild(cb);
-  div.appendChild(lb);
-  L.DomEvent.disableClickPropagation(div);
-  return div;
-};
-objectsControl.addTo(gardenMap);
-
-// ===== Weergave-schakelaar: kaart vs. alleen vormen =====
-var shapesOnlyMode = false;
-var viewToggleCb = null;
+// ===== Weergave-schakelaar rechtsbovenin de kaart: Kaart <-> Perceel =====
+var parcelSwitchCb = null;
+var kadasterCb = null;
+var kadasterRow = null;
 var viewControl = L.control({ position: 'topright' });
 viewControl.onAdd = function () {
   var div = L.DomUtil.create('div');
-  div.style.cssText = 'background:#fff;padding:4px 8px;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.3);font-size:13px;display:flex;align-items:center;gap:4px;';
-  var cb = document.createElement('input');
-  cb.type = 'checkbox';
-  cb.id = 'mapShapesOnlyToggle';
-  cb.style.cursor = 'pointer';
-  viewToggleCb = cb;
-  var lb = document.createElement('label');
-  lb.htmlFor = 'mapShapesOnlyToggle';
-  lb.style.cursor = 'pointer';
-  lb.textContent = '\u25CE Alleen vormen';
-  cb.addEventListener('change', function (e) { setShapesOnly(e.target.checked); });
-  div.appendChild(cb);
-  div.appendChild(lb);
+  div.style.cssText = 'background:#fff;padding:6px 8px;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.3);font-size:13px;';
+  var row = document.createElement('div');
+  row.style.cssText = 'display:flex;align-items:center;gap:6px;';
+  var lbMap = document.createElement('span');
+  lbMap.textContent = 'Kaart';
+  var sw = document.createElement('label');
+  sw.className = 'map-switch';
+  sw.innerHTML = '<input type="checkbox"><span class="map-switch-slider"></span>';
+  parcelSwitchCb = sw.firstChild;
+  parcelSwitchCb.addEventListener('change', function (e) { setParcelMode(e.target.checked); });
+  var lbParcel = document.createElement('span');
+  lbParcel.textContent = 'Perceel';
+  row.appendChild(lbMap); row.appendChild(sw); row.appendChild(lbParcel);
+  div.appendChild(row);
+  kadasterRow = document.createElement('label');
+  kadasterRow.style.cssText = 'display:flex;align-items:center;gap:4px;margin-top:5px;cursor:pointer;font-size:12px;';
+  kadasterCb = document.createElement('input');
+  kadasterCb.type = 'checkbox';
+  kadasterCb.checked = true;
+  kadasterCb.id = 'mapKadasterToggle';
+  kadasterCb.addEventListener('change', function (e) {
+    if (parcelMode) { e.target.checked = true; return; }
+    if (e.target.checked) { kadasterLayer.addTo(gardenMap); } else { gardenMap.removeLayer(kadasterLayer); }
+  });
+  kadasterRow.appendChild(kadasterCb);
+  var kt = document.createElement('span');
+  kt.textContent = 'Kadastrale kaart';
+  kadasterRow.appendChild(kt);
+  div.appendChild(kadasterRow);
   L.DomEvent.disableClickPropagation(div);
   return div;
 };
 viewControl.addTo(gardenMap);
 
-function setShapesOnly(on) {
-  shapesOnlyMode = on;
-  if (viewToggleCb) viewToggleCb.checked = on;
-  [osmLayer, kadasterLayer].forEach(function (lyr) {
-    if (on) { if (gardenMap.hasLayer(lyr)) gardenMap.removeLayer(lyr); }
-    else if (!gardenMap.hasLayer(lyr)) lyr.addTo(gardenMap);
-  });
-  if (!on) {
-    var kcb = document.getElementById('mapKadasterToggle');
-    if (kcb && !kcb.checked && gardenMap.hasLayer(kadasterLayer)) gardenMap.removeLayer(kadasterLayer);
-  }
-  gardenMap.getContainer().style.background = on ? '#eef5ee' : '';
-  var toggle = document.getElementById('mapParcelBtn');
-  if (toggle && on && parcelMode) setParcelMode(false);
-  if (toggle) toggle.style.display = on ? 'none' : '';
-  try { localStorage.setItem('mapShapesOnly', on ? '1' : '0'); } catch (e) {}
-}
-
-try {
-  if (localStorage.getItem('mapShapesOnly') === '1') {
-    setTimeout(function () { setShapesOnly(true); }, 0);
-  }
-} catch (e) {}
-
-// Bij in-/uitzoomen de lijnbreedtes opnieuw berekenen (weight is in pixels)
-gardenMap.on('zoomend', renderGardenObjects);
+// Bij in-/uitzoomen de lijnbreedtes en plantenmarkeringen opnieuw tekenen
+gardenMap.on('zoomend', function () {
+  renderGardenObjects();
+  if (!editVerticesMode && !suppressVertexZoomRender) renderMap();
+});
 
 // ===== Vormen tekenen: border of tuinobject =====
 function updateDrawStatus() {
   var el = document.getElementById('mapDrawStatus');
   if (!el) return;
   var on = drawMode || freehandOn || circleMode;
-  var label = drawKind ? (SHAPE_TYPE_LABELS[drawKind] || drawKind) : 'vorm';
   el.style.display = on ? '' : 'none';
-  el.textContent = on ? ('Bezig met tekenen (' + label + ') \u2014 klik hoekpunten, dubbelklik of \u201cKlaar \u2713\u201d om af te sluiten') : '';
+  el.textContent = on ? 'Bezig met tekenen \u2014 klik hoekpunten, dubbelklik of \u201cKlaar \u2713\u201d om af te sluiten' : '';
 }
 
 function setDrawMode(on, kind) {
@@ -411,6 +367,7 @@ function setDrawMode(on, kind) {
   distLayer.clearLayers();
   if (drawPreview) { gardenMap.removeLayer(drawPreview); drawPreview = null; }
   if (on) setEditVertices(false);
+  if (drawPreview) { gardenMap.removeLayer(drawPreview); drawPreview = null; }
   document.getElementById('mapDrawBtn').style.display = on ? 'none' : '';
   document.getElementById('mapFinishDrawBtn').style.display = on ? '' : 'none';
   gardenMap.getContainer().style.cursor = on ? 'crosshair' : '';
@@ -429,31 +386,69 @@ function dedupePoints() {
   }
 }
 
+// Popup na het tekenen: kies wat je hebt getekend en geef het een naam
+function askShapeNamePopup() {
+  return new Promise(function (resolve) {
+    var wrap = document.createElement('div');
+    wrap.className = 'shape-popup-backdrop';
+    var box = document.createElement('div');
+    box.className = 'shape-popup';
+    var h = document.createElement('h3');
+    h.textContent = 'Vorm getekend';
+    box.appendChild(h);
+    var p = document.createElement('p');
+    p.textContent = 'Wat heb je getekend en hoe heet het?';
+    box.appendChild(p);
+    var sel = document.createElement('select');
+    Object.keys(SHAPE_TYPE_LABELS).forEach(function (key) {
+      var opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = SHAPE_TYPE_LABELS[key];
+      sel.appendChild(opt);
+    });
+    sel.value = drawKind || 'border';
+    box.appendChild(sel);
+    var inp = document.createElement('input');
+    inp.type = 'text';
+    inp.placeholder = 'Naam';
+    function defaultName() {
+      return sel.value === 'border'
+        ? 'Border ' + (borders.length + 1)
+        : SHAPE_TYPE_LABELS[sel.value] + ' ' + (readGardenObjects().length + 1);
+    }
+    inp.value = defaultName();
+    sel.addEventListener('change', function () { inp.value = defaultName(); });
+    box.appendChild(inp);
+    var row = document.createElement('div');
+    row.className = 'shape-popup-row';
+    var cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.className = 'btn btn-secondary';
+    cancel.textContent = 'Annuleren';
+    cancel.addEventListener('click', function () { wrap.remove(); resolve(null); });
+    var ok = document.createElement('button');
+    ok.type = 'button';
+    ok.className = 'btn btn-primary';
+    ok.textContent = 'Opslaan';
+    row.appendChild(cancel); row.appendChild(ok);
+    box.appendChild(row);
+    wrap.appendChild(box);
+    wrap.addEventListener('click', function (e) { if (e.target === wrap) { wrap.remove(); resolve(null); } });
+    ok.addEventListener('click', function () {
+      var v = inp.value.trim();
+      if (!v) { inp.focus(); return; }
+      wrap.remove();
+      resolve({ kind: sel.value, name: v });
+    });
+    inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') ok.click(); });
+    document.body.appendChild(wrap);
+    setTimeout(function () { inp.focus(); inp.select(); }, 0);
+  });
+}
+
 function finishDraw() {
   dedupePoints();
   var kind = drawKind || 'border';
-  if (kind === 'border') {
-    if (drawPoints.length < 3) {
-      alert('Te weinig punten: klik minimaal 3 hoekpunten van de border aan.');
-      return;
-    }
-    var bName = prompt('Naam voor deze border:', 'Border ' + (borders.length + 1));
-    if (!bName) return; // annuleren: tekening blijft staan om opnieuw te kunnen afsluiten
-    var newBorder = {
-      id: Date.now().toString(),
-      name: bName,
-      plants: [],
-      shape: drawPoints.slice()
-    };
-    borders.push(newBorder);
-    setDrawMode(false);
-    saveState();
-    gardenMap.fitBounds(newBorder.shape, { padding: [30, 30] });
-    renderShapeSidebar();
-    setEditVertices(true);
-    selectShape('border', newBorder, borders);
-    return;
-  }
   if (kind === 'hole') {
     if (drawPoints.length < 3) {
       alert('Te weinig punten: teken minimaal 3 punten rondom het gat.');
@@ -475,31 +470,49 @@ function finishDraw() {
     selectShape('object', hObj, hArr);
     return;
   }
-  // Tuinobject (terras, pad, haag, gazon, ...)
-  var minPts = LINE_TYPES[kind] ? 2 : 1;
-  if (drawPoints.length < minPts) {
-    alert('Te weinig punten: klik minimaal ' + minPts + ' punt(en) aan.');
-    return;
-  }
-  var oName = prompt('Naam voor dit object:', SHAPE_TYPE_LABELS[kind]);
-  if (!oName) return;
-  var objs = readGardenObjects();
-  objs.push({
-    id: 'obj' + Date.now().toString(36),
-    type: kind,
-    name: oName,
-    shape: drawPoints.slice(),
-    closed: !LINE_TYPES[kind],
-    color: GARDEN_OBJECT_COLORS[kind] || GARDEN_OBJECT_COLORS.misc,
-    weight: 4
+  // Border of tuinobject (terras, pad, haag, gazon, ...): type + naam in de popup
+  askShapeNamePopup().then(function (res) {
+    if (!res || res.kind === 'hole') return; // annuleren: tekening blijft staan
+    var oKind = res.kind;
+    var oMinPts = oKind === 'border' ? 3 : (LINE_TYPES[oKind] ? 2 : 1);
+    if (drawPoints.length < oMinPts) {
+      alert('Te weinig punten voor een ' + SHAPE_TYPE_LABELS[oKind] + ': klik minimaal ' + oMinPts + ' punt(en) aan.');
+      return;
+    }
+    if (oKind === 'border') {
+      var newBorder = {
+        id: Date.now().toString(),
+        name: res.name,
+        placed: [],
+        shape: drawPoints.slice()
+      };
+      borders.push(newBorder);
+      setDrawMode(false);
+      saveState();
+      gardenMap.fitBounds(newBorder.shape, { padding: [30, 30] });
+      renderShapeSidebar();
+      setEditVertices(true);
+      selectShape('border', newBorder, borders);
+      return;
+    }
+    var objs = readGardenObjects();
+    objs.push({
+      id: 'obj' + Date.now().toString(36),
+      type: oKind,
+      name: res.name,
+      shape: drawPoints.slice(),
+      closed: !LINE_TYPES[oKind],
+      color: GARDEN_OBJECT_COLORS[oKind] || GARDEN_OBJECT_COLORS.misc,
+      weight: 4
+    });
+    localStorage.setItem('gardenObjects', JSON.stringify(objs));
+    var newObj = objs[objs.length - 1];
+    setDrawMode(false);
+    renderGardenObjects();
+    if (typeof renderGardenObjectList === 'function') renderGardenObjectList();
+    renderShapeSidebar();
+    if (newObj) { setEditVertices(true); selectShape('object', newObj, objs); }
   });
-  localStorage.setItem('gardenObjects', JSON.stringify(objs));
-  var newObj = objs[objs.length - 1];
-  setDrawMode(false);
-  renderGardenObjects();
-  if (typeof renderGardenObjectList === 'function') renderGardenObjectList();
-  renderShapeSidebar();
-  if (newObj) { setEditVertices(true); selectShape('object', newObj, objs); }
 }
 
 gardenMap.on('click', function (e) {
@@ -582,9 +595,8 @@ function setFreehand(on) {
   updateDrawStatus();
   if (on) {
     if (circleMode) setCircleMode(false);
-    var sel = document.getElementById('mapDrawType');
     holeTarget = null;
-    setDrawMode(true, sel ? sel.value : 'border');
+    setDrawMode(true, 'border');
   } else {
     cancelStroke();
     setDrawMode(false);
@@ -670,7 +682,7 @@ function endStroke(e) {
   var tol = Math.max(0.15, metersPerPixel() * 1.5); // fijner dan ~1,5 px is trilling
   drawPoints = simplifyLatLng(pts, tol);
   dedupePoints();
-  var minPts = kind === 'hole' ? 3 : (LINE_TYPES[kind] ? 2 : (kind === 'border' ? 3 : 1));
+  var minPts = kind === 'hole' ? 3 : 1; // definitieve typekeuze + validatie volgt in de popup
   if (drawPoints.length < minPts) {
     drawPoints = [];
     distLayer.clearLayers();
@@ -743,8 +755,7 @@ function setCircleMode(on) {
   if (on) {
     if (freehandOn) setFreehand(false);
     holeTarget = null;
-    var sel = document.getElementById('mapDrawType');
-    setDrawMode(true, sel ? sel.value : 'border');
+    setDrawMode(true, 'border');
   } else {
     circleCenter = null;
     if (circlePreview) { gardenMap.removeLayer(circlePreview); circlePreview = null; }
@@ -952,8 +963,7 @@ function saveShapeEdit() {
 }
 
 document.getElementById('mapDrawBtn').addEventListener('click', function () {
-  var sel = document.getElementById('mapDrawType');
-  setDrawMode(true, sel ? sel.value : 'border');
+  setDrawMode(true, 'border');
 });
 document.getElementById('mapFinishDrawBtn').addEventListener('click', finishDraw);
 var suppressVertexZoomRender = false;
@@ -963,11 +973,6 @@ gardenMap.on('zoomend', function () {
     selectShape(selectedShape.kind, selectedShape.obj, selectedShape.arr);
   }
 });
-document.getElementById('mapKadasterToggle').addEventListener('change', function (e) {
-  if (parcelMode) { e.target.checked = false; return; }
-  if (e.target.checked) { kadasterLayer.addTo(gardenMap); } else { gardenMap.removeLayer(kadasterLayer); }
-});
-
 // Synchroniseer kaart met planner-wijzigingen
 var _origSaveState = saveState;
 saveState = function () { _origSaveState(); renderMap(); renderShapeSidebar(); };
@@ -976,14 +981,19 @@ renderMap();
 renderShapeSidebar();
 
 // ===== Perceel-view: kadastrale grens + bebouwing als vector (PDOK BRK WFS) =====
-// Tikt de gebruiker op een perceel, dan verdwijnt de tegelondergrond (die is
-// op hoog zoomniveau wazig) en wordt het perceel + de bebouwing (panden, uit
-// de BGT) als echte vectoren getekend: haarscherp tot zoom 28.
+// Zet de gebruiker de schuif op "Perceel", dan verdwijnt de tegelondergrond
+// (die is op hoog zoomniveau wazig) en wordt het perceel van het gekozen
+// adres + de bebouwing (panden, uit de BGT) als echte vectoren getekend:
+// haarscherp tot zoom 28. De perceelgegevens (kadastrale aanduiding en
+// oppervlakte) staan in een label net buiten de perceelgrens, zodat je er
+// nooit een vorm overheen tekent.
 var parcelLayer = L.layerGroup().addTo(gardenMap);
 var parcelBuildLayer = L.layerGroup().addTo(gardenMap);
+var parcelLabelLayer = L.layerGroup().addTo(gardenMap);
 var parcelMode = false;
-// (perceel-vectoren blijven boven de vormen, ook in vormenweergave)
-
+var parcelFetching = false;
+var parcelGeom = null;   // GeoJSON-geometry van het eigen perceel
+var parcelInfo = null;   // { label, opp }
 
 function parcelStyle(sel) {
   return sel
@@ -1013,25 +1023,59 @@ function geomRings(geom) {
   return [];
 }
 
+function gardenAddressPos() {
+  try {
+    var a = JSON.parse(localStorage.getItem('gardenAddress'));
+    if (a && typeof a.lat === 'number' && typeof a.lng === 'number') return a;
+  } catch (e) {}
+  return null;
+}
+
+function updateParcelLabel() {
+  parcelLabelLayer.clearLayers();
+  if (!parcelGeom || !parcelInfo) return;
+  var rings = geomRings(parcelGeom).map(ringToLatLngs);
+  if (!rings.length) return;
+  var bounds = L.latLngBounds(rings[0]);
+  rings.forEach(function (r) { bounds.extend(L.latLngBounds(r)); });
+  var NE = bounds.getNorthEast();
+  L.marker([NE.lat, NE.lng], {
+    interactive: false,
+    icon: L.divIcon({
+      className: 'dist-label parcel-info-label',
+      iconSize: [0, 0],
+      html: '\uD83D\uDCCD ' + esc(parcelInfo.label)
+    })
+  }).addTo(parcelLabelLayer);
+}
+
 function setParcelMode(on) {
   parcelMode = on;
-  var btn = document.getElementById('mapParcelBtn');
-  if (btn) {
-    btn.textContent = on ? '\uD83D\uDD19 Terug naar kaart' : '\uD83D\uDCCD Perceel tonen';
-  }
+  if (parcelSwitchCb) parcelSwitchCb.checked = on;
+  if (kadasterRow) kadasterRow.style.display = on ? 'none' : '';
   parcelLayer.clearLayers();
   parcelBuildLayer.clearLayers();
+  parcelLabelLayer.clearLayers();
+  parcelGeom = null;
+  parcelInfo = null;
   gardenMap.getContainer().style.background = on ? '#e8f5e9' : '';
   if (on) {
     [osmLayer, kadasterLayer].forEach(function (lyr) {
       if (gardenMap.hasLayer(lyr)) gardenMap.removeLayer(lyr);
     });
-    var c = gardenMap.getCenter();
-    var d = 0.004; // ~450 m rond het kaartmiddelpunt
-    fetchParcels([c.lng - d, c.lat - d, c.lng + d, c.lat + d]);
-    fetchBuildings([c.lng - d, c.lat - d, c.lng + d, c.lat + d]);
+    var addr = gardenAddressPos();
+    if (!addr) {
+      alert('Kies eerst een adres: het perceel wordt opgezocht bij het adres van je tuin.');
+      setParcelMode(false);
+      return;
+    }
+    var d = 0.002; // ~200 m rond het adres
+    var bbox = [addr.lng - d, addr.lat - d, addr.lng + d, addr.lat + d];
+    fetchParcels(bbox, addr);
+    fetchBuildings(bbox);
   } else {
-    setShapesOnly(shapesOnlyMode);
+    osmLayer.addTo(gardenMap);
+    if (kadasterCb && kadasterCb.checked) kadasterLayer.addTo(gardenMap);
   }
 }
 
@@ -1043,20 +1087,43 @@ function wfsUrl(typeName, bbox) {
     '&bbox=' + bbox.join(',') + ',urn:ogc:def:crs:EPSG::CRS84';
 }
 
-function fetchParcels(bbox) {
+// Geeft true als het punt (van het adres) binnen de buitenring ligt
+function ringContains(ring, lat, lng) {
+  var pts = ringToLatLngs(ring);
+  var inside = false;
+  for (var i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    var xi = pts[i][1], yi = pts[i][0], xj = pts[j][1], yj = pts[j][0];
+    if (((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi)) inside = !inside;
+  }
+  return inside;
+}
+
+function fetchParcels(bbox, addr) {
   parcelFetching = true;
   fetch(wfsUrl('kadastralekaart:Perceel', bbox)).then(function (r) { return r.json(); }).then(function (fc) {
+    var own = null;
     (fc.features || []).forEach(function (f) {
-      var rings = geomRings(f.geometry);
-      if (!rings.length) return;
-      var props = f.properties || {};
-      var label = (props.kadastraleGemeenteWaarde || '') + ' ' + (props.sectie || '') + ' ' +
-        (props.perceelnummer || '') + (props.kadastraleGrootteWaarde ? ' — ' + props.kadastraleGrootteWaarde + ' m²' : '');
-      var poly = L.polygon(rings.map(ringToLatLngs), parcelStyle(false)).addTo(parcelLayer);
-      poly.bindTooltip('Kadastraal perceel: ' + label + ' — klik om tuin te bekijken');
-      poly.on('click', function () { selectParcel(f, poly); });
+      if (!own && ringContains(f.geometry.coordinates[0], addr.lat, addr.lng)) own = f;
     });
-  }).catch(function () {});
+    if (!own) {
+      alert('Geen kadastraal perceel gevonden op dit adres.');
+      setParcelMode(false);
+      return;
+    }
+    var props = own.properties || {};
+    parcelGeom = own.geometry;
+    parcelInfo = {
+      label: (props.kadastraleGemeenteWaarde || '') + ' ' + (props.sectie || '') + ' ' +
+        (props.perceelnummer || '') + (props.kadastraleGrootteWaarde ? ' \u2014 ' + props.kadastraleGrootteWaarde + ' m\u00B2' : '')
+    };
+    var rings = geomRings(parcelGeom).map(ringToLatLngs);
+    L.polygon(rings, parcelStyle(true)).addTo(parcelLayer);
+    gardenMap.fitBounds(L.latLngBounds(rings[0]), { padding: [70, 70], maxZoom: 24 });
+    updateParcelLabel();
+  }).catch(function () {
+    alert('Perceelgegevens konden niet worden opgehaald (PDOK onbereikbaar?).');
+    setParcelMode(false);
+  });
 }
 
 function fetchBuildings(bbox) {
@@ -1066,28 +1133,16 @@ function fetchBuildings(bbox) {
       if (!rings.length) return;
       L.polygon(rings.map(ringToLatLngs), buildStyle(false)).addTo(parcelBuildLayer);
     });
+    // panden binnen het eigen perceel markeren als "niet-tuin"
+    if (parcelGeom) {
+      var bounds = L.latLngBounds(ringToLatLngs(parcelGeom.coordinates[0]));
+      parcelBuildLayer.eachLayer(function (lyr) {
+        if (!lyr.getBounds) return;
+        var b = lyr.getBounds();
+        if (bounds.contains(b.getSouthWest()) && bounds.contains(b.getNorthEast())) {
+          lyr.setStyle(buildStyle(true));
+        }
+      });
+    }
   }).catch(function () {});
 }
-
-function selectParcel(feature, poly) {
-  parcelLayer.eachLayer(function (lyr) { if (lyr.setStyle) lyr.setStyle(parcelStyle(false)); });
-  parcelBuildLayer.eachLayer(function (lyr) { if (lyr.setStyle) lyr.setStyle(buildStyle(false)); });
-  poly.setStyle(parcelStyle(true));
-  var rings = geomRings(feature.geometry).map(ringToLatLngs);
-  var bounds = L.latLngBounds(rings[0]);
-  gardenMap.fitBounds(bounds, { padding: [40, 40], maxZoom: 28 });
-  // panden binnen het perceel markeren als "niet-tuin"
-  parcelBuildLayer.eachLayer(function (lyr) {
-    if (!lyr.getBounds) return;
-    var b = lyr.getBounds();
-    if (bounds.contains(b.getSouthWest()) && bounds.contains(b.getNorthEast())) {
-      lyr.setStyle(buildStyle(true));
-    }
-  });
-}
-
-(function () {
-  var db = document.getElementById('mapParcelBtn');
-  if (!db) return;
-  db.addEventListener('click', function () { setParcelMode(!parcelMode); });
-})();
