@@ -93,17 +93,9 @@ td.aan { text-align:center; white-space:nowrap; }
   var NAMES = [];
   placed.forEach(function (p) { if (NAMES.indexOf(p.latijnseNaam) === -1) NAMES.push(p.latijnseNaam); });
   var shortName = {};
-  var byShort = {};
   NAMES.forEach(function (n) {
     var s = (window.PlantPicker && PlantPicker.plantShortName) ? PlantPicker.plantShortName(n, 4) : n.slice(0, 4);
-    if (!s) s = '?';
-    (byShort[s] = byShort[s] || []).push(n);
-  });
-  Object.keys(byShort).forEach(function (s) {
-    byShort[s].sort(function (a, b) { return a.localeCompare(b, 'nl'); });
-    byShort[s].forEach(function (n, i) {
-      shortName[n] = (byShort[s].length > 1) ? s + (i + 1) : s;
-    });
+    shortName[n] = s || '?';
   });
   var number = {};
   NAMES.slice().sort(function (a, b) { return a.localeCompare(b, 'nl'); }).forEach(function (n, i) { number[n] = i + 1; });
@@ -135,18 +127,11 @@ td.aan { text-align:center; white-space:nowrap; }
       var r = Math.max((plantSpacingCm(plant) / 2) / 100 * scale, 1);
       var g = el('g', {});
       g.appendChild(el('circle', { cx: cx, cy: cy, r: r, fill: colorHex(plant.kleur), stroke: '#333', 'stroke-width': 1 }));
-      var label = shortName[plant.latijnseNaam] || '?';
-      var m = label.match(/^([A-Za-z]+)(\d+)$/);
+      var label = String(number[plant.latijnseNaam] || '?');
       var lines = [label];
       var CH = 0.62;
       var fit = function (txt, maxW, maxH) { return Math.max(Math.min(maxW / (CH * txt.length), maxH), 4); };
-      var fs;
-      if (label.length * CH * Math.max(r * 0.9, 7) > r * 1.8 && m) {
-        lines = [m[1], m[2]];
-        fs = Math.min(fit(m[1], r * 1.7, r * 0.75), fit(m[2], r * 1.7, r * 0.75));
-      } else {
-        fs = fit(label, r * 1.8, r * 0.9);
-      }
+      var fs = fit(label, r * 1.8, r * 0.9);
       var txt = el('text', { x: cx, y: cy, 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-size': fs, 'font-weight': 600, fill: '#111', 'paint-order': 'stroke', stroke: '#fff', 'stroke-width': Math.max(fs * 0.14, 0.6) });
       lines.forEach(function (ln, li) {
         var t = el('tspan', { x: cx });
@@ -189,7 +174,7 @@ td.aan { text-align:center; white-space:nowrap; }
 
   document.getElementById('printBtn').addEventListener('click', function () { window.print(); });
   document.getElementById('closeBtn').addEventListener('click', function () { window.close(); });
-  document.getElementById('legend').innerHTML = 'Elke plant heeft een afkorting in de tekening (kolom \u201cAfkorting\u201d). Komen afkortingen vaker voor, dan krijgt elke plant een oplopend nummer achter of onder de afkorting (bv. \u201cAsAg1\u201d, \u201cAsAg2\u201d). Het nummer in kolom \u201cNr.\u201d verwijst naar de alfabetische volgorde. ' +
+  document.getElementById('legend').innerHTML = 'Elke plant in de tekening heeft het nummer uit kolom \u201cNr.\u201d (oplopende nummers 1 t/m ' + (sorted.length || 1) + ' in alfabetische volgorde). Zo kun je elke plant terugvinden in de plantenlijst en de kleine gekochte plantjes eenvoudig nummeren. ' +
     sorted.length + ' soorten, ' + placed.length + ' planten totaal.';
   document.getElementById('foot').textContent = 'Tuinplantplan \u2014 gegenereerd op ' + new Date().toLocaleString('nl-NL');
 })();
