@@ -203,6 +203,23 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
     #pvBorderList { max-height: 160px; }
     .pv-scroll { max-height: 60vh; }
 }
+
+/* Kaart-schuif rechtsbovenin (Kaart <-> Perceel) */
+.map-switch { position: relative; display: inline-block; width: 40px; height: 22px; flex: none; }
+.map-switch input { opacity: 0; width: 0; height: 0; }
+.map-switch-slider { position: absolute; inset: 0; background: #bdbdbd; border-radius: 11px; transition: .2s; cursor: pointer; }
+.map-switch-slider:before { content: ""; position: absolute; height: 16px; width: 16px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .2s; box-shadow: 0 1px 3px rgba(0,0,0,.4); }
+.map-switch input:checked + .map-switch-slider { background: #2e7d32; }
+.map-switch input:checked + .map-switch-slider:before { transform: translateX(18px); }
+/* Popup na het tekenen (type + naam) */
+.shape-popup-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: flex; align-items: center; justify-content: center; z-index: 2000; }
+.shape-popup { background: #fff; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,.3); padding: 18px 20px; width: 320px; max-width: calc(100vw - 40px); }
+.shape-popup h3 { margin: 0 0 4px; font-size: 16px; }
+.shape-popup p { margin: 0 0 10px; font-size: 13px; color: #666; }
+.shape-popup select, .shape-popup input { width: 100%; box-sizing: border-box; padding: 6px 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+.shape-popup-row { display: flex; gap: 8px; justify-content: flex-end; }
+/* Perceelgegevens net buiten de perceelgrens */
+.parcel-info-label { color: #6d4c41; background: rgba(255,255,255,.95); font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.35); white-space: nowrap; transform: translate(-50%, -130%); }
 </style>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 <script src="map.js" defer></script>
@@ -233,12 +250,11 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
             <div class="section map-section">
   <h3>Tuin &amp; borders op de kaart &#128506;</h3>
   <div class="map-controls">
-    <select id="mapDrawType" title="Welke vorm wil je tekenen?"></select>
-    <button class="btn btn-primary" id="mapDrawBtn">Vorm intekenen</button>
+        <button class="btn btn-primary" id="mapDrawBtn">Vorm intekenen</button>
     <button class="btn btn-primary" id="mapFinishDrawBtn" style="display:none;">Klaar &#10003;</button>
     <span id="mapDrawStatus" class="map-draw-status" style="display:none;"></span>
     
-    <button class="btn btn-secondary" id="mapParcelBtn">&#128205; Perceel tonen</button>    <label style="font-size:13px; display:flex; align-items:center; gap:4px;"><input type="checkbox" id="mapKadasterToggle" checked> Kadastrale kaart</label>
+    
   </div>
   <div class="map-wrap">
     <div id="mapShapeSidebar">
@@ -249,7 +265,7 @@ tr.drag-plant.grabbing { cursor: grabbing; opacity: .55; }
       <div id="gardenMap"></div>
     </div>
   </div>
-  <p class="map-help">Kies een vorm, klik de hoekpunten op de kaart (dubbelklik of &quot;Klaar&quot; sluit af). Met &quot;Hoekpunten slepen&quot; versleep je hoekpunten (rechtsklik = verwijderen); de afstanden tussen hoekpunten verschijnen vanzelf. Met &quot;Perceel tonen&quot; zie je alleen je kadastrale perceelgrenzen en bebouwing als scherpe vectoren — onbeperkt inzoombaar.</p>
+  <p class="map-help">Kies een vorm, klik de hoekpunten op de kaart (dubbelklik of &quot;Klaar&quot; sluit af). Met &quot;Hoekpunten slepen&quot; versleep je hoekpunten (rechtsklik = verwijderen); de afstanden tussen hoekpunten verschijnen vanzelf. Met de schuif rechtsbovenin de kaart wissel je tussen de gewone kaart en je eigen perceel (kadastrale grens + bebouwing als scherpe vectoren, onbeperkt inzoombaar; de perceelgegevens staan in een label net buiten de grens).</p>
 </div>
             
             <div id="gardenObjectList"></div>
