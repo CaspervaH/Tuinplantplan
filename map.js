@@ -18,15 +18,19 @@ var gardenMap = L.map('gardenMap', { maxZoom: 28 }).setView(
   savedMapView ? [savedMapView.lat, savedMapView.lng] : [52.1, 5.3],
   savedMapView ? savedMapView.zoom : 12
 );
+var shapesOnlySaved = false;
+try { shapesOnlySaved = localStorage.getItem('mapShapesOnly') === '1'; } catch (e) {}
+
 var osmLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 28, maxNativeZoom: 19, attribution: '&copy; OpenStreetMap'
-}).addTo(gardenMap);
+});
+if (!shapesOnlySaved) osmLayer.addTo(gardenMap);
 // Kadastrale kaart als WMTS-tegels (betrouwbaar, ook op hoog zoomniveau)
 var kadasterLayer = L.tileLayer('https://service.pdok.nl/kadaster/brk-kadastralekaart/wmts/v5_0/Kadastralekaart/EPSG:3857/{z}/{x}/{y}.png', {
   maxZoom: 28, maxNativeZoom: 19, opacity: 0.9, minZoom: 14,
   attribution: 'Kadastrale kaart: PDOK / Kadaster'
 });
-kadasterLayer.addTo(gardenMap);
+if (!shapesOnlySaved) kadasterLayer.addTo(gardenMap);
 
 var mapShapeLayer = L.layerGroup().addTo(gardenMap);
 var mapObjectLayer = L.layerGroup().addTo(gardenMap);
@@ -211,9 +215,6 @@ function renderMap() {
           iconAnchor: [Math.round(w / 2), 8]
         })
       }).addTo(mapMarkerLayer);
-      marker.on('click', function (ev) {
-        if (drawMode || freehandOn || circleMode) { L.DomEvent.stopPropagation(ev); }
-      });
     });
   });
   renderGardenObjects();
@@ -342,6 +343,54 @@ objectsControl.onAdd = function () {
 };
 objectsControl.addTo(gardenMap);
 
+// ===== Weergave-schakelaar: kaart vs. alleen vormen =====
+var shapesOnlyMode = false;
+var viewToggleCb = null;
+var viewControl = L.control({ position: 'topright' });
+viewControl.onAdd = function () {
+  var div = L.DomUtil.create('div');
+  div.style.cssText = 'background:#fff;padding:4px 8px;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.3);font-size:13px;display:flex;align-items:center;gap:4px;';
+  var cb = document.createElement('input');
+  cb.type = 'checkbox';
+  cb.id = 'mapShapesOnlyToggle';
+  cb.style.cursor = 'pointer';
+  viewToggleCb = cb;
+  var lb = document.createElement('label');
+  lb.htmlFor = 'mapShapesOnlyToggle';
+  lb.style.cursor = 'pointer';
+  lb.textContent = '\u25CE Alleen vormen';
+  cb.addEventListener('change', function (e) { setShapesOnly(e.target.checked); });
+  div.appendChild(cb);
+  div.appendChild(lb);
+  L.DomEvent.disableClickPropagation(div);
+  return div;
+};
+viewControl.addTo(gardenMap);
+
+function setShapesOnly(on) {
+  shapesOnlyMode = on;
+  if (viewToggleCb) viewToggleCb.checked = on;
+  [osmLayer, kadasterLayer].forEach(function (lyr) {
+    if (on) { if (gardenMap.hasLayer(lyr)) gardenMap.removeLayer(lyr); }
+    else if (!gardenMap.hasLayer(lyr)) lyr.addTo(gardenMap);
+  });
+  if (!on) {
+    var kcb = document.getElementById('mapKadasterToggle');
+    if (kcb && !kcb.checked && gardenMap.hasLayer(kadasterLayer)) gardenMap.removeLayer(kadasterLayer);
+  }
+  gardenMap.getContainer().style.background = on ? '#eef5ee' : '';
+  var toggle = document.getElementById('mapParcelBtn');
+  if (toggle && on && parcelMode) setParcelMode(false);
+  if (toggle) toggle.style.display = on ? 'none' : '';
+  try { localStorage.setItem('mapShapesOnly', on ? '1' : '0'); } catch (e) {}
+}
+
+try {
+  if (localStorage.getItem('mapShapesOnly') === '1') {
+    setTimeout(function () { setShapesOnly(true); }, 0);
+  }
+} catch (e) {}
+
 // Bij in-/uitzoomen de lijnbreedtes opnieuw berekenen (weight is in pixels)
 gardenMap.on('zoomend', renderGardenObjects);
 
@@ -400,7 +449,9 @@ function finishDraw() {
     setDrawMode(false);
     saveState();
     gardenMap.fitBounds(newBorder.shape, { padding: [30, 30] });
-    openBorderEditor(newBorder.id);
+    renderShapeSidebar();
+    setEditVertices(true);
+    selectShape('border', newBorder, borders);
     return;
   }
   if (kind === 'hole') {
@@ -443,9 +494,12 @@ function finishDraw() {
     weight: 4
   });
   localStorage.setItem('gardenObjects', JSON.stringify(objs));
+  var newObj = objs[objs.length - 1];
   setDrawMode(false);
   renderGardenObjects();
   if (typeof renderGardenObjectList === 'function') renderGardenObjectList();
+  renderShapeSidebar();
+  if (newObj) { setEditVertices(true); selectShape('object', newObj, objs); }
 }
 
 gardenMap.on('click', function (e) {
@@ -641,20 +695,27 @@ buildFreehandControls();
 // ===== Gat in een vlak ("donut"): bv. een rond pad met gazon in het midden =====
 var holeBtn = null;
 function buildHoleButton() {
-  var eb = document.getElementById('mapEditShapeBtn');
-  if (!eb || holeBtn) return;
-  holeBtn = document.createElement('button');
-  holeBtn.type = 'button';
-  holeBtn.className = eb.className || '';
-  holeBtn.textContent = '\uD83D\uDD73\uFE0F Gat inmaken';
-  holeBtn.style.display = 'none';
-  holeBtn.addEventListener('click', function () {
-    if (!selectedShape || selectedShape.kind !== 'object' || !selectedShape.obj.closed) return;
-    if (freehandOn) { setFreehand(false); } // eerst modus netjes afsluiten
-    holeTarget = selectedShape.obj;
-    setDrawMode(true, 'hole');
-  });
-  eb.parentNode.insertBefore(holeBtn, eb.nextSibling);
+  if (holeBtn) return;
+  var holeControl = L.control({ position: 'topright' });
+  holeControl.onAdd = function () {
+    var div = L.DomUtil.create('div');
+    div.style.cssText = 'background:#fff;padding:4px 8px;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.3);font-size:13px;';
+    holeBtn = document.createElement('button');
+    holeBtn.type = 'button';
+    holeBtn.textContent = '\uD83D\uDD73\uFE0F Gat inmaken';
+    holeBtn.style.cssText = 'border:none;background:none;cursor:pointer;font-size:13px;';
+    holeBtn.style.display = 'none';
+    holeBtn.addEventListener('click', function () {
+      if (!selectedShape || selectedShape.kind !== 'object' || !selectedShape.obj.closed) return;
+      if (freehandOn) { setFreehand(false); } // eerst modus netjes afsluiten
+      holeTarget = selectedShape.obj;
+      setDrawMode(true, 'hole');
+    });
+    div.appendChild(holeBtn);
+    L.DomEvent.disableClickPropagation(div);
+    return div;
+  };
+  holeControl.addTo(gardenMap);
 }
 function updateHoleBtn() {
   if (!holeBtn) return;
@@ -730,6 +791,69 @@ buildCircleButton();
   document.head.appendChild(st);
 })();
 
+// ===== Sidebar met vormen (links van de kaart) =====
+// Lijst met borders + tuinobjecten; klik = meteen hoekpunten slepen tot je
+// de vorm weer uitklikt. De losse knop "Hoekpunten slepen" is vervallen.
+function buildShapeSidebar() {
+  var host = document.getElementById('mapShapeSidebar');
+  var listEl = document.getElementById('mapShapeSidebarList');
+  if (!host || !listEl) return;
+  listEl.addEventListener('click', function (e) {
+    var del = e.target.closest ? e.target.closest('[data-shapedel]') : null;
+    if (del) {
+      var dKind = del.getAttribute('data-shapekind');
+      var dId = del.getAttribute('data-shapeid');
+      if (!confirm('Deze vorm verwijderen?')) return;
+      if (dKind === 'border') {
+        var bi = borders.findIndex(function (b) { return b.id === dId; });
+        if (bi >= 0) { borders.splice(bi, 1); saveState(); renderShapeSidebar(); }
+      } else {
+        var objs = readGardenObjects().filter(function (o) { return o.id !== dId; });
+        localStorage.setItem('gardenObjects', JSON.stringify(objs));
+        renderGardenObjects();
+        renderShapeSidebar();
+      }
+      return;
+    }
+    var btn = e.target.closest ? e.target.closest('[data-shapebtn]') : null;
+    if (!btn) return;
+    var kind = btn.getAttribute('data-shapekind');
+    var id = btn.getAttribute('data-shapeid');
+    var arr = kind === 'border' ? borders : readGardenObjects();
+    var obj = null;
+    for (var i = 0; i < arr.length; i++) if (arr[i].id === id) { obj = arr[i]; break; }
+    if (!obj) return;
+    var isActive = editVerticesMode && selectedShape && selectedShape.obj === obj;
+    if (isActive) { setEditVertices(false); }
+    else { setEditVertices(true); selectShape(kind, obj, arr); }
+  });
+}
+buildShapeSidebar();
+
+function renderShapeSidebar() {
+  var listEl = document.getElementById('mapShapeSidebarList');
+  if (!listEl) return;
+  var activeObj = editVerticesMode && selectedShape ? selectedShape.obj : null;
+  var html = '';
+  borders.forEach(function (b) {
+    if (!b.shape || b.shape.length < 3) return;
+    var sel = activeObj === b;
+    html += '<div class="shape-row"><button type="button" data-shapebtn="1" data-shapekind="border" data-shapeid="' + esc(b.id) + '" class="pv-side-btn' + (sel ? ' active' : '') + '" title="' + esc(b.name) + '">\uD83C\uDF3F ' + esc(b.name) + (sel ? ' \u2715' : '') + '</button>' +
+      '<button type="button" data-shapedel="1" data-shapekind="border" data-shapeid="' + esc(b.id) + '" class="shape-del" title="Vorm verwijderen">\u2715</button></div>';
+  });
+  var objs = readGardenObjects();
+  if (borders.length && objs.length) html += '<div class="pv-side-group">Tuinobjecten</div>';
+  objs.forEach(function (o) {
+    if (!o.shape || !o.shape.length) return;
+    var sel = activeObj === o;
+    var color = o.color || GARDEN_OBJECT_COLORS[o.type] || GARDEN_OBJECT_COLORS.misc;
+    html += '<div class="shape-row"><button type="button" data-shapebtn="1" data-shapekind="object" data-shapeid="' + esc(o.id) + '" class="pv-side-btn' + (sel ? ' active' : '') + '" style="' + (sel ? '' : 'border-left:4px solid ' + color + ';') + '" title="' + esc(o.name || o.type) + '">' + esc(o.name || o.type) + (sel ? ' \u2715' : '') + '</button>' +
+      '<button type="button" data-shapedel="1" data-shapekind="object" data-shapeid="' + esc(o.id) + '" class="shape-del" title="Vorm verwijderen">\u2715</button></div>';
+  });
+  if (!html) html = '<div class="pv-side-group" style="font-weight:400;color:var(--light-text);">Nog geen vormen \u2014 teken er \u00E9\u00E9n met "Vorm intekenen".</div>';
+  listEl.innerHTML = html;
+}
+
 function setEditVertices(on) {
   editVerticesMode = on;
   if (on) setDrawMode(false);
@@ -738,11 +862,10 @@ function setEditVertices(on) {
     vertexLayer.clearLayers();
     distLayer.clearLayers();
   }
-  var btn = document.getElementById('mapEditShapeBtn');
-  if (btn) btn.textContent = on ? '\u2705 Klaar met slepen' : '\uD83D\uDCB0 Hoekpunten slepen';
   gardenMap.getContainer().style.cursor = on ? 'pointer' : '';
   updateHoleBtn();
   renderMap();
+  renderShapeSidebar();
 }
 
 function selectShape(kind, obj, arr) {
@@ -763,8 +886,13 @@ function selectShape(kind, obj, arr) {
         if (kind === 'border') renderMap();
         else renderGardenObjects();
         showDistances(obj.shape, shapeIsClosed(kind, obj));
+        suppressVertexZoomRender = true;
       });
-      mk.on('dragend', function () { saveShapeEdit(); });
+      mk.on('dragend', function () {
+        suppressVertexZoomRender = false;
+        saveShapeEdit();
+        if (editVerticesMode && selectedShape) selectShape(selectedShape.kind, selectedShape.obj, selectedShape.arr);
+      });
       mk.on('contextmenu', function () {
         var minPts = ring.hole < 0 ? (kind === 'border' ? 3 : (LINE_TYPES[obj.type] ? 2 : 1)) : 3;
         if (ring.hole >= 0 && ring.pts.length <= minPts) {
@@ -809,6 +937,7 @@ function selectShape(kind, obj, arr) {
   showDistances(obj.shape, shapeIsClosed(kind, obj));
   updateHoleBtn();
   renderMap();
+  renderShapeSidebar();
 }
 
 function saveShapeEdit() {
@@ -819,6 +948,7 @@ function saveShapeEdit() {
     localStorage.setItem('gardenObjects', JSON.stringify(selectedShape.arr));
     renderGardenObjects();
   }
+  renderShapeSidebar();
 }
 
 document.getElementById('mapDrawBtn').addEventListener('click', function () {
@@ -826,10 +956,9 @@ document.getElementById('mapDrawBtn').addEventListener('click', function () {
   setDrawMode(true, sel ? sel.value : 'border');
 });
 document.getElementById('mapFinishDrawBtn').addEventListener('click', finishDraw);
-document.getElementById('mapEditShapeBtn').addEventListener('click', function () {
-  setEditVertices(!editVerticesMode);
-});
+var suppressVertexZoomRender = false;
 gardenMap.on('zoomend', function () {
+  if (suppressVertexZoomRender) return;
   if (editVerticesMode && selectedShape) {
     selectShape(selectedShape.kind, selectedShape.obj, selectedShape.arr);
   }
@@ -841,9 +970,10 @@ document.getElementById('mapKadasterToggle').addEventListener('change', function
 
 // Synchroniseer kaart met planner-wijzigingen
 var _origSaveState = saveState;
-saveState = function () { _origSaveState(); renderMap(); };
+saveState = function () { _origSaveState(); renderMap(); renderShapeSidebar(); };
 
 renderMap();
+renderShapeSidebar();
 
 // ===== Perceel-view: kadastrale grens + bebouwing als vector (PDOK BRK WFS) =====
 // Tikt de gebruiker op een perceel, dan verdwijnt de tegelondergrond (die is
@@ -852,6 +982,7 @@ renderMap();
 var parcelLayer = L.layerGroup().addTo(gardenMap);
 var parcelBuildLayer = L.layerGroup().addTo(gardenMap);
 var parcelMode = false;
+// (perceel-vectoren blijven boven de vormen, ook in vormenweergave)
 
 
 function parcelStyle(sel) {
@@ -900,10 +1031,7 @@ function setParcelMode(on) {
     fetchParcels([c.lng - d, c.lat - d, c.lng + d, c.lat + d]);
     fetchBuildings([c.lng - d, c.lat - d, c.lng + d, c.lat + d]);
   } else {
-    var cb = document.getElementById('mapKadasterToggle');
-    osmLayer.addTo(gardenMap);
-    if (!cb || cb.checked) kadasterLayer.addTo(gardenMap);
-    
+    setShapesOnly(shapesOnlyMode);
   }
 }
 
