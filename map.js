@@ -39,6 +39,9 @@ var holeTarget = null;     // object waarin nu een gat wordt getekend
 var circleMode = false;    // perfecte cirkel tekenen (tik middelpunt, tik rand)
 var circleCenter = null;
 var circlePreview = null;  // L.circle als live voorbeeld van de cirkel
+var rulerMode = false;     // meetlat met vaste lengte tekenen
+var rulerBtn = null, rulerLengthInput = null, rulerAnchor = null, rulerPreview = null;
+var circleDiameterInput = null;
 
 // ===== Afstanden tussen hoekpunten (echte meters uit de coördinaten) =====
 function distanceMeters(a, b) {
@@ -245,7 +248,7 @@ var GARDEN_OBJECT_COLORS = {
   haag: '#558b2f', moestuin: '#8bc34a', boom: '#33691e', vijver: '#29b6f6',
   zithoek: '#ffb300', zandbak: '#ffca28', speeltoestel: '#f57c00',
   vuurplaats: '#d84315', plantebak: '#6d4c41', techniek: '#546e7a',
-  misc: '#607d8b'
+  meetlat: '#1565c0', misc: '#607d8b'
 };
 
 // Typen die je in de kaart kunt tekenen (labels voor de keuzelijst)
@@ -254,9 +257,9 @@ var SHAPE_TYPE_LABELS = {
   terras: 'Terras', pad: 'Pad', gazon: 'Gazon', haag: 'Haag',
   moestuin: 'Moestuin', boom: 'Boom', vijver: 'Vijver', zithoek: 'Zithoek',
   zandbak: 'Zandbak', speeltoestel: 'Speeltoestel', vuurplaats: 'Vuurplaats',
-  plantebak: 'Plantebak', techniek: 'Techniekpunt', misc: 'Anders'
+  plantebak: 'Plantebak', techniek: 'Techniekpunt', meetlat: 'Meetlat', misc: 'Anders'
 };
-var LINE_TYPES = { pad: true, haag: true }; // lijnvormige typen (open, geen vlak)
+var LINE_TYPES = { pad: true, haag: true, meetlat: true }; // lijnvormige typen (open, geen vlak)
 
 function metersPerPixel() {
   // Web Mercator: equator-omtrek / 2^(zoom+8), gecorrigeerd voor breedtegraad
@@ -355,9 +358,13 @@ gardenMap.on('zoomend', function () {
 function updateDrawStatus() {
   var el = document.getElementById('mapDrawStatus');
   if (!el) return;
-  var on = drawMode || freehandOn || circleMode;
+  var on = drawMode || freehandOn || circleMode || rulerMode;
   el.style.display = on ? '' : 'none';
-  el.textContent = on ? 'Bezig met tekenen \u2014 klik hoekpunten, dubbelklik of \u201cKlaar \u2713\u201d om af te sluiten' : '';
+  el.textContent = circleMode
+    ? 'Cirkel: tik het middelpunt en daarna de rand, of vul \u2300 meters in'
+    : rulerMode
+      ? 'Meetlat: tik een beginpunt en vul de lengte in meters in (bv. 1,65)'
+      : on ? 'Bezig met tekenen \u2014 klik hoekpunten, dubbelklik of \u201cKlaar \u2713\u201d om af te sluiten' : '';
 }
 
 function setDrawMode(on, kind) {
@@ -371,8 +378,12 @@ function setDrawMode(on, kind) {
   document.getElementById('mapDrawBtn').style.display = on ? 'none' : '';
   document.getElementById('mapFinishDrawBtn').style.display = on ? '' : 'none';
   gardenMap.getContainer().style.cursor = on ? 'crosshair' : '';
-  if (!on) { circleCenter = null; if (circlePreview) { gardenMap.removeLayer(circlePreview); circlePreview = null; } }
+  if (!on) {
+    circleCenter = null; if (circlePreview) { gardenMap.removeLayer(circlePreview); circlePreview = null; }
+    rulerAnchor = null; if (rulerPreview) { gardenMap.removeLayer(rulerPreview); rulerPreview = null; }
+  }
   updateCircleBtn();
+  updateRulerBtn();
   updateDrawStatus();
 }
 
@@ -449,6 +460,31 @@ function askShapeNamePopup() {
 function finishDraw() {
   dedupePoints();
   var kind = drawKind || 'border';
+  if (kind === 'meetlat') {
+    // Meetlat: geen popup, meteen opslaan als tuinobject met vaste lengte
+    if (drawPoints.length >= 2) {
+      var rArr = readGardenObjects();
+      var rObj = {
+        id: 'obj' + Date.now().toString(36),
+        type: 'meetlat',
+        name: 'Meetlat ' + fmtDist(distanceMeters(drawPoints[0], drawPoints[1])),
+        shape: drawPoints.slice(),
+        closed: false,
+        color: GARDEN_OBJECT_COLORS.meetlat,
+        widthM: 0.15
+      };
+      rArr.push(rObj);
+      localStorage.setItem('gardenObjects', JSON.stringify(rArr));
+      setDrawMode(false);
+      renderGardenObjects();
+      if (typeof renderGardenObjectList === 'function') renderGardenObjectList();
+      renderShapeSidebar();
+      setEditVertices(true);
+      selectShape('object', rObj, rArr);
+    } else { setDrawMode(false); }
+    if (rulerMode) setRulerMode(false);
+    return;
+  }
   if (kind === 'hole') {
     if (drawPoints.length < 3) {
       alert('Te weinig punten: teken minimaal 3 punten rondom het gat.');
@@ -518,10 +554,19 @@ function finishDraw() {
 gardenMap.on('click', function (e) {
   if (editVerticesMode) return;
   if (!drawMode) return;
+  if (rulerMode) {
+    rulerAnchor = [e.latlng.lat, e.latlng.lng];
+    if (rulerPreview) { gardenMap.removeLayer(rulerPreview); rulerPreview = null; }
+    var rl = parseMeterValue(rulerLengthInput && rulerLengthInput.value);
+    if (rl) { placeRuler(rulerAnchor, gardenMap.getCenter(), rl); }
+    else if (rulerLengthInput) { rulerLengthInput.focus(); }
+    return;
+  }
   if (circleMode) {
     if (!circleCenter) {
       circleCenter = [e.latlng.lat, e.latlng.lng];
       circlePreview = L.circle(circleCenter, { radius: 1, color: '#1565c0', weight: 2, dashArray: '6 4', fillOpacity: 0.1 }).addTo(gardenMap);
+      if (circleDiameterInput) { circleDiameterInput.style.display = 'inline'; circleDiameterInput.focus(); }
     } else {
       var rM = distanceMeters(circleCenter, [e.latlng.lat, e.latlng.lng]);
       if (rM < 0.2) {
@@ -529,10 +574,7 @@ gardenMap.on('click', function (e) {
         return;
       }
       var cKind = drawKind || 'border';
-      drawPoints = makeCirclePoints(circleCenter, rM, 48);
-      circleCenter = null;
-      if (circlePreview) { gardenMap.removeLayer(circlePreview); circlePreview = null; }
-      finishDraw();
+      placeCircle(circleCenter, rM);
       // na succes: meteen weer cirkel-modus voor het volgende rondje
       if (circleMode && !drawMode && cKind !== 'hole') setDrawMode(true, cKind);
     }
@@ -545,7 +587,7 @@ gardenMap.on('click', function (e) {
   showDistances(drawPoints, false);
 });
 
-gardenMap.on('dblclick', function () { if (circleMode) return; if (drawMode && !freehandStroke) finishDraw(); });
+gardenMap.on('dblclick', function () { if (circleMode || rulerMode) return; if (drawMode && !freehandStroke) finishDraw(); });
 
 // ===== Vrij tekenen met Apple Pencil / vinger (freehand) =====
 // Modus aan zetten, type kiezen in de lijst, en de vorm in \u00e9\u00e9n streep
@@ -595,6 +637,7 @@ function setFreehand(on) {
   updateDrawStatus();
   if (on) {
     if (circleMode) setCircleMode(false);
+    if (rulerMode) setRulerMode(false);
     holeTarget = null;
     setDrawMode(true, 'border');
   } else {
@@ -737,7 +780,7 @@ function updateHoleBtn() {
 }
 buildHoleButton();
 
-// ===== Perfecte cirkel tekenen (tik middelpunt, tik rand) =====
+// ===== Perfecte cirkel tekenen (tik middelpunt, tik rand of geef de diameter op) =====
 var circleBtn = null;
 function buildCircleButton() {
   var db = document.getElementById('mapDrawBtn');
@@ -746,13 +789,80 @@ function buildCircleButton() {
   circleBtn.type = 'button';
   circleBtn.className = db.className || '';
   circleBtn.textContent = '\u2B55 Cirkel';
-  circleBtn.title = 'Perfecte cirkel: tik het middelpunt en daarna de rand';
+  circleBtn.title = 'Perfecte cirkel: tik het middelpunt en daarna de rand, of voer direct de diameter in (bv. 3,50)';
   circleBtn.addEventListener('click', function () { setCircleMode(!circleMode); });
   db.parentNode.insertBefore(circleBtn, db.nextSibling);
+  rulerBtn = document.createElement('button');
+  rulerBtn.type = 'button';
+  rulerBtn.className = db.className || '';
+  rulerBtn.textContent = '\uD83D\uDCCF Meetlat';
+  rulerBtn.title = 'Meetlat: lijn met vaste lengte in meters, daarna te verslepen als hulplijn bij het tekenen';
+  rulerBtn.addEventListener('click', function () { setRulerMode(!rulerMode); });
+  db.parentNode.insertBefore(rulerBtn, circleBtn.nextSibling);
+  var di = document.createElement('input');
+  di.type = 'number';
+  di.min = '0.2';
+  di.step = 'any';
+  di.placeholder = '⌀ m, bv. 3,50';
+  di.id = 'mapCircleDiameter';
+  di.style.display = 'none';
+  di.style.width = '90px';
+  di.style.marginLeft = '8px';
+  di.style.padding = '6px 8px';
+  di.style.border = '1px solid #ccc';
+  di.style.borderRadius = '6px';
+  di.style.fontSize = '13px';
+  di.style.verticalAlign = 'middle';
+  di.title = 'Diameter in meters (komma of punt); laat leeg om de rand zelf te tikken';
+  circleDiameterInput = di;
+  db.parentNode.insertBefore(di, rulerBtn.nextSibling);
+  var ri = document.createElement('input');
+  ri.type = 'number';
+  ri.min = '0.1';
+  ri.step = 'any';
+  ri.placeholder = 'lengte m, bv. 1,65';
+  ri.id = 'mapRulerLength';
+  ri.style.display = 'none';
+  ri.style.width = '110px';
+  ri.style.marginLeft = '8px';
+  ri.style.padding = '6px 8px';
+  ri.style.border = '1px solid #ccc';
+  ri.style.borderRadius = '6px';
+  ri.style.fontSize = '13px';
+  ri.style.verticalAlign = 'middle';
+  ri.title = 'Lengte van de meetlat in meters (komma of punt is beide goed)';
+  rulerLengthInput = ri;
+  db.parentNode.insertBefore(ri, di.nextSibling);
+  di.addEventListener('keydown', function (e) { if (e.key === 'Enter') applyCircleDiameter(); });
+  ri.addEventListener('keydown', function (e) { if (e.key === 'Enter') applyRulerLength(); });
 }
+
+function parseMeterValue(s) {
+  var v = parseFloat(String(s || '').trim().replace(',', '.'));
+  return isFinite(v) && v > 0 ? v : null;
+}
+
+function applyCircleDiameter() {
+  if (!circleCenter) return;
+  var v = parseMeterValue(circleDiameterInput.value);
+  if (!v) { alert('Voer een diameter in meters in, bv. 3,50.'); return; }
+  var cKind = drawKind || 'border';
+  placeCircle(circleCenter, v / 2);
+  circleDiameterInput.value = '';
+  if (circleMode && !drawMode && cKind !== 'hole') setDrawMode(true, cKind);
+}
+
+function applyRulerLength() {
+  if (!rulerAnchor) return;
+  var v = parseMeterValue(rulerLengthInput.value);
+  if (!v) { alert('Voer een lengte in meters in, bv. 1,65.'); return; }
+  placeRuler(rulerAnchor, gardenMap.getCenter(), v);
+}
+
 function setCircleMode(on) {
   circleMode = on;
   if (on) {
+    if (rulerMode) setRulerMode(false);
     if (freehandOn) setFreehand(false);
     holeTarget = null;
     setDrawMode(true, 'border');
@@ -764,10 +874,68 @@ function setCircleMode(on) {
   updateCircleBtn();
   updateDrawStatus();
 }
+
 function updateCircleBtn() {
   if (!circleBtn) return;
   circleBtn.textContent = circleMode ? '\u2705 Klaar met cirkel' : '\u2B55 Cirkel';
+  if (circleDiameterInput) circleDiameterInput.style.display = circleMode ? 'inline' : 'none';
 }
+
+function updateRulerBtn() {
+  if (!rulerBtn) return;
+  rulerBtn.textContent = rulerMode ? '\u2705 Klaar met meetlat' : '\uD83D\uDCCF Meetlat';
+  if (rulerLengthInput) rulerLengthInput.style.display = rulerMode ? 'inline' : 'none';
+}
+
+function setRulerMode(on) {
+  rulerMode = on;
+  rulerAnchor = null;
+  if (rulerPreview) { gardenMap.removeLayer(rulerPreview); rulerPreview = null; }
+  if (on) {
+    if (circleMode) setCircleMode(false);
+    if (freehandOn) setFreehand(false);
+    holeTarget = null;
+    setDrawMode(true, 'meetlat');
+  } else {
+    setDrawMode(false);
+  }
+  updateRulerBtn();
+  updateDrawStatus();
+}
+
+// Meetlat met vaste lengte: vanuit het getikte punt in de richting van het
+// kaartmidden, daarna als los tuinobject te verslepen (net als een border).
+function placeRuler(from, toward, lengthM) {
+  var brg = bearingRad(from, toward);
+  var end = movePoint(from, brg, lengthM);
+  drawPoints = [from.slice(), end];
+  finishDraw();
+  rulerAnchor = null;
+  if (rulerPreview) { gardenMap.removeLayer(rulerPreview); rulerPreview = null; }
+}
+
+function bearingRad(a, b) {
+  var la1 = a[0] * Math.PI / 180, la2 = b[0] * Math.PI / 180;
+  var dLng = (b[1] - a[1]) * Math.PI / 180;
+  var y = Math.sin(dLng) * Math.cos(la2);
+  var x = Math.cos(la1) * Math.sin(la2) - Math.sin(la1) * Math.cos(la2) * Math.cos(dLng);
+  return Math.atan2(y, x);
+}
+
+function movePoint(a, brg, distM) {
+  var R = 6371000;
+  var la1 = a[0] * Math.PI / 180, lo1 = a[1] * Math.PI / 180;
+  var la2 = Math.asin(Math.sin(la1) * Math.cos(distM / R) + Math.cos(la1) * Math.sin(distM / R) * Math.cos(brg));
+  var lo2 = lo1 + Math.atan2(Math.sin(brg) * Math.sin(distM / R) * Math.cos(la1), Math.cos(distM / R) - Math.sin(la1) * Math.sin(la2));
+  return [la2 * 180 / Math.PI, lo2 * 180 / Math.PI];
+}
+function placeCircle(center, radiusM) {
+  drawPoints = makeCirclePoints(center, radiusM, 48);
+  circleCenter = null;
+  if (circlePreview) { gardenMap.removeLayer(circlePreview); circlePreview = null; }
+  finishDraw();
+}
+
 function makeCirclePoints(center, radiusM, n) {
   var pts = [];
   var latRad = center[0] * Math.PI / 180;
@@ -786,6 +954,25 @@ gardenMap.on('mousemove', function (e) {
   }
 });
 buildCircleButton();
+
+// ===== Vorm als geheel verplaatsen (sleepgreep) =====
+function buildMoveHandle() {
+  var st = document.createElement('style');
+  st.textContent = '.vertex-move { width: 22px; height: 22px; background: #ff9800; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,.4); cursor: move; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; font-weight: 700; font-family: sans-serif; }' +
+    '.vertex-move:hover { background: #f57c00; }';
+  document.head.appendChild(st);
+}
+buildMoveHandle();
+
+function moveHandlePos(obj) {
+  var pts = obj.shape;
+  if (!pts || !pts.length) return null;
+  var ne = { lat: -90, lng: -180 };
+  pts.forEach(function (p) { if (p[0] > ne.lat) { ne.lat = p[0]; ne.lng = p[1]; } });
+  var mpp = metersPerPixel();
+  if (!isFinite(mpp) || mpp <= 0) return [ne.lat, ne.lng];
+  return movePoint([ne.lat, ne.lng], 0, Math.min(1.2, mpp * 28));
+}
 
 // ===== Hoekpunten van vormen slepen (borders en tuinobjecten) =====
 (function () {
@@ -946,9 +1133,44 @@ function selectShape(kind, obj, arr) {
     }
   });
   showDistances(obj.shape, shapeIsClosed(kind, obj));
+  addMoveHandle(kind, obj);
   updateHoleBtn();
   renderMap();
   renderShapeSidebar();
+}
+
+// Greep net boven de vorm: eraan trekken verplaatst de hele vorm (alle punten,
+// inclusief gaten en geplaatste planten) zonder de vorm te vervormen
+function addMoveHandle(kind, obj) {
+  if (!obj.shape || obj.shape.length < 2) return;
+  var hp = moveHandlePos(obj);
+  if (!hp) return;
+  var hm = L.marker(hp, {
+    draggable: true,
+    icon: L.divIcon({ className: 'vertex-move', iconSize: [22, 22], html: '\u2194' })
+  }).addTo(vertexLayer);
+  hm.bindTooltip('vorm verplaatsen \u2014 aan deze knop slepen');
+  var last = null;
+  hm.on('dragstart', function () { last = null; });
+  hm.on('drag', function (e) {
+    var ll = e.target.getLatLng();
+    var cur = [ll.lat, ll.lng];
+    if (last) {
+      var dLat = cur[0] - last[0], dLng = cur[1] - last[1];
+      obj.shape.forEach(function (p) { p[0] += dLat; p[1] += dLng; });
+      (obj.holes || []).forEach(function (h) { h.forEach(function (p) { p[0] += dLat; p[1] += dLng; }); });
+      if (kind === 'border' && obj.placed) obj.placed.forEach(function (p) { if (p.pos) { p.pos.lat += dLat; p.pos.lng += dLng; } });
+      if (kind === 'border') renderMap(); else renderGardenObjects();
+      showDistances(obj.shape, shapeIsClosed(kind, obj));
+      suppressVertexZoomRender = true;
+    }
+    last = cur;
+  });
+  hm.on('dragend', function () {
+    suppressVertexZoomRender = false;
+    saveShapeEdit();
+    if (editVerticesMode && selectedShape) selectShape(selectedShape.kind, selectedShape.obj, selectedShape.arr);
+  });
 }
 
 function saveShapeEdit() {
