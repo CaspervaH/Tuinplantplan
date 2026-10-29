@@ -40,8 +40,8 @@ var circleMode = false;    // perfecte cirkel tekenen (tik middelpunt, tik rand)
 var circleCenter = null;
 var circlePreview = null;  // L.circle als live voorbeeld van de cirkel
 var rulerMode = false;     // meetlat met vaste lengte tekenen
-var rulerBtn = null, rulerLengthInput = null, rulerAnchor = null, rulerPreview = null;
-var circleDiameterInput = null;
+var rulerBtn = null, rulerLengthM = null, rulerAnchor = null, rulerPreview = null;
+var circleDiameterM = null;
 
 // ===== Afstanden tussen hoekpunten (echte meters uit de coördinaten) =====
 function distanceMeters(a, b) {
@@ -361,9 +361,11 @@ function updateDrawStatus() {
   var on = drawMode || freehandOn || circleMode || rulerMode;
   el.style.display = on ? '' : 'none';
   el.textContent = circleMode
-    ? 'Cirkel: tik het middelpunt en daarna de rand, of vul \u2300 meters in'
+    ? (circleDiameterM
+        ? 'Cirkel: tik het middelpunt op de kaart'
+        : 'Cirkel: tik het middelpunt en daarna de rand')
     : rulerMode
-      ? 'Meetlat: tik een beginpunt en vul de lengte in meters in (bv. 1,65)'
+      ? 'Meetlat: tik het beginpunt op de kaart'
       : on ? 'Bezig met tekenen \u2014 klik hoekpunten, dubbelklik of \u201cKlaar \u2713\u201d om af te sluiten' : '';
 }
 
@@ -454,6 +456,52 @@ function askShapeNamePopup() {
     inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') ok.click(); });
     document.body.appendChild(wrap);
     setTimeout(function () { inp.focus(); inp.select(); }, 0);
+  });
+}
+
+// Popup met één getalveld (bv. diameter of meetlatlengte), zelfde stijl als
+// de naam-popup. Resolve met het aantal meters, of null bij annuleren.
+function askMeterPopup(title, text, placeholder, allowEmpty) {
+  return new Promise(function (resolve) {
+    var wrap = document.createElement('div');
+    wrap.className = 'shape-popup-backdrop';
+    var box = document.createElement('div');
+    box.className = 'shape-popup';
+    var h = document.createElement('h3');
+    h.textContent = title;
+    box.appendChild(h);
+    var p = document.createElement('p');
+    p.textContent = text;
+    box.appendChild(p);
+    var inp = document.createElement('input');
+    inp.type = 'text';
+    inp.inputMode = 'decimal';
+    inp.placeholder = placeholder || '';
+    box.appendChild(inp);
+    var row = document.createElement('div');
+    row.className = 'shape-popup-row';
+    var cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.className = 'btn btn-secondary';
+    cancel.textContent = 'Annuleren';
+    cancel.addEventListener('click', function () { wrap.remove(); resolve(null); });
+    var ok = document.createElement('button');
+    ok.type = 'button';
+    ok.className = 'btn btn-primary';
+    ok.textContent = 'OK';
+    ok.addEventListener('click', function () {
+      var v = parseMeterValue(inp.value);
+      if (!v && !allowEmpty) { inp.focus(); return; }
+      wrap.remove();
+      resolve(v || 0);
+    });
+    row.appendChild(cancel); row.appendChild(ok);
+    box.appendChild(row);
+    wrap.appendChild(box);
+    wrap.addEventListener('click', function (e) { if (e.target === wrap) { wrap.remove(); resolve(null); } });
+    inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') ok.click(); });
+    document.body.appendChild(wrap);
+    setTimeout(function () { inp.focus(); }, 0);
   });
 }
 
@@ -557,16 +605,14 @@ gardenMap.on('click', function (e) {
   if (rulerMode) {
     rulerAnchor = [e.latlng.lat, e.latlng.lng];
     if (rulerPreview) { gardenMap.removeLayer(rulerPreview); rulerPreview = null; }
-    var rl = parseMeterValue(rulerLengthInput && rulerLengthInput.value);
-    if (rl) { placeRuler(rulerAnchor, gardenMap.getCenter(), rl); }
-    else if (rulerLengthInput) { rulerLengthInput.focus(); }
+    if (rulerLengthM) { placeRuler(rulerAnchor, gardenMap.getCenter(), rulerLengthM); }
     return;
   }
   if (circleMode) {
     if (!circleCenter) {
       circleCenter = [e.latlng.lat, e.latlng.lng];
+      if (circleDiameterM) { placeCircle(circleCenter, circleDiameterM / 2); return; }
       circlePreview = L.circle(circleCenter, { radius: 1, color: '#1565c0', weight: 2, dashArray: '6 4', fillOpacity: 0.1 }).addTo(gardenMap);
-      if (circleDiameterInput) { circleDiameterInput.style.display = 'inline'; circleDiameterInput.focus(); }
     } else {
       var rM = distanceMeters(circleCenter, [e.latlng.lat, e.latlng.lng]);
       if (rM < 0.2) {
@@ -799,42 +845,6 @@ function buildCircleButton() {
   rulerBtn.title = 'Meetlat: lijn met vaste lengte in meters, daarna te verslepen als hulplijn bij het tekenen';
   rulerBtn.addEventListener('click', function () { setRulerMode(!rulerMode); });
   db.parentNode.insertBefore(rulerBtn, circleBtn.nextSibling);
-  var di = document.createElement('input');
-  di.type = 'number';
-  di.min = '0.2';
-  di.step = 'any';
-  di.placeholder = '⌀ m, bv. 3,50';
-  di.id = 'mapCircleDiameter';
-  di.style.display = 'none';
-  di.style.width = '90px';
-  di.style.marginLeft = '8px';
-  di.style.padding = '6px 8px';
-  di.style.border = '1px solid #ccc';
-  di.style.borderRadius = '6px';
-  di.style.fontSize = '13px';
-  di.style.verticalAlign = 'middle';
-  di.title = 'Diameter in meters (komma of punt); laat leeg om de rand zelf te tikken';
-  circleDiameterInput = di;
-  db.parentNode.insertBefore(di, rulerBtn.nextSibling);
-  var ri = document.createElement('input');
-  ri.type = 'number';
-  ri.min = '0.1';
-  ri.step = 'any';
-  ri.placeholder = 'lengte m, bv. 1,65';
-  ri.id = 'mapRulerLength';
-  ri.style.display = 'none';
-  ri.style.width = '110px';
-  ri.style.marginLeft = '8px';
-  ri.style.padding = '6px 8px';
-  ri.style.border = '1px solid #ccc';
-  ri.style.borderRadius = '6px';
-  ri.style.fontSize = '13px';
-  ri.style.verticalAlign = 'middle';
-  ri.title = 'Lengte van de meetlat in meters (komma of punt is beide goed)';
-  rulerLengthInput = ri;
-  db.parentNode.insertBefore(ri, di.nextSibling);
-  di.addEventListener('keydown', function (e) { if (e.key === 'Enter') applyCircleDiameter(); });
-  ri.addEventListener('keydown', function (e) { if (e.key === 'Enter') applyRulerLength(); });
 }
 
 function parseMeterValue(s) {
@@ -842,33 +852,25 @@ function parseMeterValue(s) {
   return isFinite(v) && v > 0 ? v : null;
 }
 
-function applyCircleDiameter() {
-  if (!circleCenter) return;
-  var v = parseMeterValue(circleDiameterInput.value);
-  if (!v) { alert('Voer een diameter in meters in, bv. 3,50.'); return; }
-  var cKind = drawKind || 'border';
-  placeCircle(circleCenter, v / 2);
-  circleDiameterInput.value = '';
-  if (circleMode && !drawMode && cKind !== 'hole') setDrawMode(true, cKind);
-}
-
-function applyRulerLength() {
-  if (!rulerAnchor) return;
-  var v = parseMeterValue(rulerLengthInput.value);
-  if (!v) { alert('Voer een lengte in meters in, bv. 1,65.'); return; }
-  placeRuler(rulerAnchor, gardenMap.getCenter(), v);
-}
-
 function setCircleMode(on) {
   circleMode = on;
+  circleCenter = null;
+  circleDiameterM = null;
+  if (circlePreview) { gardenMap.removeLayer(circlePreview); circlePreview = null; }
   if (on) {
     if (rulerMode) setRulerMode(false);
     if (freehandOn) setFreehand(false);
     holeTarget = null;
-    setDrawMode(true, 'border');
+    askMeterPopup('Cirkel tekenen',
+      'Welke diameter krijgt de cirkel (in meters)? Laat leeg als je de rand zelf op de kaart wilt tikken.',
+      'bv. 3,50', true).then(function (v) {
+        if (!circleMode) return;
+        if (v === null) { setCircleMode(false); return; }
+        circleDiameterM = v || null;
+        setDrawMode(true, 'border');
+        updateDrawStatus();
+      });
   } else {
-    circleCenter = null;
-    if (circlePreview) { gardenMap.removeLayer(circlePreview); circlePreview = null; }
     setDrawMode(false);
   }
   updateCircleBtn();
@@ -878,24 +880,31 @@ function setCircleMode(on) {
 function updateCircleBtn() {
   if (!circleBtn) return;
   circleBtn.textContent = circleMode ? '\u2705 Klaar met cirkel' : '\u2B55 Cirkel';
-  if (circleDiameterInput) circleDiameterInput.style.display = circleMode ? 'inline' : 'none';
 }
 
 function updateRulerBtn() {
   if (!rulerBtn) return;
   rulerBtn.textContent = rulerMode ? '\u2705 Klaar met meetlat' : '\uD83D\uDCCF Meetlat';
-  if (rulerLengthInput) rulerLengthInput.style.display = rulerMode ? 'inline' : 'none';
 }
 
 function setRulerMode(on) {
   rulerMode = on;
   rulerAnchor = null;
+  rulerLengthM = null;
   if (rulerPreview) { gardenMap.removeLayer(rulerPreview); rulerPreview = null; }
   if (on) {
     if (circleMode) setCircleMode(false);
     if (freehandOn) setFreehand(false);
     holeTarget = null;
-    setDrawMode(true, 'meetlat');
+    askMeterPopup('Meetlat tekenen',
+      'Hoe lang is de meetlat (in meters)? Tik daarna op de kaart waar de meetlat moet beginnen.',
+      'bv. 1,65', false).then(function (v) {
+        if (!rulerMode) return;
+        if (v === null) { setRulerMode(false); return; }
+        rulerLengthM = v;
+        setDrawMode(true, 'meetlat');
+        updateDrawStatus();
+      });
   } else {
     setDrawMode(false);
   }
